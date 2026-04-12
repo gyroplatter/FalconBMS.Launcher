@@ -174,7 +174,8 @@ public partial class KeymappingView : UserControl
         if (joys is null || joys.Length == 0)
             return;
 
-        joySlot = Math.Clamp(joySlot, 0, joys.Length - 1);
+        // .NET Framework 4.8 does not support Math.Clamp().
+        joySlot = Math.Max(0, Math.Min(joySlot, joys.Length - 1));
 
         string f16ActiveKeyPath = kvm.GetActiveKeyPath(KeyProfile.F16);
         string f15ActiveKeyPath = kvm.GetActiveKeyPath(KeyProfile.F15ABCD);
@@ -387,7 +388,7 @@ public partial class KeymappingView : UserControl
         }
 
         var currentPressed = new HashSet<DiKey>();
-        foreach (DiKey key in Enum.GetValues<DiKey>())
+        foreach (DiKey key in Enum.GetValues(typeof(DiKey)))
         {
             if (key == DiKey.Unknown)
                 continue;
@@ -567,7 +568,7 @@ public partial class KeymappingView : UserControl
         if (isDown)
         {
             int assignIndex = _isShiftButtonPressed ? 1 : 0;
-            string? target = joy.GetDxCallback(buttonIndex0Based, assignIndex);
+            string target = joy.GetDxCallback(buttonIndex0Based, assignIndex);
 
             if (string.Equals(target, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(target, "SimHotasShift", StringComparison.OrdinalIgnoreCase))
@@ -577,9 +578,11 @@ public partial class KeymappingView : UserControl
 
             string label = $"DX{buttonIndex0Based + 1} ({deviceName})";
 
-            if (!string.IsNullOrWhiteSpace(target) && !string.Equals(target, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(target) &&
+                !string.Equals(target, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
             {
-                if (kvm.TryFindKeyRowByCallback(target, out KeymappingGridRowViewModel? row) && row is not null)
+                KeymappingGridRowViewModel row;
+                if (kvm.TryFindKeyRowByCallback(target, out row) && row != null)
                 {
                     label += " / " + row.Mapping.Trim();
                     SelectAndRevealRow(kvm, row, joySlot);
@@ -595,13 +598,15 @@ public partial class KeymappingView : UserControl
         }
 
         int releaseIndex = _isShiftButtonPressed ? 3 : 2;
-        string? releaseTarget = joy.GetDxCallback(buttonIndex0Based, releaseIndex);
+        string releaseTarget = joy.GetDxCallback(buttonIndex0Based, releaseIndex);
 
-        if (!string.IsNullOrWhiteSpace(releaseTarget) && !string.Equals(releaseTarget, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(releaseTarget) &&
+            !string.Equals(releaseTarget, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
         {
             string label = $"DX{buttonIndex0Based + 1}.RELEASE ({deviceName})";
 
-            if (kvm.TryFindKeyRowByCallback(releaseTarget, out KeymappingGridRowViewModel? releaseRow) && releaseRow is not null)
+            KeymappingGridRowViewModel releaseRow;
+            if (kvm.TryFindKeyRowByCallback(releaseTarget, out releaseRow) && releaseRow != null)
             {
                 label += " / " + releaseRow.Mapping.Trim();
                 SelectAndRevealRow(kvm, releaseRow, joySlot);
@@ -614,7 +619,7 @@ public partial class KeymappingView : UserControl
             kvm.AssignmentText = label;
         }
 
-        string? pressTarget = joy.GetDxCallback(buttonIndex0Based, 0);
+        string pressTarget = joy.GetDxCallback(buttonIndex0Based, 0);
         if (string.Equals(pressTarget, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(pressTarget, "SimHotasShift", StringComparison.OrdinalIgnoreCase))
         {

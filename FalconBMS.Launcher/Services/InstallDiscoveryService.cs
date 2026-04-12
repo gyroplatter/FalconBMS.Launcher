@@ -88,7 +88,7 @@ public sealed class InstallDiscoveryService
 
     private static string BuildVersionDisplayFromExe(string registryKeyName, string falconExePath)
     {
-        var isInternal = registryKeyName.Contains("(Internal)", StringComparison.OrdinalIgnoreCase);
+        var isInternal = registryKeyName.IndexOf("(Internal)", StringComparison.OrdinalIgnoreCase) >= 0;
 
         try
         {

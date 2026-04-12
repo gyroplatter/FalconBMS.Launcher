@@ -100,7 +100,10 @@ public static class DebugDiagnosticsService
             using var stream = File.OpenRead(path);
             using var sha1 = SHA1.Create();
             byte[] hash = sha1.ComputeHash(stream);
-            string hashText = Convert.ToHexString(hash);
+
+            // .NET Framework 4.8 does not have Convert.ToHexString().
+            string hashText = BitConverter.ToString(hash).Replace("-", string.Empty);
+
             return $"exists len={fi.Length} sha1={hashText}";
         }
         catch (Exception ex)

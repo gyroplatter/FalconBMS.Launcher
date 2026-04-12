@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace FalconBMS.Launcher.Converters;
 

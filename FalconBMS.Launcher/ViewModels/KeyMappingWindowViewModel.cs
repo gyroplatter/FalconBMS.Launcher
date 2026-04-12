@@ -275,7 +275,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         var pressed = new List<Key>();
 
-        foreach (Key k in Enum.GetValues<Key>())
+        foreach (Key k in Enum.GetValues(typeof(Key)))
         {
             if (k == Key.Unknown)
                 continue;
@@ -442,7 +442,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             var dx = joy.KeyMappingPreviewDX(_selectedRow);
             if (!string.IsNullOrWhiteSpace(dx))
             {
-                var lines = dx.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var lines = dx.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (var line in lines)
                     parts.Add("JOY " + slot + line.Trim());
             }

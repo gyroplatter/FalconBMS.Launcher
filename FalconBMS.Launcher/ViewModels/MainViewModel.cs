@@ -696,7 +696,7 @@ public sealed class MainViewModel : ViewModelBase
         {
             var s = SelectedInstall?.DisplayName ?? "";
             if (string.IsNullOrWhiteSpace(s)) return "";
-            return s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+            return s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)[0];
         }
     }
 
@@ -705,7 +705,7 @@ public sealed class MainViewModel : ViewModelBase
         get
         {
             var s = SelectedInstall?.DisplayName ?? "";
-            return s.Contains("(Internal", StringComparison.OrdinalIgnoreCase);
+            return s.IndexOf("(Internal", StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 

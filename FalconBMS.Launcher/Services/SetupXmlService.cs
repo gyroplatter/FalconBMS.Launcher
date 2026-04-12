@@ -184,7 +184,7 @@ public sealed class SetupXmlService
         string guidToken = "{" + instanceGuid.ToString().ToUpperInvariant() + "}";
 
         return Directory.GetFiles(cfgDir, "Setup.v100.*.xml", SearchOption.TopDirectoryOnly)
-            .FirstOrDefault(f => Path.GetFileName(f).Contains(guidToken, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(f => Path.GetFileName(f).IndexOf(guidToken, StringComparison.OrdinalIgnoreCase) >= 0);
     }
 
     public string BuildUserXmlPath(string baseDir, string deviceName, Guid instanceGuid)

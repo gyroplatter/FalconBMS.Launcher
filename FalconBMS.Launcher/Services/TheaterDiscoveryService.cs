@@ -61,14 +61,15 @@ public sealed class TheaterDiscoveryService
         foreach (var tdf in theaterFiles)
         {
             // Hack: ignore output from F4Patch
-            if (tdf.Contains("F4Patch", StringComparison.OrdinalIgnoreCase))
+            if (tdf.IndexOf("F4Patch", StringComparison.OrdinalIgnoreCase) >= 0)
                 continue;
 
             foreach (var line in File.ReadLines(tdf, Encoding.UTF8))
             {
                 if (line.StartsWith("name ", StringComparison.OrdinalIgnoreCase))
                 {
-                    theaters.Add(line.Replace("name ", "", StringComparison.OrdinalIgnoreCase).Trim());
+                    // We already know the line starts with "name ", so remove that exact prefix directly.
+                    theaters.Add(line.Substring(5).Trim());
                     break;
                 }
             }

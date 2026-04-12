@@ -28,7 +28,12 @@ public sealed class AxisMappingDatReader
         if (bytes.Length != TotalSize) return null; // if BMS changes format later, we'll version it
 
         int headerJoy = ReadInt32LE(bytes, 0);
-        var headerGuid = new Guid(bytes.AsSpan(4, 16));
+
+        // .NET Framework 4.8 Guid does not accept Span<byte>, so copy the 16-byte GUID slice first.
+        var headerGuidBytes = new byte[16];
+        Buffer.BlockCopy(bytes, 4, headerGuidBytes, 0, 16);
+        var headerGuid = new Guid(headerGuidBytes);
+
         int deviceCount = ReadInt32LE(bytes, 20);
 
         var entries = new List<AxisMapEntry>(AxisCount);

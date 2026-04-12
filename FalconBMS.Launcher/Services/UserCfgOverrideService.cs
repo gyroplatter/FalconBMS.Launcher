@@ -130,12 +130,12 @@ public sealed class UserCfgOverrideService
 
         line = trimmed;
 
-        while (line.Contains("  ", StringComparison.Ordinal))
-            line = line.Replace("  ", " ", StringComparison.Ordinal);
+        while (line.IndexOf("  ", StringComparison.Ordinal) >= 0)
+            line = line.Replace("  ", " ");
 
-        while (line.Contains("\x201C", StringComparison.Ordinal) || line.Contains("\x201D", StringComparison.Ordinal))
-            line = line.Replace("\x201C", "\x0022", StringComparison.Ordinal)
-                       .Replace("\x201D", "\x0022", StringComparison.Ordinal);
+        while (line.IndexOf("\x201C", StringComparison.Ordinal) >= 0 || line.IndexOf("\x201D", StringComparison.Ordinal) >= 0)
+            line = line.Replace("\x201C", "\x0022")
+                       .Replace("\x201D", "\x0022");
 
         return line;
     }

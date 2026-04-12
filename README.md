@@ -1,7 +1,7 @@
 ﻿# Falcon BMS Alternative Launcher (Rebuild)
 
 ## Summary
-This is a full rebuild of the Falcon BMS Alternative Launcher using .NET 8 (WPF), with strict parity to the original launcher.
+This is a full rebuild of the Falcon BMS Alternative Launcher using .NET 4.8 (WPF) x64.
 
 This launcher is currently only compatible with Falcon BMS 4.38.
 
@@ -19,16 +19,13 @@ All XML and KEY behaviors are verifiable against the original launcher
 
 ### master
 
-Close parity to original launcher. Axes and keymapping are in separate tabs.
-
-### feature/axis-keymapping-combined
-
-Same as master, but axes and keymapping are combined into a single table.
+Close parity to original launcher, but axes and keymapping are combined into a single table.
 
 Goals:
 - Improve usability by treating axes and keybindings as a unified "control" system
 - Reduce user confusion
 - Prepare for potential future support of different axis mappings per aircraft (F16 vs F15)
+
 
 ---
 
@@ -39,11 +36,11 @@ This project uses the following NuGet packages:
 - Vortice.DirectInput  
   For DirectInput bindings used for device detection, axis polling, and button input.
 
-- Vortice.Win32  
-  Supporting Windows API bindings required by DirectInput.
-
 - System.ServiceModel.Syndication  
   For RSS feed handling in the launcher UI.
+
+- System.Net.Http
+  For RSS feed usage in .NET 4.8
 
 ---
 
@@ -60,14 +57,13 @@ This project uses the following NuGet packages:
 All generated output files are compatible with the original launcher.
 
 Mappings and axes are interchangeable:
-- Edits in the original launcher are reflected here
-- Edits here are reflected in the original launcher
+- Edits made in original launcher are reflected in this new Launcher
+- Edits made in this new Launcher are reflected in the original Launcher
 
 ---
 
 ### In Progress
 
-- Starters and Overrides system
 - UI and styling refinement
 - Launcher bypass
 - Performance optimizations

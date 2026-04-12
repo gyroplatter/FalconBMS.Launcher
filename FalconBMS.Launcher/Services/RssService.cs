@@ -27,7 +27,8 @@ public sealed class RssService
         using var resp = await _http.GetAsync(FeedUrl, ct);
         resp.EnsureSuccessStatusCode();
 
-        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        // .NET Framework 4.8 does not expose the CancellationToken overload here.
+        using var stream = await resp.Content.ReadAsStreamAsync();
         using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore });
 
         var feed = SyndicationFeed.Load(reader);

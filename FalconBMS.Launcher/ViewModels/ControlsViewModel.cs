@@ -323,8 +323,8 @@ public sealed class ControlsViewModel : ViewModelBase
         }
 
         var contains = devices.FirstOrDefault(d =>
-            d.Name.Contains(deviceName, StringComparison.OrdinalIgnoreCase) ||
-            deviceName.Contains(d.Name, StringComparison.OrdinalIgnoreCase));
+            d.Name.IndexOf(deviceName, StringComparison.OrdinalIgnoreCase) >= 0 ||
+            deviceName.IndexOf(d.Name, StringComparison.OrdinalIgnoreCase) >= 0);
 
         return contains?.InstanceGuid;
     }

@@ -104,7 +104,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     public string TitleText => $"Assign {AxisCatalog.Get(_function).DisplayName} Axis";
 
-    private string _detectedText = "Awaiting inputs";
+    private string _detectedText = "Awaiting inputs: Move your control";
     public string DetectedText
     {
         get => _detectedText;
@@ -685,7 +685,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
             // We want bar updates immediately, but we do NOT want detection to consider movement
             // until the settle window has passed and we capture a clean baseline.
-            long startTick = Environment.TickCount64;
+            int startTick = Environment.TickCount;
             bool baselineCaptured = false;
 
             _rebaselineRequested = false;
@@ -724,7 +724,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
                 // During settle, we still update the bar, but we do not allow detection.
                 if (!baselineCaptured)
                 {
-                    long elapsed = Environment.TickCount64 - startTick;
+                    int elapsed = unchecked(Environment.TickCount - startTick);
                     if (elapsed >= InitialSettleMs)
                     {
                         foreach (var kvp in sessions)
