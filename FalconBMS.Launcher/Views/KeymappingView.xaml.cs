@@ -563,12 +563,12 @@ public partial class KeymappingView : UserControl
             return;
 
         var joy = joys[joySlot];
-        string deviceName = joy.ProductName;
+        string deviceName = joy.ProductName ?? string.Empty;
 
         if (isDown)
         {
             int assignIndex = _isShiftButtonPressed ? 1 : 0;
-            string target = joy.GetDxCallback(buttonIndex0Based, assignIndex);
+            string target = joy.GetDxCallback(buttonIndex0Based, assignIndex) ?? string.Empty;
 
             if (string.Equals(target, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(target, "SimHotasShift", StringComparison.OrdinalIgnoreCase))
@@ -581,7 +581,7 @@ public partial class KeymappingView : UserControl
             if (!string.IsNullOrWhiteSpace(target) &&
                 !string.Equals(target, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
             {
-                KeymappingGridRowViewModel row;
+                KeymappingGridRowViewModel? row;
                 if (kvm.TryFindKeyRowByCallback(target, out row) && row != null)
                 {
                     label += " / " + row.Mapping.Trim();
@@ -598,14 +598,14 @@ public partial class KeymappingView : UserControl
         }
 
         int releaseIndex = _isShiftButtonPressed ? 3 : 2;
-        string releaseTarget = joy.GetDxCallback(buttonIndex0Based, releaseIndex);
+        string releaseTarget = joy.GetDxCallback(buttonIndex0Based, releaseIndex) ?? string.Empty;
 
         if (!string.IsNullOrWhiteSpace(releaseTarget) &&
             !string.Equals(releaseTarget, "SimDoNothing", StringComparison.OrdinalIgnoreCase))
         {
             string label = $"DX{buttonIndex0Based + 1}.RELEASE ({deviceName})";
 
-            KeymappingGridRowViewModel releaseRow;
+            KeymappingGridRowViewModel? releaseRow;
             if (kvm.TryFindKeyRowByCallback(releaseTarget, out releaseRow) && releaseRow != null)
             {
                 label += " / " + releaseRow.Mapping.Trim();
@@ -619,7 +619,7 @@ public partial class KeymappingView : UserControl
             kvm.AssignmentText = label;
         }
 
-        string pressTarget = joy.GetDxCallback(buttonIndex0Based, 0);
+        string pressTarget = joy.GetDxCallback(buttonIndex0Based, 0) ?? string.Empty;
         if (string.Equals(pressTarget, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(pressTarget, "SimHotasShift", StringComparison.OrdinalIgnoreCase))
         {

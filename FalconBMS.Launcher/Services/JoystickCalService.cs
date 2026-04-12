@@ -165,6 +165,6 @@ public sealed class JoystickCalService
         var devName = sorting.GetDeviceNameBySlot(baseDir, slot);
         if (string.IsNullOrWhiteSpace(devName)) return null;
 
-        return setupXml.TryGetDetents(baseDir, devName, out var detents) ? detents : null;
+        return setupXml.TryGetDetents(baseDir, devName!, out var detents) ? detents : null;
     }
 }

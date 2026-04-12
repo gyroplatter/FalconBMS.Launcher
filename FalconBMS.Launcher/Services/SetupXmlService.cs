@@ -80,7 +80,7 @@ public sealed class SetupXmlService
         {
             var setupName = AxisFunctionToSetupAxisName(def.Function);
             if (!string.IsNullOrWhiteSpace(setupName))
-                reverse[setupName] = def.Function;
+                reverse[setupName!] = def.Function;
         }
 
         var axis = new Dictionary<AxisFunction, AxisSnapshot>();
@@ -100,7 +100,7 @@ public sealed class SetupXmlService
                 {
                     var deviceName = safe; // safe already matches sanitized name
 
-                    if (TryGetDetents(baseDir, deviceName, out var dp))
+                    if (TryGetDetents(baseDir, deviceName!, out var dp))
                         detentsBySafeName[safe!] = dp;
                 }
             }
@@ -111,7 +111,7 @@ public sealed class SetupXmlService
                 var axisName = (string?)ax.Element("AxisName");
                 if (string.IsNullOrWhiteSpace(axisName)) continue;
 
-                if (!reverse.TryGetValue(axisName.Trim(), out var func))
+                if (!reverse.TryGetValue(axisName!.Trim(), out var func))
                     continue;
 
                 bool invert = false;
@@ -156,7 +156,7 @@ public sealed class SetupXmlService
 
         // Current launcher file name format:
         // Setup.v100.{SafeDeviceName} {GUID}.xml
-        if (!fileName.StartsWith("Setup.v100.", StringComparison.OrdinalIgnoreCase))
+        if (!fileName!.StartsWith("Setup.v100.", StringComparison.OrdinalIgnoreCase))
             return null;
 
         // Strip prefix + suffix
@@ -194,7 +194,7 @@ public sealed class SetupXmlService
         // (e.g., "HOTAS" vs "H.O.T.A.S.") which prevents BMS from seeing curves.
         var existing = FindExistingUserXmlPathByGuid(baseDir, instanceGuid);
         if (!string.IsNullOrWhiteSpace(existing))
-            return existing;
+            return existing!;
 
         var safe = SanitizeFilePart(deviceName);
         var file = $"Setup.v100.{safe} {{{instanceGuid.ToString().ToUpperInvariant()}}}.xml";
@@ -697,7 +697,7 @@ public sealed class SetupXmlService
         if (string.IsNullOrWhiteSpace(filename))
             return null;
 
-        int l = filename.IndexOf('{');
+        int l = filename!.IndexOf('{');
         int r = filename.IndexOf('}');
         if (l < 0 || r <= l)
             return null;

@@ -40,7 +40,7 @@ public sealed class InstallDiscoveryService
                     continue;
                 }
 
-                var exe = ResolveFalconExe(baseDir);
+                var exe = ResolveFalconExe(baseDir!);
                 if (exe is null)
                 {
                     DebugDiagnosticsService.Warn($"Skipping install '{subName}' because Falcon BMS.exe was not found under: {baseDir}");
@@ -52,7 +52,7 @@ public sealed class InstallDiscoveryService
                 installs.Add(new BmsInstall
                 {
                     RegistryKeyName = subName,
-                    BaseDir = baseDir,
+                    BaseDir = baseDir!,
                     FalconExePath = exe,
                     VersionDisplay = versionDisplay
                 });

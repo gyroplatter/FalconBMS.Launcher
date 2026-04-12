@@ -14,7 +14,7 @@ public sealed class AxisRowViewModel : ViewModelBase
 {
     public AxisFunction Function { get; }
     public int MappingIndex { get; }
-    public string DisplayName { get; }
+    public string DisplayName { get; } = string.Empty;
     public string GroupName { get; }
 
     private string _bindingText = "Not set";
@@ -210,7 +210,7 @@ public sealed class AxisRowViewModel : ViewModelBase
     {
         Function = def.Function;
         MappingIndex = def.MappingIndex;
-        DisplayName = string.IsNullOrWhiteSpace(displayNameOverride) ? def.DisplayName : displayNameOverride;
+        DisplayName = string.IsNullOrWhiteSpace(displayNameOverride) ? (def.DisplayName ?? string.Empty) : displayNameOverride!;
         GroupName = groupName;
 
         AssignCommand = new RelayCommand(() => assign(Function), () => canExecute(Function));

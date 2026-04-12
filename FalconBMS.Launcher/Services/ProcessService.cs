@@ -56,9 +56,15 @@ public sealed class ProcessService
         if (!File.Exists(exePath))
             throw new FileNotFoundException("Executable not found.", exePath);
 
-        string resolvedWorkingDirectory = string.IsNullOrWhiteSpace(workingDirectory)
-            ? Path.GetDirectoryName(exePath)!
-            : workingDirectory;
+        string resolvedWorkingDirectory;
+        if (string.IsNullOrWhiteSpace(workingDirectory))
+        {
+            resolvedWorkingDirectory = Path.GetDirectoryName(exePath) ?? string.Empty;
+        }
+        else
+        {
+            resolvedWorkingDirectory = workingDirectory!;
+        }
 
         DebugDiagnosticsService.Info($"Launching EXE: {exePath} {arguments}".TrimEnd());
 

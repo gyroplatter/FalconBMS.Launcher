@@ -143,7 +143,7 @@ public sealed class KeymappingViewModel : ViewModelBase
 
         string? importedPath = GetImportedKeyPath(profile);
         if (!string.IsNullOrWhiteSpace(importedPath) && File.Exists(importedPath))
-            return importedPath;
+            return importedPath!;
 
         return GetDefaultKeyPath(install.BaseDir, profile);
     }
@@ -465,7 +465,7 @@ public sealed class KeymappingViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(sectionId))
             return null;
 
-        int dotIndex = sectionId.IndexOf('.');
+        int dotIndex = sectionId!.IndexOf('.');
         if (dotIndex <= 0)
             return null;
 

@@ -78,7 +78,7 @@ public sealed class MainViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(value)) return;
 
             DebugDiagnosticsService.Info($"Writing theater selection: {value}");
-            _registry.WriteString(SelectedInstall.RegistryKeyName, "curTheater", value);
+            _registry.WriteString(SelectedInstall.RegistryKeyName, "curTheater", value!);
         }
     }
 
@@ -341,7 +341,7 @@ public sealed class MainViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(cur))
         {
             if (!Theaters.Any(x => string.Equals(x, cur, StringComparison.Ordinal)))
-                Theaters.Insert(0, cur);
+                Theaters.Insert(0, cur!);
 
             SelectedTheater = cur;
         }
@@ -605,15 +605,15 @@ public sealed class MainViewModel : ViewModelBase
                 if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
                 {
                     if (!string.IsNullOrWhiteSpace(item.DownloadUrl))
-                        _proc.OpenUrl(item.DownloadUrl);
+                        _proc.OpenUrl(item.DownloadUrl!);
 
                     return;
                 }
 
-                _thirdPartyStrip.SaveExecutablePath(id, exePath);
+                _thirdPartyStrip.SaveExecutablePath(id, exePath!);
             }
 
-            _proc.StartExecutable(exePath);
+            _proc.StartExecutable(exePath!);
         }
         catch (Exception ex)
         {

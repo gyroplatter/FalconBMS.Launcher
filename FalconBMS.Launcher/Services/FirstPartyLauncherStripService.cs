@@ -118,7 +118,7 @@ public sealed class FirstPartyLauncherStripService
         items.Add(new LauncherStripItem(
             id,
             label,
-            exePath,
+            exePath!,
             workingDirectory,
             minimizeLauncherUntilExit));
     }
