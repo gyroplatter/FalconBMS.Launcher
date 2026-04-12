@@ -1,0 +1,128 @@
+﻿<Window x:Class="FalconBMS.Launcher.Views.AxisAssignWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:FalconBMS.Launcher.Controls"
+        Title="{Binding TitleText}"
+        Width="520" Height="360"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- 0 -->
+            <!-- Title -->
+            <RowDefinition Height="Auto"/> <!-- 1 -->
+            <!-- Axis bar -->
+            <RowDefinition Height="Auto"/> <!-- 2 -->
+            <!-- Detected text -->
+            <RowDefinition Height="*"/> <!-- 3 -->
+            <!-- Invert / Detents -->
+            <RowDefinition Height="Auto"/> <!-- 4 -->
+            <!-- DZ/Sat -->
+            <RowDefinition Height="Auto"/> <!-- 5 -->
+            <!-- Buttons -->
+            <RowDefinition Height="Auto"/> <!-- 6 -->
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{Binding TitleText}"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,10"/>
+
+        <controls:AxisBar Grid.Row="1"
+                  Margin="0,0,0,10"
+                  Value="{Binding AxisBarValue}"
+                  IsActive="{Binding AxisBarEnabled}"
+                  FillBrush="{Binding AxisBarFillBrush}"
+                  LeftLabel="{Binding AxisBarLeftLabel}"
+                  RightLabel="{Binding AxisBarRightLabel}"
+                  OverlayText="{Binding AxisBarOverlayText}"
+                  OverlayVisibility="{Binding AxisBarOverlayVisibility}"
+                  ShowDetentMarkers="{Binding ShowDetentMarkers}"
+                  IdleDetentFraction="{Binding IdleDetentFraction}"
+                  AbDetentFraction="{Binding AbDetentFraction}" />
+
+        <Border Grid.Row="2"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="10"
+                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                Background="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}">
+            <TextBlock Text="{Binding DetectedText}"
+                       FontSize="14"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <Grid Grid.Row="4" Margin="0,12,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <CheckBox Grid.Column="0"
+                      VerticalAlignment="Center"
+                      Content="Invert"
+                      IsChecked="{Binding Invert}"/>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Visibility="{Binding DetentControlsVisibility}">
+                <Button Content="Idle Detent"
+                        MinWidth="90"
+                        Margin="0,0,10,0"
+                        Command="{Binding SetIdleDetentCommand}"/>
+                <Button Content="AB Detent"
+                        MinWidth="90"
+                        Command="{Binding SetAbDetentCommand}"/>
+            </StackPanel>
+        </Grid>
+        
+        <Grid Grid.Row="5"
+              Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="0,0,18,0"
+                        Visibility="{Binding DeadzoneControlsVisibility}">
+                <TextBlock Text="DeadZone" Margin="0,0,0,6"/>
+                <ComboBox Width="120"
+                          ItemsSource="{Binding CurveOptions}"
+                          SelectedItem="{Binding DeadzoneCurve}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Margin="0,0,18,0">
+                <TextBlock Text="Saturation" Margin="0,0,0,6"/>
+                <ComboBox Width="120"
+                          ItemsSource="{Binding CurveOptions}"
+                          SelectedItem="{Binding SaturationCurve}"/>
+            </StackPanel>
+        </Grid>
+
+        <StackPanel Grid.Row="6"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Content="Clear"
+                    MinWidth="90"
+                    Margin="0,0,10,0"
+                    Command="{Binding ClearCommand}"/>
+
+            <Button Content="Cancel"
+                    MinWidth="90"
+                    Margin="0,0,10,0"
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
+
+            <Button Content="Save"
+                    MinWidth="90"
+                    IsDefault="True"
+                    IsEnabled="{Binding CanSave}"
+                    Click="Save_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

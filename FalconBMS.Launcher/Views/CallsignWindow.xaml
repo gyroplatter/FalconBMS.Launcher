@@ -1,0 +1,79 @@
+﻿<Window x:Class="FalconBMS.Launcher.Views.CallsignWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Register Pilot"
+        Width="460"
+        Height="260"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Loaded="Window_Loaded">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Register Pilot"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Margin="0,0,0,14"/>
+
+        <TextBlock Grid.Row="1"
+                   Text="Callsign"
+                   Margin="0,0,0,4"/>
+
+        <TextBox Grid.Row="2"
+                 x:Name="TextBox_Callsign"
+                 Text="Viper"
+                 MaxLength="12"
+                 Margin="0,0,0,4"
+                 TextChanged="Callsign_Changed"/>
+
+        <TextBlock Grid.Row="3"
+                   x:Name="Label_Error_Callsign"
+                   Text="Seriously your callsign is &quot;Viper&quot; !?"
+                   Visibility="Collapsed"
+                   Foreground="Firebrick"
+                   Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="4"
+                   Text="Pilot Name"
+                   Margin="0,0,0,4"/>
+
+        <StackPanel Grid.Row="5">
+            <TextBox x:Name="TextBox_PilotName"
+                     Text="Joe Pilot"
+                     MaxLength="20"
+                     Margin="0,0,0,4"
+                     TextChanged="PilotName_Changed"/>
+
+            <TextBlock x:Name="Label_Error_PilotName"
+                       Text="Seriously your name is &quot;Joe Pilot&quot; !?"
+                       Visibility="Collapsed"
+                       Foreground="Firebrick"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="6"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Cancel"
+                    Width="90"
+                    Margin="0,0,10,0"
+                    IsCancel="True"
+                    Click="Cancel_Click"/>
+
+            <Button Content="Register"
+                    Width="90"
+                    IsDefault="True"
+                    Click="Button_Register_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
