@@ -155,9 +155,8 @@ public static class ThemeService
 
     private static bool PathMatches(string? source, string expectedPath)
     {
-        if (string.IsNullOrWhiteSpace(source))
-            return false;
-
-        return source.EndsWith(expectedPath, StringComparison.OrdinalIgnoreCase);
+        return source is string sourceValue &&
+               !string.IsNullOrWhiteSpace(sourceValue) &&
+               sourceValue.EndsWith(expectedPath, StringComparison.OrdinalIgnoreCase);
     }
 }
