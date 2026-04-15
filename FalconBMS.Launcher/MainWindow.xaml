@@ -29,6 +29,10 @@
             <views:KeymappingView/>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:StylesViewModel}">
+            <views:StylesView/>
+        </DataTemplate>
+
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 

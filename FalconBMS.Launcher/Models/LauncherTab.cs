@@ -11,4 +11,7 @@ public enum LauncherTab
     Audio = 2,
     Views = 3,
     Keymapping = 4,
+#if DEBUG
+    Styles = 5,
+#endif
 }

@@ -19,6 +19,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public AudioViewModel Audio { get; }
     public ViewsViewModel Views { get; }
     public KeymappingViewModel Keymapping { get; }
+#if DEBUG
+    public StylesViewModel Styles { get; } = new();
+#endif
 
     private LauncherTab _currentTab = LauncherTab.Main;
     public LauncherTab CurrentTab
@@ -38,6 +41,9 @@ public sealed class MainWindowViewModel : ViewModelBase
             LauncherTab.Audio => Audio,
             LauncherTab.Views => Views,
             LauncherTab.Keymapping => Keymapping,
+#if DEBUG
+            LauncherTab.Styles => Styles,
+#endif
             _ => Main
         };
 

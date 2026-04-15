@@ -31,7 +31,13 @@
 
             <Button Content="Keymapping"
                     Padding="14,6"
+                    Margin="0,0,8,0"
                     Click="Keymapping_Click"/>
+
+            <Button x:Name="StylesButton"
+                    Content="Styles"
+                    Padding="14,6"
+                    Click="Styles_Click"/>
         </StackPanel>
     </Border>
 </UserControl>
