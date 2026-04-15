@@ -4,10 +4,10 @@
     <!-- Light mode -->
     <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#F4F7FB"/>
     <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="AppSurfaceAltBrush" Color="#E8EEF6"/>
+    <SolidColorBrush x:Key="AppSurfaceAltBrush" Color="#F0F2F9"/>
     <SolidColorBrush x:Key="AppBorderBrush" Color="#C6D1DF"/>
     <SolidColorBrush x:Key="AppForegroundBrush" Color="#18212C"/>
-    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6b848c"/>
+    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6B848C"/>
     <SolidColorBrush x:Key="AppAccentBrush" Color="#3E6FA8"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1E232E"/>
 

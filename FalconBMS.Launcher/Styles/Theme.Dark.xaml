@@ -3,11 +3,11 @@
 
     <!-- Dark mode -->
     <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#11161D"/>
-    <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1A212B"/>
-    <SolidColorBrush x:Key="AppSurfaceAltBrush" Color="#222B37"/>
-    <SolidColorBrush x:Key="AppBorderBrush" Color="#3A4656"/>
-    <SolidColorBrush x:Key="AppForegroundBrush" Color="#E5EDF7"/>
-    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6b848c"/>
+    <SolidColorBrush x:Key="AppSurfaceBrush" Color="#1E232E"/>
+    <SolidColorBrush x:Key="AppSurfaceAltBrush" Color="#2C303B"/>
+    <SolidColorBrush x:Key="AppBorderBrush" Color="#26FFFFFF"/>
+    <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#959CB1"/>
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
 
