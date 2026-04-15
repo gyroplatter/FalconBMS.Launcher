@@ -10,8 +10,7 @@
             </Grid.RowDefinitions>
 
             <TextBlock Text="Views"
-                       FontSize="18"
-                       FontWeight="SemiBold"
+           Style="{StaticResource HeadingTextBlockStyle}"
                        Margin="0,0,0,10"/>
 
             <Border Grid.Row="1"

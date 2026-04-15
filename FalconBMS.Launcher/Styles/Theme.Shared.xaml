@@ -19,6 +19,30 @@
         <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
         <Setter Property="FontFamily" Value="Arial"/>
     </Style>
+    
+     <!-- Typography: Heading -->
+    <Style x:Key="HeadingTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppHeadingForegroundBrush}"/>
+    </Style>
+
+    <!-- Typography: Subheading -->
+    <Style x:Key="SubheadingTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppSubHeadingForegroundBrush}"/>
+    </Style>
+
+    <!-- Typography: Body -->
+    <Style x:Key="BodyTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AppBodyForegroundBrush}"/>
+    </Style>
+
+    <!-- Typography: Muted -->
+    <Style x:Key="MutedTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
+    </Style>
 
     <Style TargetType="{x:Type Border}">
         <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
@@ -241,12 +265,16 @@
                     </Border>
 
                     <ControlTemplate.Triggers>
+                        <!-- Hover = darker solid shade, not faded text -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="Opacity" Value="0.9"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppPrimaryHoverBrush}"/>
                         </Trigger>
 
+                        <!-- Pressed = keep same darker shade for now -->
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Opacity" Value="0.8"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppPrimaryHoverBrush}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">
@@ -302,12 +330,16 @@
                     </Border>
 
                     <ControlTemplate.Triggers>
+                        <!-- Hover = darker solid shade, not faded text -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="Opacity" Value="0.9"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppSecondaryHoverBrush}"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppSecondaryHoverBrush}"/>
                         </Trigger>
 
+                        <!-- Pressed = keep same darker shade for now -->
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Opacity" Value="0.8"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppSecondaryHoverBrush}"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppSecondaryHoverBrush}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">

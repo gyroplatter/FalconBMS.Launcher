@@ -6,8 +6,7 @@
         <StackPanel>
 
             <TextBlock Text="Styles"
-                       FontSize="18"
-                       FontWeight="SemiBold"
+           Style="{StaticResource HeadingTextBlockStyle}"
                        Margin="0,0,0,10"/>
 
             <TextBlock Text="Debug-only style guide for previewing launcher UI elements in one place."
@@ -39,30 +38,25 @@
                     BorderThickness="1"
                     Background="{DynamicResource AppSurfaceBrush}">
                 <StackPanel>
-                    
+
                     <TextBlock Text="Typography"
-                               FontSize="16"
-                               FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                                Margin="0,0,0,12"/>
 
                     <TextBlock Text="Heading Example"
-                               FontSize="20"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource AppHeadingForegroundBrush}"
-                               Margin="0,0,0,6"/>
+           Style="{StaticResource HeadingTextBlockStyle}"
+           Margin="0,0,0,6"/>
 
                     <TextBlock Text="Subheading Example"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource AppSubHeadingForegroundBrush}"
-                               Margin="0,0,0,6"/>
+           Style="{StaticResource SubheadingTextBlockStyle}"
+           Margin="0,0,0,6"/>
 
                     <TextBlock Text="This is normal body copy using the current shared foreground brush."
-                               Foreground="{DynamicResource AppBodyForegroundBrush}"
-                               Margin="0,0,0,6"/>
+           Style="{StaticResource BodyTextBlockStyle}"
+           Margin="0,0,0,6"/>
 
                     <TextBlock Text="Muted/example helper text"
-                               Foreground="{DynamicResource AppMutedForegroundBrush}"/>
+           Style="{StaticResource MutedTextBlockStyle}"/>
                 </StackPanel>
             </Border>
 
@@ -154,8 +148,7 @@
                     Background="{DynamicResource AppSurfaceBrush}">
                 <StackPanel>
                     <TextBlock Text="Layout &amp; Surface Testing"
-                               FontSize="16"
-                               FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                                Margin="0,0,0,12"/>
 
                     <Border Padding="12"

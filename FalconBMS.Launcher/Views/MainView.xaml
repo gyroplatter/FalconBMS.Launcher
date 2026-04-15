@@ -28,13 +28,13 @@
                 <TextBlock Grid.Row="0"
                            Grid.Column="0"
                            Text="Falcon BMS Install"
-                           FontWeight="SemiBold"
+                           Style="{StaticResource SubheadingTextBlockStyle}"
                            Margin="0,0,0,4"/>
 
                 <TextBlock Grid.Row="0"
                            Grid.Column="2"
                            Text="Theater"
-                           FontWeight="SemiBold"
+                           Style="{StaticResource SubheadingTextBlockStyle}"
                            Margin="0,0,0,4"/>
 
                 <ComboBox Grid.Row="1"
@@ -60,7 +60,7 @@
 
             <!-- Shortcuts for Docs and User folders -->
             <TextBlock Text="Shortcuts"
-                       FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                        Margin="0,0,0,6"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
@@ -77,7 +77,7 @@
             </StackPanel>
 
             <TextBlock Text="1st Party Apps"
-                       FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                        Margin="0,0,0,6"/>
 
             <ItemsControl ItemsSource="{Binding FirstPartyItems}">
@@ -116,7 +116,7 @@
             </ItemsControl>
 
             <TextBlock Text="3rd Party Apps"
-                       FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                        Margin="0,8,0,6"/>
 
             <ItemsControl ItemsSource="{Binding ThirdPartyItems}">
@@ -154,60 +154,72 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <TextBlock Text="Launch Options"
-                       FontWeight="SemiBold"
+            <TextBlock Text="BMS Launch Options"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                        Margin="0,12,0,6"/>
 
             <WrapPanel Margin="0,0,0,8">
+                <TextBlock Text="Config:"
+               Style="{StaticResource BodyTextBlockStyle}"
+               Margin="0,0,12,8"/>
+
                 <CheckBox Content="ACMI"
-                          IsChecked="{Binding LaunchAcmi, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding LaunchAcmi, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="WINDOW"
-                          IsChecked="{Binding LaunchWindow, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding LaunchWindow, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="NOMOVIE"
-                          IsChecked="{Binding LaunchNoMovie, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding LaunchNoMovie, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="EYEFLY"
-                          IsChecked="{Binding LaunchEyeFly, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding LaunchEyeFly, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="DEBUG"
-                          IsChecked="{Binding LaunchDebug, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding LaunchDebug, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="RTT Export"
-                          IsChecked="{Binding ExportRttTextures, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding ExportRttTextures, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
             </WrapPanel>
 
             <WrapPanel Margin="0,0,0,8">
+                <TextBlock Text="VR:"
+               Style="{StaticResource BodyTextBlockStyle}"
+               Margin="0,0,12,8"/>
+
                 <CheckBox Content="No VR"
-                          IsChecked="{Binding VrNoVr, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding VrNoVr, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="SteamVR"
-                          IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
                 <CheckBox Content="OpenXR"
-                          IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
-                          Margin="0,0,16,8"/>
+              IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
+              Margin="0,0,16,8"/>
             </WrapPanel>
 
             <TextBlock Text="Alternative Launcher Options"
-                       FontWeight="SemiBold"
+           Style="{StaticResource SubheadingTextBlockStyle}"
                        Margin="0,4,0,6"/>
 
             <WrapPanel Margin="0,0,0,8">
+                <TextBlock Text="Theme:"
+               Style="{StaticResource BodyTextBlockStyle}"
+               Margin="0,0,12,8"/>
+
                 <RadioButton Content="Auto"
-                             GroupName="LauncherThemeMode"
-                             IsChecked="{Binding LauncherThemeAuto, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
+                 GroupName="LauncherThemeMode"
+                 IsChecked="{Binding LauncherThemeAuto, Mode=TwoWay}"
+                 Margin="0,0,16,8"/>
                 <RadioButton Content="Light"
-                             GroupName="LauncherThemeMode"
-                             IsChecked="{Binding LauncherThemeLight, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
+                 GroupName="LauncherThemeMode"
+                 IsChecked="{Binding LauncherThemeLight, Mode=TwoWay}"
+                 Margin="0,0,16,8"/>
                 <RadioButton Content="Dark"
-                             GroupName="LauncherThemeMode"
-                             IsChecked="{Binding LauncherThemeDark, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
+                 GroupName="LauncherThemeMode"
+                 IsChecked="{Binding LauncherThemeDark, Mode=TwoWay}"
+                 Margin="0,0,16,8"/>
             </WrapPanel>
 
             <TextBlock Text="{Binding StatusText}"
