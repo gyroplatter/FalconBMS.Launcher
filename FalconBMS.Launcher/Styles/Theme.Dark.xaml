@@ -7,8 +7,22 @@
     <SolidColorBrush x:Key="AppSurfaceAltBrush" Color="#222B37"/>
     <SolidColorBrush x:Key="AppBorderBrush" Color="#3A4656"/>
     <SolidColorBrush x:Key="AppForegroundBrush" Color="#E5EDF7"/>
-    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#A3B0C2"/>
+    <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#6b848c"/>
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
+
+    <SolidColorBrush x:Key="AppHeadingForegroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppSubHeadingForegroundBrush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="AppBodyForegroundBrush" Color="#D1D5DB"/>
+
+    <!-- Primary CTA -->
+    <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FBB040"/>
+    <SolidColorBrush x:Key="AppPrimaryHoverBrush" Color="#E6FBB040"/>
+    <SolidColorBrush x:Key="AppPrimaryForegroundBrush" Color="#163546"/>
+
+    <!-- Secondary CTA -->
+    <SolidColorBrush x:Key="AppSecondaryBrush" Color="#4B5C62"/>
+    <SolidColorBrush x:Key="AppSecondaryHoverBrush" Color="#E64B5C62"/>
+    <SolidColorBrush x:Key="AppSecondaryForegroundBrush" Color="#FFFFFF"/>
 
 </ResourceDictionary>

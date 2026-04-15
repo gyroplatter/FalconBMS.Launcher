@@ -50,14 +50,14 @@
                           IsEditable="False"/>
             </Grid>
 
-            <!-- Launch button on its own row -->
+            <!-- Launch BMS -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                 <Button Content="Launch"
                         Width="90"
                         Command="{Binding LaunchCommand}"/>
             </StackPanel>
 
-            <!-- Shortcuts section for Docs and User folders -->
+            <!-- Shortcuts for Docs and User folders -->
             <TextBlock Text="Shortcuts"
                        FontWeight="SemiBold"
                        Margin="0,0,0,6"/>

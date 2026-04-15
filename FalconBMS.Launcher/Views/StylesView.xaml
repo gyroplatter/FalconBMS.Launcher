@@ -11,13 +11,35 @@
                        Margin="0,0,0,10"/>
 
             <TextBlock Text="Debug-only style guide for previewing launcher UI elements in one place."
-                       Margin="0,0,0,16"/>
+                       Margin="0,0,0,12"/>
+
+            <TextBlock Text="Launcher Theme"
+                       FontWeight="SemiBold"
+                       Margin="0,0,0,6"/>
+
+            <WrapPanel Margin="0,0,0,16">
+                <RadioButton Content="Auto"
+                             GroupName="LauncherThemeModeFromStyles"
+                             IsChecked="{Binding DataContext.Main.LauncherThemeAuto, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+
+                <RadioButton Content="Light"
+                             GroupName="LauncherThemeModeFromStyles"
+                             IsChecked="{Binding DataContext.Main.LauncherThemeLight, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+
+                <RadioButton Content="Dark"
+                             GroupName="LauncherThemeModeFromStyles"
+                             IsChecked="{Binding DataContext.Main.LauncherThemeDark, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+            </WrapPanel>
 
             <Border Padding="16"
                     Margin="0,0,0,16"
                     BorderThickness="1"
                     Background="{DynamicResource AppSurfaceBrush}">
                 <StackPanel>
+                    
                     <TextBlock Text="Typography"
                                FontSize="16"
                                FontWeight="SemiBold"
@@ -26,14 +48,17 @@
                     <TextBlock Text="Heading Example"
                                FontSize="20"
                                FontWeight="Bold"
+                               Foreground="{DynamicResource AppHeadingForegroundBrush}"
                                Margin="0,0,0,6"/>
 
                     <TextBlock Text="Subheading Example"
                                FontSize="16"
                                FontWeight="SemiBold"
+                               Foreground="{DynamicResource AppSubHeadingForegroundBrush}"
                                Margin="0,0,0,6"/>
 
                     <TextBlock Text="This is normal body copy using the current shared foreground brush."
+                               Foreground="{DynamicResource AppBodyForegroundBrush}"
                                Margin="0,0,0,6"/>
 
                     <TextBlock Text="Muted/example helper text"
@@ -57,6 +82,7 @@
 
                     <TextBox Text="{Binding SampleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              Width="260"
+                             HorizontalAlignment="Left"
                              Margin="0,0,0,12"/>
 
                     <TextBlock Text="ComboBox"
@@ -66,6 +92,7 @@
                     <ComboBox ItemsSource="{Binding SampleDropdownItems}"
                               SelectedItem="{Binding SelectedDropdownItem, Mode=TwoWay}"
                               Width="260"
+                              HorizontalAlignment="Left"
                               Margin="0,0,0,12"/>
 
                     <TextBlock Text="Buttons"
@@ -73,15 +100,17 @@
                                Margin="0,0,0,6"/>
 
                     <WrapPanel Margin="0,0,0,12">
-                        <Button Content="Primary Button"
-                                Margin="0,0,8,8"/>
+                        <Button Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0">
+                            <TextBlock Text="Primary"
+               Foreground="{DynamicResource AppPrimaryForegroundBrush}"
+               FontWeight="SemiBold"/>
+                        </Button>
 
-                        <Button Content="Secondary Button"
-                                Margin="0,0,8,8"/>
-
-                        <Button Content="Disabled Button"
-                                IsEnabled="False"
-                                Margin="0,0,8,8"/>
+                        <Button Style="{StaticResource SecondaryButtonStyle}">
+                            <TextBlock Text="Secondary"
+               Foreground="{DynamicResource AppSecondaryForegroundBrush}"
+               FontWeight="SemiBold"/>
+                        </Button>
 
                     </WrapPanel>
 
