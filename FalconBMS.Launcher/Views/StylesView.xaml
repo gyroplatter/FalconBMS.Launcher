@@ -100,18 +100,12 @@
                                Margin="0,0,0,6"/>
 
                     <WrapPanel Margin="0,0,0,12">
-                        <Button Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0">
-                            <TextBlock Text="Primary"
-               Foreground="{DynamicResource AppPrimaryForegroundBrush}"
-               FontWeight="SemiBold"/>
-                        </Button>
+                        <Button Style="{StaticResource PrimaryButtonStyle}"
+                                Content="Primary"
+                                Margin="0,0,8,0"/>
 
-                        <Button Style="{StaticResource SecondaryButtonStyle}">
-                            <TextBlock Text="Secondary"
-               Foreground="{DynamicResource AppSecondaryForegroundBrush}"
-               FontWeight="SemiBold"/>
-                        </Button>
-
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
+                                Content="Secondary"/>
                     </WrapPanel>
 
                     <TextBlock Text="Checkboxes"

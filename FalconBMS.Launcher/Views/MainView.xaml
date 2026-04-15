@@ -52,9 +52,10 @@
 
             <!-- Launch BMS -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Button Content="Launch"
-                        Width="90"
-                        Command="{Binding LaunchCommand}"/>
+                <Button Style="{StaticResource PrimaryButtonStyle}"
+            Content="Launch"
+            Width="90"
+            Command="{Binding LaunchCommand}"/>
             </StackPanel>
 
             <!-- Shortcuts for Docs and User folders -->
@@ -63,14 +64,16 @@
                        Margin="0,0,0,6"/>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Button Content="Docs Folder"
-                        Width="80"
-                        Margin="0,0,8,0"
-                        Command="{Binding OpenDocsCommand}"/>
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+            Content="Docs Folder"
+            Width="80"
+            Margin="0,0,8,0"
+            Command="{Binding OpenDocsCommand}"/>
 
-                <Button Content="User Folder"
-                        Width="80"
-                        Command="{Binding OpenUserCommand}"/>
+                <Button Style="{StaticResource SecondaryButtonStyle}"
+            Content="User Folder"
+            Width="80"
+            Command="{Binding OpenUserCommand}"/>
             </StackPanel>
 
             <TextBlock Text="1st Party Apps"
