@@ -102,6 +102,39 @@ public sealed class MainViewModel : ViewModelBase
 
     public bool IsNewsStatusVisible => !string.IsNullOrWhiteSpace(NewsStatusText) && NewsItems.Count == 0;
 
+
+    private string _launcherThemeMode = ThemeService.NormalizeThemeMode(Properties.Settings.Default.LauncherThemeMode);
+
+    public bool LauncherThemeAuto
+    {
+        get => string.Equals(_launcherThemeMode, LauncherThemeModes.Auto, StringComparison.Ordinal);
+        set
+        {
+            if (!value) return;
+            SetLauncherThemeMode(LauncherThemeModes.Auto);
+        }
+    }
+
+    public bool LauncherThemeLight
+    {
+        get => string.Equals(_launcherThemeMode, LauncherThemeModes.Light, StringComparison.Ordinal);
+        set
+        {
+            if (!value) return;
+            SetLauncherThemeMode(LauncherThemeModes.Light);
+        }
+    }
+
+    public bool LauncherThemeDark
+    {
+        get => string.Equals(_launcherThemeMode, LauncherThemeModes.Dark, StringComparison.Ordinal);
+        set
+        {
+            if (!value) return;
+            SetLauncherThemeMode(LauncherThemeModes.Dark);
+        }
+    }
+
     private bool _launchAcmi = Properties.Settings.Default.CMD_ACMI;
     public bool LaunchAcmi
     {
@@ -202,6 +235,20 @@ public sealed class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(VrSteamVr));
             OnPropertyChanged(nameof(VrOpenXr));
         }
+    }
+    private void SetLauncherThemeMode(string themeMode)
+    {
+        var normalizedMode = ThemeService.NormalizeThemeMode(themeMode);
+        if (string.Equals(_launcherThemeMode, normalizedMode, StringComparison.Ordinal))
+            return;
+
+        _launcherThemeMode = normalizedMode;
+
+        ThemeService.ApplyTheme(normalizedMode);
+
+        OnPropertyChanged(nameof(LauncherThemeAuto));
+        OnPropertyChanged(nameof(LauncherThemeLight));
+        OnPropertyChanged(nameof(LauncherThemeDark));
     }
 
     private bool _vrSteamVr = Properties.Settings.Default.VR_SteamVR;

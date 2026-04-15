@@ -93,10 +93,11 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Cursor="Hand"
-                                HorizontalAlignment="Left">
+                                HorizontalAlignment="Left"
+                                Foreground="{DynamicResource AppAccentBrush}">
                             <Button.Style>
                                 <Style TargetType="Button">
-                                    <Setter Property="Foreground" Value="DodgerBlue"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="Button">
@@ -131,10 +132,11 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Cursor="Hand"
-                                HorizontalAlignment="Left">
+                                HorizontalAlignment="Left"
+                                Foreground="{DynamicResource AppAccentBrush}">
                             <Button.Style>
                                 <Style TargetType="Button">
-                                    <Setter Property="Foreground" Value="DodgerBlue"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="Button">
@@ -186,8 +188,27 @@
                           Margin="0,0,16,8"/>
             </WrapPanel>
 
+            <TextBlock Text="Alternative Launcher Options"
+                       FontWeight="SemiBold"
+                       Margin="0,4,0,6"/>
+
+            <WrapPanel Margin="0,0,0,8">
+                <RadioButton Content="Auto"
+                             GroupName="LauncherThemeMode"
+                             IsChecked="{Binding LauncherThemeAuto, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+                <RadioButton Content="Light"
+                             GroupName="LauncherThemeMode"
+                             IsChecked="{Binding LauncherThemeLight, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+                <RadioButton Content="Dark"
+                             GroupName="LauncherThemeMode"
+                             IsChecked="{Binding LauncherThemeDark, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+            </WrapPanel>
+
             <TextBlock Text="{Binding StatusText}"
-                       Foreground="Gray"
+                       Foreground="{DynamicResource AppMutedForegroundBrush}"
                        TextWrapping="Wrap"
                        Margin="0,8,0,0"/>
 
@@ -195,7 +216,8 @@
 
         <Border Grid.Column="1"
                 BorderThickness="1"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                Background="{DynamicResource AppSurfaceBrush}"
                 Padding="12">
 
             <Grid>
@@ -216,7 +238,7 @@
 
                         <TextBlock Text="{Binding NewsStatusText}"
                                    Visibility="{Binding IsNewsStatusVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                   Foreground="Gray"
+                                   Foreground="{DynamicResource AppMutedForegroundBrush}"
                                    Margin="0,0,0,8"/>
 
                         <ItemsControl ItemsSource="{Binding NewsItems}">
@@ -224,12 +246,12 @@
                                 <DataTemplate>
                                     <Border Margin="0,0,0,12"
                                             BorderThickness="0,0,0,1"
-                                            BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}"
+                                            BorderBrush="{DynamicResource AppBorderBrush}"
                                             Padding="0,0,0,8">
                                         <StackPanel>
 
                                             <TextBlock Text="{Binding PublishedDisplay}"
-                                                       Foreground="Gray"
+                                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
                                                        FontSize="12"/>
 
                                             <TextBlock FontWeight="SemiBold"

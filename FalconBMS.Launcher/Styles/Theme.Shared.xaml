@@ -1,0 +1,63 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Shared theme styles.
+        Actual brush values are supplied by Theme.Light.xaml or Theme.Dark.xaml.
+    -->
+
+    <Style TargetType="{x:Type Window}">
+        <Setter Property="Background" Value="{DynamicResource AppWindowBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type UserControl}">
+        <Setter Property="Background" Value="{DynamicResource AppWindowBackgroundBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type TextBlock}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type Border}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceAltBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10,5"/>
+    </Style>
+
+    <Style TargetType="{x:Type ComboBox}">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type RadioButton}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+    </Style>
+
+    <Style TargetType="{x:Type Hyperlink}">
+        <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+    </Style>
+
+
+    <!--
+        Layout: Main content container
+        Controls spacing for the primary content area (all tabs).
+        Keep this as a named style (NOT global) to avoid affecting nested ContentControls.
+    -->
+    <Style x:Key="MainContentControlStyle" TargetType="ContentControl">
+        <Setter Property="Margin" Value="16,12,16,12"/>
+    </Style>
+    
+</ResourceDictionary>

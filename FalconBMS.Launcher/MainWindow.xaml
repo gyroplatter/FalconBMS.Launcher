@@ -5,7 +5,8 @@
         xmlns:vm="clr-namespace:FalconBMS.Launcher.ViewModels"
         Title="Falcon BMS Launcher"
         Width="1280" Height="720"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppWindowBackgroundBrush}">
 
     <Window.Resources>
         <DataTemplate DataType="{x:Type vm:MainViewModel}">
@@ -34,32 +35,37 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Row 1: header -->
+            <!-- Row 0: header -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 2: nav -->
+            <!-- Row 1: nav -->
             <RowDefinition Height="*"/>
-            <!-- Row 3: content -->
+            <!-- Row 2: content -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 4: footer -->
+            <!-- Row 3: footer -->
         </Grid.RowDefinitions>
 
         <!-- Row 1: header logo row -->
-        <Border Grid.Row="0" Padding="12" Background="#1E232E">
+        <Border Grid.Row="0" Padding="12" Background="{DynamicResource AppHeaderBackgroundBrush}">
             <Image Source="Assets/bms-logo.png"
-           Height="40"
-           Stretch="Uniform"
-           HorizontalAlignment="Left"/>
+                   Height="40"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Left"/>
         </Border>
 
         <!-- Row 2: nav -->
         <views:LauncherNavBar Grid.Row="1"/>
 
         <!-- Row 3: active tab content -->
-        <ContentControl Grid.Row="2" Content="{Binding CurrentViewModel}" />
+        <ContentControl Grid.Row="2"
+                Content="{Binding CurrentViewModel}"
+                Style="{StaticResource MainContentControlStyle}"/>
 
         <!-- Row 4: footer -->
-        <Border Grid.Row="3" Padding="10" BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}">
+        <Border Grid.Row="3"
+                Padding="10"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                Background="{DynamicResource AppSurfaceBrush}">
             <TextBlock Text="{Binding Main.LauncherVersion}" />
         </Border>
     </Grid>

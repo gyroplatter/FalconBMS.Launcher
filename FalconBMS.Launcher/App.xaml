@@ -5,7 +5,15 @@
              xmlns:converters="clr-namespace:FalconBMS.Launcher.Converters"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <converters:EnumEqualsConverter x:Key="EnumEquals"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Shared styles first, then a default theme dictionary that ThemeService can replace at startup. -->
+                <ResourceDictionary Source="Styles/Theme.Shared.xaml"/>
+                <ResourceDictionary Source="Styles/Theme.Light.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <converters:EnumEqualsConverter x:Key="EnumEquals"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

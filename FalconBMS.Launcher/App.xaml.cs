@@ -52,6 +52,9 @@ namespace FalconBMS.Launcher
                 Timeout.Infinite,
                 false);
 
+            // Apply the saved launcher theme before the main window is created.
+            ThemeService.ApplySavedThemeOnStartup();
+
             base.OnStartup(e);
         }
 

@@ -274,5 +274,17 @@ namespace FalconBMS.Launcher.Properties {
                 this["Misc_SmartScalingOverride"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Auto")]
+        public string LauncherThemeMode {
+            get {
+                return ((string)(this["LauncherThemeMode"]));
+            }
+            set {
+                this["LauncherThemeMode"] = value;
+            }
+        }
     }
 }
