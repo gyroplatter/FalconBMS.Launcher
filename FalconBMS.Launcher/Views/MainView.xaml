@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Grid>
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
@@ -185,18 +185,23 @@
 
             <WrapPanel Margin="0,0,0,8">
                 <TextBlock Text="VR:"
-               Style="{StaticResource BodyTextBlockStyle}"
-               Margin="0,0,12,8"/>
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Margin="0,0,12,8"/>
 
-                <CheckBox Content="No VR"
-              IsChecked="{Binding VrNoVr, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="SteamVR"
-              IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="OpenXR"
-              IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
+                <RadioButton Content="No VR"
+                             GroupName="VrMode"
+                             IsChecked="{Binding VrNoVr, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+
+                <RadioButton Content="SteamVR"
+                             GroupName="VrMode"
+                             IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
+
+                <RadioButton Content="OpenXR"
+                             GroupName="VrMode"
+                             IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
+                             Margin="0,0,16,8"/>
             </WrapPanel>
 
             <TextBlock Text="Alternative Launcher Options"
