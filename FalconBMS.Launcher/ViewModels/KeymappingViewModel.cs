@@ -52,13 +52,42 @@ public sealed class KeymappingViewModel : ViewModelBase
     }
 
     private string _searchText = "";
+
+    // Debounce timer for search input so we don't filter on every keystroke
+    private System.Windows.Threading.DispatcherTimer? _searchDebounceTimer;
+
+    // Last value typed by user (used when debounce fires)
+    private string _pendingSearchText = string.Empty;
+
     public string SearchText
     {
         get => _searchText;
         set
         {
-            if (!Set(ref _searchText, value)) return;
-            ApplyRowFilter();
+            if (_searchText == value)
+                return;
+
+            _searchText = value;
+            _pendingSearchText = value; // store latest typed value
+            OnPropertyChanged();
+
+            // Initialize debounce timer if needed
+            if (_searchDebounceTimer == null)
+            {
+                _searchDebounceTimer = new System.Windows.Threading.DispatcherTimer();
+                _searchDebounceTimer.Interval = TimeSpan.FromMilliseconds(150); // tweak if needed
+                _searchDebounceTimer.Tick += (s, e) =>
+                {
+                    _searchDebounceTimer!.Stop();
+
+                    // Apply filter only after user pauses typing
+                    ApplyRowFilter();
+                };
+            }
+
+            // Restart debounce timer on every keystroke
+            _searchDebounceTimer.Stop();
+            _searchDebounceTimer.Start();
         }
     }
 
