@@ -315,6 +315,7 @@ public sealed class KeymappingViewModel : ViewModelBase
         var totalSw = Stopwatch.StartNew();
         KeymappingGridRowViewModel? selectedRowAfterRefresh = null;
         int replacedCount = 0;
+        var visibleRowReplacements = new Dictionary<KeymappingGridRowViewModel, KeymappingGridRowViewModel>();
 
         foreach (var section in _sections)
         {
@@ -344,6 +345,7 @@ public sealed class KeymappingViewModel : ViewModelBase
                     row: replacementSource);
 
                 section.KeyRows[i] = refreshedRow;
+                visibleRowReplacements[existingRow] = refreshedRow;
 
                 if (ReferenceEquals(replacementSource, savedSelectedRow))
                     selectedRowAfterRefresh = refreshedRow;
@@ -352,14 +354,18 @@ public sealed class KeymappingViewModel : ViewModelBase
             }
         }
 
-        ApplyRowFilter();
+        bool usedFullRefilter = !string.IsNullOrWhiteSpace(SearchText);
+        if (usedFullRefilter)
+            ApplyRowFilter();
+        else
+            ReplaceVisibleRowsInPlace(visibleRowReplacements);
 
         if (selectedRowAfterRefresh is not null && IsRowVisible(selectedRowAfterRefresh))
             SelectedRow = selectedRowAfterRefresh;
 
         totalSw.Stop();
         DebugDiagnosticsService.Info(
-            $"KEYMAP IN-MEMORY REFRESH | Type=SpecificKeyRows | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
+            $"KEYMAP IN-MEMORY REFRESH | Type=SpecificKeyRows | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count} | UsedFullRefilter={usedFullRefilter}");
     }
 
     public void RefreshAxisRowInMemory(AxisFunction function)
@@ -378,6 +384,7 @@ public sealed class KeymappingViewModel : ViewModelBase
         var snapshot = _axisSnapshot.Build(baseDir, new[] { function });
 
         int replacedCount = 0;
+        var visibleRowReplacements = new Dictionary<KeymappingGridRowViewModel, KeymappingGridRowViewModel>();
 
         foreach (var section in _sections)
         {
@@ -387,18 +394,25 @@ public sealed class KeymappingViewModel : ViewModelBase
                 if (existingRow.AxisRow is null || existingRow.AxisRow.Function != function)
                     continue;
 
-                section.AxisRows[i] = CreateAxisRowViewModel(
+                var refreshedRow = CreateAxisRowViewModel(
                     baseDir: baseDir,
                     sectionId: section.SectionId,
                     categoryName: section.CategoryName,
                     function: function,
                     snapshot: snapshot);
 
+                section.AxisRows[i] = refreshedRow;
+                visibleRowReplacements[existingRow] = refreshedRow;
+
                 replacedCount++;
             }
         }
 
-        ApplyRowFilter();
+        bool usedFullRefilter = !string.IsNullOrWhiteSpace(SearchText);
+        if (usedFullRefilter)
+            ApplyRowFilter();
+        else
+            ReplaceVisibleRowsInPlace(visibleRowReplacements);
 
         if (TryFindAxisRowByFunction(function, out var selectedRow) &&
             selectedRow is not null &&
@@ -409,7 +423,7 @@ public sealed class KeymappingViewModel : ViewModelBase
 
         totalSw.Stop();
         DebugDiagnosticsService.Info(
-            $"KEYMAP IN-MEMORY REFRESH | Type=AxisRow | Profile={SelectedProfile} | Function={function} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
+            $"KEYMAP IN-MEMORY REFRESH | Type=AxisRow | Profile={SelectedProfile} | Function={function} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count} | UsedFullRefilter={usedFullRefilter}");
     }
 
     public void ApplyRowFilter()
@@ -548,6 +562,19 @@ public sealed class KeymappingViewModel : ViewModelBase
     public void SelectAllCategory()
     {
         SelectCategoryByKey(KeymappingCategoryOption.AllKey);
+    }
+
+    private void ReplaceVisibleRowsInPlace(Dictionary<KeymappingGridRowViewModel, KeymappingGridRowViewModel> replacements)
+    {
+        if (replacements.Count == 0)
+            return;
+
+        for (int i = 0; i < Rows.Count; i++)
+        {
+            var existingRow = Rows[i];
+            if (replacements.TryGetValue(existingRow, out var refreshedRow))
+                Rows[i] = refreshedRow;
+        }
     }
 
     private KeymappingGridRowViewModel CreateKeyRowViewModel(
