@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -250,22 +251,37 @@ public partial class KeymappingView : UserControl
     private void StartCapture()
     {
         string actionId = DebugDiagnosticsService.CreateActionId("KEYCAP");
+        var totalSw = Stopwatch.StartNew();
         DebugDiagnosticsService.Info($"[KeymappingView] StartCapture CALLED | ActionId={actionId}");
 
         if (!IsLoaded)
+        {
+            DebugDiagnosticsService.Info($"[KeymappingView] StartCapture ABORT | ActionId={actionId} | Reason=NotLoaded | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
         var mw = FindAncestorMainWindow();
         if (mw is null)
+        {
+            DebugDiagnosticsService.Info($"[KeymappingView] StartCapture ABORT | ActionId={actionId} | Reason=NoMainWindow | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
         IntPtr hwnd = new WindowInteropHelper(mw).Handle;
         if (hwnd == IntPtr.Zero)
+        {
+            DebugDiagnosticsService.Info($"[KeymappingView] StartCapture ABORT | ActionId={actionId} | Reason=ZeroHwnd | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
+        var stopSw = Stopwatch.StartNew();
         StopCapture();
+        stopSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture PHASE | ActionId={actionId} | Phase=StopPreviousCapture | ElapsedMs={stopSw.ElapsedMilliseconds}");
+
         DebugDiagnosticsService.Info("[KeymappingView] StartCapture | Action=StopPreviousCaptureFirst");
 
+        var keyboardSw = Stopwatch.StartNew();
         try
         {
             _kb = _di.OpenKeyboard(hwnd);
@@ -274,10 +290,17 @@ public partial class KeymappingView : UserControl
         {
             _kb = null;
         }
+        keyboardSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture PHASE | ActionId={actionId} | Phase=OpenKeyboard | ElapsedMs={keyboardSw.ElapsedMilliseconds} | KeyboardOpened={(_kb is not null)}");
 
+        var joystickSw = Stopwatch.StartNew();
         OpenJoystickSessions(hwnd);
+        joystickSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture PHASE | ActionId={actionId} | Phase=OpenJoystickSessions | ElapsedMs={joystickSw.ElapsedMilliseconds} | SessionCount={_joySessions.Count}");
+
         _skipNextDxPoll = true;
 
+        var timerSw = Stopwatch.StartNew();
         _timer ??= new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromMilliseconds(30)
@@ -286,6 +309,10 @@ public partial class KeymappingView : UserControl
         _timer.Tick -= Timer_Tick;
         _timer.Tick += Timer_Tick;
         _timer.Start();
+        timerSw.Stop();
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture COMPLETE | ActionId={actionId} | ElapsedMs={totalSw.ElapsedMilliseconds} | SessionCount={_joySessions.Count}");
     }
 
     private void StopCapture()
@@ -330,39 +357,64 @@ public partial class KeymappingView : UserControl
 
     private void OpenJoystickSessions(IntPtr hwnd)
     {
+        var totalSw = Stopwatch.StartNew();
         DebugDiagnosticsService.Info("[KeymappingView] OpenJoystickSessions CALLED");
 
         var mw = FindAncestorMainWindow();
         if (mw?.DataContext is not MainWindowViewModel mwvm)
+        {
+            DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions ABORT | Reason=NoMainWindowViewModel | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
         var install = mwvm.Main.SelectedInstall;
         if (install is null)
+        {
+            DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions ABORT | Reason=NoInstall | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
+        var sortingSw = Stopwatch.StartNew();
         var sorting = _sorting.Read(install.BaseDir);
+        sortingSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions PHASE | Phase=ReadDeviceSorting | ElapsedMs={sortingSw.ElapsedMilliseconds} | DeviceSortingCount={sorting.Count}");
+
         if (sorting.Count == 0)
         {
             DebugDiagnosticsService.Info("[KeymappingView] OpenJoystickSessions skipped because DeviceSorting is empty.");
+            DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions COMPLETE | ElapsedMs={totalSw.ElapsedMilliseconds} | SessionCount={_joySessions.Count}");
             return;
         }
 
         var byProduct = sorting.ToDictionary(d => d.ProductGuid, d => d.SlotIndex);
 
+        var enumSw = Stopwatch.StartNew();
         var diDevices = _di.EnumerateDevices();
+        enumSw.Stop();
         DebugDiagnosticsService.Info($"ENUM DEVICES | Source=KeymappingView.OpenJoystickSessions | Reason=CaptureStart | Count={diDevices.Count}");
+        DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions PHASE | Phase=EnumerateDevices | ElapsedMs={enumSw.ElapsedMilliseconds} | EnumeratedCount={diDevices.Count}");
+
+        int openedCount = 0;
 
         foreach (var dev in diDevices)
         {
             if (!byProduct.TryGetValue(dev.ProductGuid, out int slot))
                 continue;
 
+            var openSw = Stopwatch.StartNew();
             var session = _di.Open(dev.InstanceGuid, hwnd);
             _joySessions[slot] = session;
 
             var state = session.ReadState();
             _prevButtons[slot] = (state.Buttons ?? Array.Empty<bool>()).ToArray();
+            openSw.Stop();
+
+            openedCount++;
+            DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions DEVICE | Slot={slot} | ElapsedMs={openSw.ElapsedMilliseconds}");
         }
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions COMPLETE | ElapsedMs={totalSw.ElapsedMilliseconds} | SessionCount={_joySessions.Count} | OpenedCount={openedCount}");
     }
 
     private void PollKeyboard()
@@ -666,6 +718,9 @@ public partial class KeymappingView : UserControl
 
     private void RegenerateDeviceColumns()
     {
+        var totalSw = Stopwatch.StartNew();
+        int existingColumnCount = KeyMappingGrid.Columns.Count;
+
         KeyMappingGrid.Columns.Clear();
         _columnSlotMap.Clear();
 
@@ -692,15 +747,23 @@ public partial class KeymappingView : UserControl
 
         var mw = FindAncestorMainWindow();
         if (mw?.DataContext is not MainWindowViewModel mwvm)
+        {
+            DebugDiagnosticsService.Info($"KEYMAP COLUMNS | Result=NoMainWindowViewModel | PreviousColumns={existingColumnCount} | NewColumns={KeyMappingGrid.Columns.Count} | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
         var install = mwvm.Main.SelectedInstall;
         if (install is null)
+        {
+            DebugDiagnosticsService.Info($"KEYMAP COLUMNS | Result=NoInstall | PreviousColumns={existingColumnCount} | NewColumns={KeyMappingGrid.Columns.Count} | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
+        }
 
+        var sortingSw = Stopwatch.StartNew();
         var devices = _sorting.Read(install.BaseDir)
             .OrderBy(x => x.SlotIndex)
             .ToList();
+        sortingSw.Stop();
 
         foreach (var device in devices)
         {
@@ -708,6 +771,10 @@ public partial class KeymappingView : UserControl
             KeyMappingGrid.Columns.Add(column);
             _columnSlotMap[column] = device.SlotIndex;
         }
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP COLUMNS | Result=Success | PreviousColumns={existingColumnCount} | DeviceColumns={devices.Count} | NewColumns={KeyMappingGrid.Columns.Count} | ReadSortingElapsedMs={sortingSw.ElapsedMilliseconds} | TotalElapsedMs={totalSw.ElapsedMilliseconds}");
     }
 
     private DataGridTemplateColumn CreateDeviceColumn(int slotIndex, string header)

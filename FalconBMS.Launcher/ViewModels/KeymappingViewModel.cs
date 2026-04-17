@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -160,6 +161,9 @@ public sealed class KeymappingViewModel : ViewModelBase
 
     public void RefreshFromDisk()
     {
+        var totalSw = Stopwatch.StartNew();
+        DebugDiagnosticsService.Info($"KEYMAP REFRESH BEGIN | Profile={SelectedProfile}");
+
         Rows.Clear();
         KeyRows.Clear();
         Categories.Clear();
@@ -172,6 +176,7 @@ public sealed class KeymappingViewModel : ViewModelBase
         if (install is null)
         {
             StatusText = "No install selected.";
+            DebugDiagnosticsService.Info($"KEYMAP REFRESH END | Profile={SelectedProfile} | Result=NoInstall | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
         }
 
@@ -183,10 +188,15 @@ public sealed class KeymappingViewModel : ViewModelBase
             StatusText = SelectedProfile == KeyProfile.F15ABCD
                 ? "Missing key file: BMS - Full-F15ABCD.key"
                 : "Missing key file: BMS - Full.key";
+            DebugDiagnosticsService.Info($"KEYMAP REFRESH END | Profile={SelectedProfile} | Result=MissingKeyPath | ElapsedMs={totalSw.ElapsedMilliseconds}");
             return;
         }
 
+        var setupReadSw = Stopwatch.StartNew();
         var km = _setupKeymap.Read(baseDir);
+        setupReadSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP REFRESH PHASE | Phase=SetupXmlRead | Profile={SelectedProfile} | ElapsedMs={setupReadSw.ElapsedMilliseconds} | DeviceCount={km.Devices.Length}");
 
         string? profileTag = SelectedProfile == KeyProfile.F15ABCD
             ? JoyAssgnLite.F15ProfileTag
@@ -199,16 +209,34 @@ public sealed class KeymappingViewModel : ViewModelBase
         KeymappingContext.RollJoyId = km.RollJoyId;
         KeymappingContext.ThrottleJoyId = km.ThrottleJoyId;
 
+        var keyFileReadSw = Stopwatch.StartNew();
         var keyFile = new KeyFile(keyPath);
+        keyFileReadSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP REFRESH PHASE | Phase=KeyFileRead | Profile={SelectedProfile} | ElapsedMs={keyFileReadSw.ElapsedMilliseconds} | KeyPath={Path.GetFileName(keyPath)} | KeyAssignCount={keyFile.keyAssign.Count()}");
+
+        var buildSw = Stopwatch.StartNew();
         var buildResult = _gridBuilder.Build(baseDir, SelectedProfile, keyFile);
+        buildSw.Stop();
+
+        int builtAxisRowCount = buildResult.Sections.Sum(x => x.AxisRows.Count);
+        int builtKeyRowCount = buildResult.Sections.Sum(x => x.KeyRows.Count);
+
+        DebugDiagnosticsService.Info(
+            $"KEYMAP REFRESH PHASE | Phase=GridBuild | Profile={SelectedProfile} | ElapsedMs={buildSw.ElapsedMilliseconds} | SectionCount={buildResult.Sections.Count} | AxisRowCount={builtAxisRowCount} | KeyRowCount={builtKeyRowCount}");
 
         _sections.AddRange(buildResult.Sections);
 
         foreach (var keyRow in buildResult.KeyRows)
             KeyRows.Add(keyRow);
 
+        var categorySw = Stopwatch.StartNew();
         RebuildCategories(keyFile);
         EnsureSelectedCategoryStillValid();
+        categorySw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP REFRESH PHASE | Phase=CategoryBuild | Profile={SelectedProfile} | ElapsedMs={categorySw.ElapsedMilliseconds} | CategoryCount={Categories.Count}");
+
         ApplyRowFilter();
 
         int rowCount = _sections.Sum(x => x.AxisRows.Count + x.KeyRows.Count);
@@ -217,15 +245,25 @@ public sealed class KeymappingViewModel : ViewModelBase
         StatusText = isImported
             ? $"Loaded {rowCount:N0} mappings from imported file: {Path.GetFileName(keyPath)}"
             : $"Loaded {rowCount:N0} mappings from {Path.GetFileName(keyPath)}";
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP REFRESH END | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | SectionCount={_sections.Count} | KeyRows={KeyRows.Count} | VisibleRows={Rows.Count} | Source={Path.GetFileName(keyPath)}");
     }
 
     public void ApplyRowFilter()
     {
+        var sw = Stopwatch.StartNew();
+
         Rows.Clear();
 
         KeymappingCategoryOption selected = SelectedCategory
             ?? Categories.FirstOrDefault(x => x.Kind == CategoryFilterKind.All)
             ?? KeymappingCategoryOption.CreateAll();
+
+        int matchedSectionCount = 0;
+        int visibleAxisRowCount = 0;
+        int visibleKeyRowCount = 0;
 
         foreach (var section in _sections)
         {
@@ -256,6 +294,10 @@ public sealed class KeymappingViewModel : ViewModelBase
             if (visibleAxisRows.Count == 0 && visibleKeyRows.Count == 0)
                 continue;
 
+            matchedSectionCount++;
+            visibleAxisRowCount += visibleAxisRows.Count;
+            visibleKeyRowCount += visibleKeyRows.Count;
+
             Rows.Add(section.HeaderRow);
 
             foreach (var axisRow in visibleAxisRows)
@@ -264,6 +306,10 @@ public sealed class KeymappingViewModel : ViewModelBase
             foreach (var keyRow in visibleKeyRows)
                 Rows.Add(keyRow);
         }
+
+        sw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP FILTER | Profile={SelectedProfile} | ElapsedMs={sw.ElapsedMilliseconds} | SelectedCategory={selected.DisplayText} | SearchLength={(SearchText?.Length ?? 0)} | MatchedSections={matchedSectionCount} | VisibleAxisRows={visibleAxisRowCount} | VisibleKeyRows={visibleKeyRowCount} | VisibleRows={Rows.Count}");
     }
 
     public bool IsRowVisible(KeymappingGridRowViewModel row)
