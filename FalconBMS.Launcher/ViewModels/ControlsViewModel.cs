@@ -127,6 +127,37 @@ public sealed class ControlsViewModel : ViewModelBase
 
     public void RefreshFromSnapshot(AxisBindingsSnapshotService.AxisBindingsSnapshot snapshot) => LoadFromDisk(snapshot);
 
+    public IReadOnlyList<DirectInputManager.DeviceInfo> GetCachedLiveDevicesForKeymapping(string baseDir)
+    {
+        if (_cachedLiveDevices is not null &&
+            string.Equals(_lastLiveBindingInstallBaseDir, baseDir, StringComparison.OrdinalIgnoreCase))
+        {
+            DebugDiagnosticsService.Info(
+                $"ENUM DEVICES | Source=ControlsViewModel.GetCachedLiveDevicesForKeymapping | Reason=ReuseCached | Count={_cachedLiveDevices.Count} | BaseDir={baseDir}");
+
+            return _cachedLiveDevices;
+        }
+
+        try
+        {
+            _cachedLiveDevices = _di.EnumerateDevices();
+            _lastLiveBindingInstallBaseDir = baseDir;
+
+            DebugDiagnosticsService.Info(
+                $"ENUM DEVICES | Source=ControlsViewModel.GetCachedLiveDevicesForKeymapping | Reason=CacheMiss | Count={_cachedLiveDevices.Count} | BaseDir={baseDir}");
+        }
+        catch
+        {
+            _cachedLiveDevices = Array.Empty<DirectInputManager.DeviceInfo>();
+            _lastLiveBindingInstallBaseDir = baseDir;
+
+            DebugDiagnosticsService.Warn(
+                $"ENUM DEVICES | Source=ControlsViewModel.GetCachedLiveDevicesForKeymapping | Reason=CacheMiss | Result=Exception | BaseDir={baseDir}");
+        }
+
+        return _cachedLiveDevices;
+    }
+
     public void PrepareAxisConfigForRefresh(string baseDir)
     {
         DebugDiagnosticsService.Info($"REFRESH PREP | Source=ControlsViewModel.PrepareAxisConfigForRefresh | BaseDir={baseDir}");

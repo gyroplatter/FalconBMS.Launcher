@@ -282,17 +282,11 @@ public partial class KeymappingView : UserControl
 
         DebugDiagnosticsService.Info("[KeymappingView] StartCapture | Action=StopPreviousCaptureFirst");
 
-        var keyboardSw = Stopwatch.StartNew();
-        try
-        {
-            _kb = _di.OpenKeyboard(hwnd);
-        }
-        catch
-        {
-            _kb = null;
-        }
-        keyboardSw.Stop();
-        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture PHASE | ActionId={actionId} | Phase=OpenKeyboard | ElapsedMs={keyboardSw.ElapsedMilliseconds} | KeyboardOpened={(_kb is not null)}");
+        // Do not open the keyboard device up front.
+        // Keyboard polling is initialized lazily the first time the grid actually
+        // needs keyboard capture, which removes a large chunk of tab-open cost.
+        _kb = null;
+        DebugDiagnosticsService.Info($"[KeymappingView] StartCapture PHASE | ActionId={actionId} | Phase=OpenKeyboard | ElapsedMs=0 | KeyboardOpened=False | Deferred=True");
 
         var joystickSw = Stopwatch.StartNew();
         OpenJoystickSessions(hwnd);
@@ -356,6 +350,40 @@ public partial class KeymappingView : UserControl
         PollAxisBars();
     }
 
+    private void EnsureKeyboardCaptureInitialized()
+    {
+        if (_kb is not null)
+            return;
+
+        // Only initialize keyboard capture when the keymapping grid is actually
+        // active. This avoids wasting time just for viewing the tab.
+        if (!KeyMappingGrid.IsKeyboardFocusWithin)
+            return;
+
+        var mw = FindAncestorMainWindow();
+        if (mw is null)
+            return;
+
+        IntPtr hwnd = new WindowInteropHelper(mw).Handle;
+        if (hwnd == IntPtr.Zero)
+            return;
+
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            _kb = _di.OpenKeyboard(hwnd);
+        }
+        catch
+        {
+            _kb = null;
+        }
+        sw.Stop();
+
+        DebugDiagnosticsService.Info(
+            $"[KeymappingView] KeyboardCapture INIT | ElapsedMs={sw.ElapsedMilliseconds} | KeyboardOpened={(_kb is not null)}");
+    }
+
+
     private void OpenJoystickSessions(IntPtr hwnd)
     {
         var totalSw = Stopwatch.StartNew();
@@ -390,9 +418,9 @@ public partial class KeymappingView : UserControl
         var byProduct = sorting.ToDictionary(d => d.ProductGuid, d => d.SlotIndex);
 
         var enumSw = Stopwatch.StartNew();
-        var diDevices = _di.EnumerateDevices();
+        var diDevices = mwvm.Controls.GetCachedLiveDevicesForKeymapping(install.BaseDir);
         enumSw.Stop();
-        DebugDiagnosticsService.Info($"ENUM DEVICES | Source=KeymappingView.OpenJoystickSessions | Reason=CaptureStart | Count={diDevices.Count}");
+        DebugDiagnosticsService.Info($"ENUM DEVICES | Source=KeymappingView.OpenJoystickSessions | Reason=ReuseControlsCache | Count={diDevices.Count}");
         DebugDiagnosticsService.Info($"[KeymappingView] OpenJoystickSessions PHASE | Phase=EnumerateDevices | ElapsedMs={enumSw.ElapsedMilliseconds} | EnumeratedCount={diDevices.Count}");
 
         int openedCount = 0;
@@ -420,15 +448,17 @@ public partial class KeymappingView : UserControl
 
     private void PollKeyboard()
     {
-        if (_kb is null)
-            return;
-
         if (SearchTextBox.IsFocused || SearchTextBox.IsKeyboardFocused ||
             CategoryComboBox.IsFocused || CategoryComboBox.IsKeyboardFocused ||
             CategoryComboBox.IsDropDownOpen)
         {
             return;
         }
+
+        EnsureKeyboardCaptureInitialized();
+
+        if (_kb is null)
+            return;
 
         Vortice.DirectInput.KeyboardState state;
         try
