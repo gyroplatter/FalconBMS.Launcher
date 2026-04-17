@@ -201,14 +201,14 @@ public partial class KeymappingView : UserControl
         string? selectedCategoryKeyBeforeRefresh = kvm.GetSelectedCategoryKey();
         string searchTextBeforeRefresh = kvm.SearchText;
 
-        kvm.RefreshFromDisk();
+        kvm.RefreshKeyRowsInMemory();
 
         if (kvm.ContainsCategoryKey(selectedCategoryKeyBeforeRefresh))
             kvm.SelectCategoryByKey(selectedCategoryKeyBeforeRefresh);
 
         kvm.SearchText = searchTextBeforeRefresh;
 
-        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog keymapping-only refresh complete.");
+        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog keymapping row refresh complete.");
     }
 
     private void ShowAxisAssignDialog(KeymappingViewModel kvm, KeymappingGridRowViewModel selected)
@@ -235,14 +235,14 @@ public partial class KeymappingView : UserControl
         string? selectedCategoryKeyBeforeRefresh = kvm.GetSelectedCategoryKey();
         string searchTextBeforeRefresh = kvm.SearchText;
 
-        kvm.RefreshFromDisk();
+        kvm.RefreshAxisRowInMemory(selected.AxisRow.Function);
 
         if (kvm.ContainsCategoryKey(selectedCategoryKeyBeforeRefresh))
             kvm.SelectCategoryByKey(selectedCategoryKeyBeforeRefresh);
 
         kvm.SearchText = searchTextBeforeRefresh;
 
-        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog keymapping-only refresh complete.");
+        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog axis row refresh complete.");
     }
 
     private void StartCapture()

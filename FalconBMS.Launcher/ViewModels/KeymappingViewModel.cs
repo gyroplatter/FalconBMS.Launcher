@@ -21,6 +21,8 @@ public sealed class KeymappingViewModel : ViewModelBase
     private readonly Func<BmsInstall?> _getSelectedInstall;
     private readonly SetupXmlKeymapReader _setupKeymap = new();
     private readonly KeymappingGridBuilderService _gridBuilder = new();
+    private readonly AxisBindingsSnapshotService _axisSnapshot = new();
+    private readonly AxisMappingDatService _axisDat = new();
 
     private readonly List<KeymappingGridBuilderService.SectionGroup> _sections = new();
 
@@ -251,6 +253,113 @@ public sealed class KeymappingViewModel : ViewModelBase
             $"KEYMAP REFRESH END | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | SectionCount={_sections.Count} | KeyRows={KeyRows.Count} | VisibleRows={Rows.Count} | Source={Path.GetFileName(keyPath)}");
     }
 
+    public void RefreshKeyRowsInMemory()
+    {
+        var totalSw = Stopwatch.StartNew();
+        string? selectedCallback = SelectedRow?.KeyRow?.GetCallback();
+
+        var rowsByCallback = KeyRows
+            .GroupBy(x => x.GetCallback(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Last(), StringComparer.OrdinalIgnoreCase);
+
+        int replacedCount = 0;
+
+        foreach (var section in _sections)
+        {
+            for (int i = 0; i < section.KeyRows.Count; i++)
+            {
+                var existingRow = section.KeyRows[i];
+                if (existingRow.KeyRow is null)
+                    continue;
+
+                string callback = existingRow.KeyRow.GetCallback();
+                if (!rowsByCallback.TryGetValue(callback, out var sourceRow))
+                    continue;
+
+                string newSearchText = BuildKeyRowSearchText(sourceRow);
+
+                bool needsReplace =
+                    !ReferenceEquals(existingRow.KeyRow, sourceRow) ||
+                    !string.Equals(existingRow.Key, sourceRow.Key, StringComparison.Ordinal) ||
+                    !string.Equals(existingRow.SearchText, newSearchText, StringComparison.Ordinal);
+
+                if (!needsReplace)
+                    continue;
+
+                section.KeyRows[i] = CreateKeyRowViewModel(
+                    sectionId: section.SectionId,
+                    categoryName: section.CategoryName,
+                    row: sourceRow);
+
+                replacedCount++;
+            }
+        }
+
+        ApplyRowFilter();
+
+        if (!string.IsNullOrWhiteSpace(selectedCallback) &&
+            TryFindKeyRowByCallback(selectedCallback!, out var selectedRow) &&
+            selectedRow is not null &&
+            IsRowVisible(selectedRow))
+        {
+            SelectedRow = selectedRow;
+        }
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP IN-MEMORY REFRESH | Type=KeyRows | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
+    }
+
+    public void RefreshAxisRowInMemory(AxisFunction function)
+    {
+        var totalSw = Stopwatch.StartNew();
+
+        var install = _getSelectedInstall();
+        if (install is null)
+        {
+            DebugDiagnosticsService.Info(
+                $"KEYMAP IN-MEMORY REFRESH | Type=AxisRow | Profile={SelectedProfile} | Result=NoInstall | Function={function} | ElapsedMs={totalSw.ElapsedMilliseconds}");
+            return;
+        }
+
+        string baseDir = install.BaseDir;
+        var snapshot = _axisSnapshot.Build(baseDir, new[] { function });
+
+        int replacedCount = 0;
+
+        foreach (var section in _sections)
+        {
+            for (int i = 0; i < section.AxisRows.Count; i++)
+            {
+                var existingRow = section.AxisRows[i];
+                if (existingRow.AxisRow is null || existingRow.AxisRow.Function != function)
+                    continue;
+
+                section.AxisRows[i] = CreateAxisRowViewModel(
+                    baseDir: baseDir,
+                    sectionId: section.SectionId,
+                    categoryName: section.CategoryName,
+                    function: function,
+                    snapshot: snapshot);
+
+                replacedCount++;
+            }
+        }
+
+        ApplyRowFilter();
+
+        if (TryFindAxisRowByFunction(function, out var selectedRow) &&
+            selectedRow is not null &&
+            IsRowVisible(selectedRow))
+        {
+            SelectedRow = selectedRow;
+        }
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP IN-MEMORY REFRESH | Type=AxisRow | Profile={SelectedProfile} | Function={function} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
+    }
+
     public void ApplyRowFilter()
     {
         var sw = Stopwatch.StartNew();
@@ -344,6 +453,17 @@ public sealed class KeymappingViewModel : ViewModelBase
         return _sections.SelectMany(x => x.AxisRows).ToArray();
     }
 
+    public bool TryFindAxisRowByFunction(AxisFunction function, out KeymappingGridRowViewModel? row)
+    {
+        row = _sections
+            .SelectMany(x => x.AxisRows)
+            .FirstOrDefault(x =>
+                x.AxisRow is not null &&
+                x.AxisRow.Function == function);
+
+        return row is not null;
+    }
+
     public string? GetSelectedCategoryKey()
     {
         return SelectedCategory?.Key;
@@ -376,6 +496,103 @@ public sealed class KeymappingViewModel : ViewModelBase
     public void SelectAllCategory()
     {
         SelectCategoryByKey(KeymappingCategoryOption.AllKey);
+    }
+
+    private KeymappingGridRowViewModel CreateKeyRowViewModel(
+    string sectionId,
+    string categoryName,
+    KeyAssgn row)
+    {
+        return new KeymappingKeyRowViewModel(
+            sectionId: sectionId,
+            categoryName: categoryName,
+            mapping: row.Mapping,
+            key: row.Key,
+            visibility: row.Visibility,
+            searchText: BuildKeyRowSearchText(row),
+            keyRow: row);
+    }
+
+    private KeymappingGridRowViewModel CreateAxisRowViewModel(
+        string baseDir,
+        string sectionId,
+        string categoryName,
+        AxisFunction function,
+        AxisBindingsSnapshotService.AxisBindingsSnapshot snapshot)
+    {
+        var def = AxisCatalog.Get(function);
+
+        var axisVm = new AxisRowViewModel(
+            def,
+            canExecute: (AxisFunction _) => false,
+            assign: (AxisFunction _) => { },
+            clear: (AxisFunction _) => { });
+
+        int? assignedSlot = null;
+
+        if (snapshot.Bindings.TryGetValue(function, out var binding) && binding.IsMapped)
+        {
+            axisVm.BindingText = binding.BindingText;
+            axisVm.SetLiveSource(new AxisRowViewModel.LiveAxisSource(
+                binding.DeviceName ?? "",
+                binding.ProductGuid,
+                binding.PhysicalAxisIndex,
+                binding.Invert,
+                binding.Detents));
+
+            var existingMap = _axisDat.ReadAxisMapping(baseDir, def.MappingIndex);
+            if (existingMap is not null)
+                assignedSlot = existingMap.Value.JoyNum - 2;
+        }
+        else
+        {
+            axisVm.BindingText = "Not set";
+            axisVm.SetLiveSource(null);
+        }
+
+        string mappingText = $"{def.DisplayName} axis";
+
+        return new KeymappingAxisRowViewModel(
+            sectionId: sectionId,
+            categoryName: categoryName,
+            mapping: mappingText,
+            key: "",
+            visibility: "White",
+            searchText: NormalizeSearchText($"{sectionId} {categoryName} {mappingText} {axisVm.BindingText}"),
+            axisRow: axisVm,
+            assignedDeviceSlot: assignedSlot);
+    }
+
+    private static string BuildKeyRowSearchText(KeyAssgn row)
+    {
+        return NormalizeSearchText(string.Join("\n", new[]
+        {
+            row.GetKeyDescription(),
+            row.Mapping,
+            row.Key,
+            row.GetCallback(),
+            row.Z_Joy_0,
+            row.Z_Joy_1,
+            row.Z_Joy_2,
+            row.Z_Joy_3,
+            row.Z_Joy_4,
+            row.Z_Joy_5,
+            row.Z_Joy_6,
+            row.Z_Joy_7,
+            row.Z_Joy_8,
+            row.Z_Joy_9,
+            row.Z_Joy_10,
+            row.Z_Joy_11,
+            row.Z_Joy_12,
+            row.Z_Joy_13,
+            row.Z_Joy_14,
+            row.Z_Joy_15
+        }));
+    }
+
+    private static string NormalizeSearchText(string value)
+    {
+        return value.Replace("\"", "").Trim();
     }
 
     private void RebuildCategories(KeyFile keyFile)
