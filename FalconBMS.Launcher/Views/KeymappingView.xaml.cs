@@ -186,7 +186,7 @@ public partial class KeymappingView : UserControl
             Owner = mw
         };
 
-        win.DataContext = new KeyMappingWindowViewModel(
+        var vm = new KeyMappingWindowViewModel(
             baseDir: install.BaseDir,
             selectedProfile: kvm.SelectedProfile,
             selectedRow: keyRow,
@@ -196,19 +196,23 @@ public partial class KeymappingView : UserControl
             onSaveSucceeded: () => kvm.ClearImportedOverride(kvm.SelectedProfile),
             closeWindow: () => win.Close());
 
+        win.DataContext = vm;
         win.ShowDialog();
 
         string? selectedCategoryKeyBeforeRefresh = kvm.GetSelectedCategoryKey();
         string searchTextBeforeRefresh = kvm.SearchText;
 
-        kvm.RefreshKeyRowsInMemory();
+        kvm.RefreshSpecificKeyRowsInMemory(
+            originalSelectedRow: vm.OriginalSelectedRow,
+            savedSelectedRow: vm.SavedSelectedRow,
+            clearedDuplicateRow: vm.ClearedDuplicateRow);
 
         if (kvm.ContainsCategoryKey(selectedCategoryKeyBeforeRefresh))
             kvm.SelectCategoryByKey(selectedCategoryKeyBeforeRefresh);
 
         kvm.SearchText = searchTextBeforeRefresh;
 
-        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog keymapping row refresh complete.");
+        DebugDiagnosticsService.Info("[KeymappingView] Post-dialog specific key row refresh complete.");
     }
 
     private void ShowAxisAssignDialog(KeymappingViewModel kvm, KeymappingGridRowViewModel selected)

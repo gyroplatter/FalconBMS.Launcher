@@ -69,6 +69,10 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     public System.Windows.Input.ICommand SaveCommand { get; } = null!;
     public System.Windows.Input.ICommand CancelCommand { get; } = null!;
 
+    public KeyAssgn OriginalSelectedRow => _selectedRow;
+    public KeyAssgn SavedSelectedRow { get; private set; }
+    public KeyAssgn? ClearedDuplicateRow { get; private set; }
+
     public KeyMappingWindowViewModel(
         string baseDir,
         KeyProfile selectedProfile,
@@ -91,6 +95,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         TitleText = selectedRow.Mapping?.Trim() ?? "";
 
         _tmpKey = selectedRow.Clone();
+        SavedSelectedRow = selectedRow;
         RebuildTempJoysFromLive();
 
         _assignmentText = BuildAssignmentPreview();
@@ -117,6 +122,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         SaveCommand = new RelayCommand(() =>
         {
             bool saveSucceeded = false;
+            ClearedDuplicateRow = null;
 
             try
             {
@@ -124,9 +130,12 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 {
                     int idx = list.IndexOf(_selectedRow);
                     if (idx >= 0)
+                    {
                         list[idx] = _tmpKey;
+                        SavedSelectedRow = _tmpKey;
+                    }
 
-                    ClearDuplicateKeyboardAssignmentInLiveProfile(list, _tmpKey);
+                    ClearedDuplicateRow = ClearDuplicateKeyboardAssignmentInLiveProfile(list, _tmpKey);
                 }
 
                 var setupXml = new SetupXmlService();
@@ -478,11 +487,11 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private static void ClearDuplicateKeyboardAssignmentInLiveProfile(System.Collections.Generic.IList<KeyAssgn> rows, KeyAssgn selectedRow)
+    private static KeyAssgn? ClearDuplicateKeyboardAssignmentInLiveProfile(System.Collections.Generic.IList<KeyAssgn> rows, KeyAssgn selectedRow)
     {
         string selectedAssignment = selectedRow.GetKeyAssignmentStatus();
         if (string.IsNullOrWhiteSpace(selectedAssignment))
-            return;
+            return null;
 
         for (int i = 0; i < rows.Count; i++)
         {
@@ -495,8 +504,10 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             {
                 row.ClearKeyboard(shiftedLayer: false);
                 row.ClearKeyboard(shiftedLayer: true);
-                return;
+                return row;
             }
         }
+
+        return null;
     }
 }

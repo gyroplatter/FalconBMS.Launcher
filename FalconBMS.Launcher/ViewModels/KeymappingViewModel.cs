@@ -310,6 +310,58 @@ public sealed class KeymappingViewModel : ViewModelBase
             $"KEYMAP IN-MEMORY REFRESH | Type=KeyRows | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
     }
 
+    public void RefreshSpecificKeyRowsInMemory(KeyAssgn originalSelectedRow, KeyAssgn savedSelectedRow, KeyAssgn? clearedDuplicateRow)
+    {
+        var totalSw = Stopwatch.StartNew();
+        KeymappingGridRowViewModel? selectedRowAfterRefresh = null;
+        int replacedCount = 0;
+
+        foreach (var section in _sections)
+        {
+            for (int i = 0; i < section.KeyRows.Count; i++)
+            {
+                var existingRow = section.KeyRows[i];
+                if (existingRow.KeyRow is null)
+                    continue;
+
+                KeyAssgn? replacementSource = null;
+
+                if (ReferenceEquals(existingRow.KeyRow, originalSelectedRow))
+                {
+                    replacementSource = savedSelectedRow;
+                }
+                else if (clearedDuplicateRow is not null && ReferenceEquals(existingRow.KeyRow, clearedDuplicateRow))
+                {
+                    replacementSource = clearedDuplicateRow;
+                }
+
+                if (replacementSource is null)
+                    continue;
+
+                var refreshedRow = CreateKeyRowViewModel(
+                    sectionId: section.SectionId,
+                    categoryName: section.CategoryName,
+                    row: replacementSource);
+
+                section.KeyRows[i] = refreshedRow;
+
+                if (ReferenceEquals(replacementSource, savedSelectedRow))
+                    selectedRowAfterRefresh = refreshedRow;
+
+                replacedCount++;
+            }
+        }
+
+        ApplyRowFilter();
+
+        if (selectedRowAfterRefresh is not null && IsRowVisible(selectedRowAfterRefresh))
+            SelectedRow = selectedRowAfterRefresh;
+
+        totalSw.Stop();
+        DebugDiagnosticsService.Info(
+            $"KEYMAP IN-MEMORY REFRESH | Type=SpecificKeyRows | Profile={SelectedProfile} | ElapsedMs={totalSw.ElapsedMilliseconds} | ReplacedRows={replacedCount} | VisibleRows={Rows.Count}");
+    }
+
     public void RefreshAxisRowInMemory(AxisFunction function)
     {
         var totalSw = Stopwatch.StartNew();
