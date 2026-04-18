@@ -4,10 +4,12 @@
         Title="Key Mapping"
         Width="520" Height="240"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Background="{DynamicResource AppSurfaceBrush}">
 
-    <Grid Margin="14">
-        <Grid.RowDefinitions>
+    <Grid Background="{DynamicResource AppSurfaceBrush}">
+        <Grid Margin="26">
+            <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -49,5 +51,6 @@
             <Button Width="96" Margin="0,0,8,0" Content="Cancel" Command="{Binding CancelCommand}"/>
             <Button Width="96" Content="Save" Command="{Binding SaveCommand}"/>
         </StackPanel>
+        </Grid>
     </Grid>
 </Window>

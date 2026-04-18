@@ -5,7 +5,8 @@
         Title="{Binding TitleText}"
         Width="520" Height="360"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Background="{DynamicResource AppSurfaceBrush}">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -44,14 +45,14 @@
                   AbDetentFraction="{Binding AbDetentFraction}" />
 
         <Border Grid.Row="2"
-                BorderThickness="1"
-                CornerRadius="6"
-                Padding="10"
-                BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
-                Background="{DynamicResource {x:Static SystemColors.ControlLightLightBrushKey}}">
+        BorderThickness="1"
+        CornerRadius="6"
+        Padding="10"
+        BorderBrush="{DynamicResource AppBorderBrush}"
+        Background="{DynamicResource AppSurfaceAltBrush}">
             <TextBlock Text="{Binding DetectedText}"
-                       FontSize="14"
-                       TextWrapping="Wrap"/>
+               FontSize="14"
+               TextWrapping="Wrap"/>
         </Border>
 
         <Grid Grid.Row="4" Margin="0,12,0,12">
