@@ -28,6 +28,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly ThirdPartyLauncherStripService _thirdPartyStrip = new();
     private readonly KeyCatalogService _keyCatalogService = new();
     private readonly BindingModelBuilderService _bindingModelBuilder = new();
+    private readonly JsonKeyboardBindingReaderService _jsonKeyboardBindingReader = new();
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
@@ -406,6 +407,10 @@ public sealed class MainViewModel : ViewModelBase
 
         KeyCatalogs = _keyCatalogService.LoadForInstall(SelectedInstall.BaseDir);
         CurrentBindingModel = _bindingModelBuilder.Build(KeyCatalogs);
+
+        // FULL key files define the current structure/defaults.
+        // JSON overlays saved keyboard state onto that current structure.
+        _jsonKeyboardBindingReader.Apply(SelectedInstall.BaseDir, CurrentBindingModel);
 
         OnPropertyChanged(nameof(KeyCatalogs));
         OnPropertyChanged(nameof(CurrentBindingModel));
