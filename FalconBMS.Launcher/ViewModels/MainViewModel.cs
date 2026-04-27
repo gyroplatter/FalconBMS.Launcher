@@ -502,7 +502,8 @@ public sealed class MainViewModel : ViewModelBase
                 SelectedInstall.BaseDir,
                 SelectedInstall.RegistryKeyName,
                 ExportRttTextures,
-                vrEnabled);
+                vrEnabled,
+                CurrentBindingModel);
 
             DebugDiagnosticsService.Info("PrepareForLaunch complete.");
 
