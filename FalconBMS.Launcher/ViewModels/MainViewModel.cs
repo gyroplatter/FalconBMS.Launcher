@@ -26,12 +26,15 @@ public sealed class MainViewModel : ViewModelBase
     private readonly TheaterDiscoveryService _theaterDiscovery = new();
     private readonly FirstPartyLauncherStripService _firstPartyStrip = new();
     private readonly ThirdPartyLauncherStripService _thirdPartyStrip = new();
+    private readonly KeyCatalogService _keyCatalogService = new();
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
     public ObservableCollection<string> Theaters { get; } = new();
     public ObservableCollection<LauncherStripItem> FirstPartyItems { get; } = new();
     public ObservableCollection<LauncherStripItem> ThirdPartyItems { get; } = new();
+
+    public IReadOnlyList<KeyCatalog> KeyCatalogs { get; private set; } = Array.Empty<KeyCatalog>();
 
     private BmsInstall? _selectedInstall;
     public BmsInstall? SelectedInstall
@@ -48,6 +51,8 @@ public sealed class MainViewModel : ViewModelBase
 
                 Properties.Settings.Default.LastInstall = value.RegistryKeyName;
                 Properties.Settings.Default.Save();
+
+                LoadKeyCatalogsForSelectedInstall();
                 LoadTheaterForSelectedInstall();
                 RefreshLauncherStrips();
             }
@@ -377,6 +382,19 @@ public sealed class MainViewModel : ViewModelBase
 
         var last = Properties.Settings.Default.LastInstall;
         SelectedInstall = Installs.FirstOrDefault(i => i.RegistryKeyName == last) ?? Installs[0];
+    }
+
+    private void LoadKeyCatalogsForSelectedInstall()
+    {
+        if (SelectedInstall is null)
+        {
+            KeyCatalogs = Array.Empty<KeyCatalog>();
+            OnPropertyChanged(nameof(KeyCatalogs));
+            return;
+        }
+
+        KeyCatalogs = _keyCatalogService.LoadForInstall(SelectedInstall.BaseDir);
+        OnPropertyChanged(nameof(KeyCatalogs));
     }
 
     private void LoadTheaterForSelectedInstall()
