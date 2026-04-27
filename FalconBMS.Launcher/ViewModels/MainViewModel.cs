@@ -27,6 +27,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly FirstPartyLauncherStripService _firstPartyStrip = new();
     private readonly ThirdPartyLauncherStripService _thirdPartyStrip = new();
     private readonly KeyCatalogService _keyCatalogService = new();
+    private readonly BindingModelBuilderService _bindingModelBuilder = new();
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
@@ -35,6 +36,7 @@ public sealed class MainViewModel : ViewModelBase
     public ObservableCollection<LauncherStripItem> ThirdPartyItems { get; } = new();
 
     public IReadOnlyList<KeyCatalog> KeyCatalogs { get; private set; } = Array.Empty<KeyCatalog>();
+    public BindingModel CurrentBindingModel { get; private set; } = new();
 
     private BmsInstall? _selectedInstall;
     public BmsInstall? SelectedInstall
@@ -52,7 +54,7 @@ public sealed class MainViewModel : ViewModelBase
                 Properties.Settings.Default.LastInstall = value.RegistryKeyName;
                 Properties.Settings.Default.Save();
 
-                LoadKeyCatalogsForSelectedInstall();
+                LoadBindingModelForSelectedInstall();
                 LoadTheaterForSelectedInstall();
                 RefreshLauncherStrips();
             }
@@ -62,6 +64,12 @@ public sealed class MainViewModel : ViewModelBase
 
                 Theaters.Clear();
                 SelectedTheater = null;
+
+                KeyCatalogs = Array.Empty<KeyCatalog>();
+                CurrentBindingModel = new();
+                OnPropertyChanged(nameof(KeyCatalogs));
+                OnPropertyChanged(nameof(CurrentBindingModel));
+
                 RefreshLauncherStrips();
             }
 
@@ -384,17 +392,23 @@ public sealed class MainViewModel : ViewModelBase
         SelectedInstall = Installs.FirstOrDefault(i => i.RegistryKeyName == last) ?? Installs[0];
     }
 
-    private void LoadKeyCatalogsForSelectedInstall()
+    private void LoadBindingModelForSelectedInstall()
     {
         if (SelectedInstall is null)
         {
             KeyCatalogs = Array.Empty<KeyCatalog>();
+            CurrentBindingModel = new();
+
             OnPropertyChanged(nameof(KeyCatalogs));
+            OnPropertyChanged(nameof(CurrentBindingModel));
             return;
         }
 
         KeyCatalogs = _keyCatalogService.LoadForInstall(SelectedInstall.BaseDir);
+        CurrentBindingModel = _bindingModelBuilder.Build(KeyCatalogs);
+
         OnPropertyChanged(nameof(KeyCatalogs));
+        OnPropertyChanged(nameof(CurrentBindingModel));
     }
 
     private void LoadTheaterForSelectedInstall()
