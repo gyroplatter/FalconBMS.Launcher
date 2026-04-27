@@ -19,49 +19,72 @@ public sealed class RssService
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    // Can add multiple feeds here if desired.
-    private static readonly Uri FeedUrl = new("https://www.falcon-lounge.com/feed/");
+    // Mutiple RSS URLs can be used
+    private static readonly Uri[] FeedUrls =
+    {
+        new("https://www.falcon-bms.com/rss.xml"),
+        new("https://www.falcon-lounge.com/feed/")
+    };
 
     public async Task<IReadOnlyList<RssItem>> FetchAsync(int maxItems, CancellationToken ct)
     {
-        using var resp = await _http.GetAsync(FeedUrl, ct);
-        resp.EnsureSuccessStatusCode();
+        var tasks = FeedUrls.Select(feedUrl => FetchFeedAsync(feedUrl, ct)).ToList();
+        var results = await Task.WhenAll(tasks);
 
-        // .NET Framework 4.8 does not expose the CancellationToken overload here.
-        using var stream = await resp.Content.ReadAsStreamAsync();
-        using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore });
-
-        var feed = SyndicationFeed.Load(reader);
-        if (feed is null) return Array.Empty<RssItem>();
-
-        var items = feed.Items
-            .Where(i => i.Links.FirstOrDefault()?.Uri is not null)
+        return results
+            .SelectMany(items => items)
+            .OrderByDescending(i => i.Published)
             .Take(maxItems)
-            .Select(i =>
-            {
-                var link = i.Links.First().Uri;
-                var published = i.PublishDate != default ? i.PublishDate : i.LastUpdatedTime;
-                var title = i.Title?.Text?.Trim() ?? "(Untitled)";
-                var desc = i.Summary?.Text ?? "";
-                desc = StripHtml(desc).Trim();
-
-                return new RssItem
-                {
-                    Published = published,
-                    Title = title,
-                    Description = desc,
-                    Link = link
-                };
-            })
             .ToList();
+    }
 
-        return items;
+    private async Task<IReadOnlyList<RssItem>> FetchFeedAsync(Uri feedUrl, CancellationToken ct)
+    {
+        try
+        {
+            using var resp = await _http.GetAsync(feedUrl, ct);
+            resp.EnsureSuccessStatusCode();
+
+            // .NET Framework 4.8 does not expose the CancellationToken overload here.
+            using var stream = await resp.Content.ReadAsStreamAsync();
+            using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore });
+
+            var feed = SyndicationFeed.Load(reader);
+            if (feed is null)
+                return Array.Empty<RssItem>();
+
+            return feed.Items
+                .Where(i => i.Links.FirstOrDefault()?.Uri is not null)
+                .Select(i =>
+                {
+                    var link = i.Links.First().Uri;
+                    var published = i.PublishDate != default ? i.PublishDate : i.LastUpdatedTime;
+                    var title = i.Title?.Text?.Trim() ?? "(Untitled)";
+                    var desc = i.Summary?.Text ?? "";
+                    desc = StripHtml(desc).Trim();
+
+                    return new RssItem
+                    {
+                        Published = published,
+                        Title = title,
+                        Description = desc,
+                        Link = link
+                    };
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Warn($"RSS fetch failed for {feedUrl}: {ex.Message}");
+            return Array.Empty<RssItem>();
+        }
     }
 
     private static string StripHtml(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return "";
-        // Simple HTML tag removal for RSS summaries
+
+        // Simple HTML tag removal for RSS summaries.
         return Regex.Replace(input, "<.*?>", string.Empty);
     }
 }

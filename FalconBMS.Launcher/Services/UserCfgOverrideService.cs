@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace FalconBMS.Launcher.Services;
 
 /// <summary>
-/// Writes launcher-managed overrides into Falcon BMS User.cfg.
+/// Writes launcher-managed non-control overrides into Falcon BMS User.cfg.
+/// Control/device/POV/button overrides have intentionally been removed.
 /// </summary>
 public sealed class UserCfgOverrideService
 {
@@ -15,9 +17,7 @@ public sealed class UserCfgOverrideService
     private const string VrOverrideComment = "// SETUP OVERRIDE";
     private const string VrOverrideMarker = "// VR OVERRIDES BEGIN HERE - EDITS MUST BE MADE IN 'Falcon BMS VR.cfg' - DO NOT EDIT THIS DIRECTLY";
 
-    private readonly DeviceSortingService _sorting = new();
-
-    public void SaveOverrides(string baseDir, int rollJoyId, int throttleJoyId, bool exportRttTextures, bool vrEnabled)
+    public void SaveOverrides(string baseDir, bool exportRttTextures, bool vrEnabled)
     {
         DebugDiagnosticsService.Info("Ammending Falcon BMS User.cfg..");
 
@@ -27,20 +27,6 @@ public sealed class UserCfgOverrideService
         string userCfgPath = Path.Combine(configDir, "Falcon BMS User.cfg");
         string vrCfgPath = Path.Combine(configDir, "Falcon BMS VR.cfg");
         string preservedPrefix = LoadTextAboveLauncherOverrides(userCfgPath);
-
-        int deviceCount = _sorting.GetDeviceCount(baseDir);
-        int pinkyMagnitude = deviceCount * 128;
-
-        int rollSlot = NormalizeSlotIndex(rollJoyId, deviceCount);
-        int throttleSlot = NormalizeSlotIndex(throttleJoyId, deviceCount);
-
-        if (rollSlot < 0 || rollSlot >= deviceCount)
-            rollSlot = 0;
-
-        bool sameDeviceOrNoThrottle = throttleSlot < 0 || throttleSlot >= deviceCount || throttleSlot == rollSlot;
-        int pov1DeviceId = rollSlot + 2;
-        int pov2DeviceId = sameDeviceOrNoThrottle ? rollSlot + 2 : throttleSlot + 2;
-        int pov2Id = sameDeviceOrNoThrottle ? 1 : 0;
 
         List<string> vrOverrideLines = LoadVrOverrideLines(vrCfgPath, vrEnabled);
 
@@ -53,13 +39,6 @@ public sealed class UserCfgOverrideService
         sw.WriteLine();
         sw.WriteLine();
         sw.WriteLine(OverrideMarker);
-        sw.WriteLine($"set g_nButtonsPerDevice 128 {OverrideComment}");
-        sw.WriteLine($"set g_nHotasPinkyShiftMagnitude {pinkyMagnitude} {OverrideComment}");
-        sw.WriteLine($"set g_nNumOfPOVs 2 {OverrideComment}");
-        sw.WriteLine($"set g_nPOV1DeviceID {pov1DeviceId} {OverrideComment}");
-        sw.WriteLine($"set g_nPOV1ID 0 {OverrideComment}");
-        sw.WriteLine($"set g_nPOV2DeviceID {pov2DeviceId} {OverrideComment}");
-        sw.WriteLine($"set g_nPOV2ID {pov2Id} {OverrideComment}");
 
         if (exportRttTextures)
             sw.WriteLine($"set g_bExportRTTTextures 1 {OverrideComment}");
@@ -130,23 +109,13 @@ public sealed class UserCfgOverrideService
 
         line = trimmed;
 
-        while (line.IndexOf("  ", StringComparison.Ordinal) >= 0)
+        while (line.Contains("  "))
             line = line.Replace("  ", " ");
 
-        while (line.IndexOf("\x201C", StringComparison.Ordinal) >= 0 || line.IndexOf("\x201D", StringComparison.Ordinal) >= 0)
+        while (line.Contains("\x201C") || line.Contains("\x201D"))
             line = line.Replace("\x201C", "\x0022")
                        .Replace("\x201D", "\x0022");
 
         return line;
-    }
-
-    private static int NormalizeSlotIndex(int joyId, int deviceCount)
-    {
-        int slot = joyId - 2;
-
-        if (slot >= 0 && slot < deviceCount)
-            return slot;
-
-        return -1;
     }
 }

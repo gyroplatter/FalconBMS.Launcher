@@ -13,26 +13,11 @@
                     Padding="14,6"
                     Margin="0,0,8,0"
                     Click="Main_Click"/>
-<!-- HIDE FOR NOW
-            <Button Content="Controls"
-                    Padding="14,6"
-                    Margin="0,0,8,0"
-                    Click="Controls_Click"/>
 
-            <Button Content="Audio"
-                    Padding="14,6"
-                    Margin="0,0,8,0"
-                    Click="Audio_Click"/>
--->
             <Button Content="Views"
                     Padding="14,6"
                     Margin="0,0,8,0"
                     Click="Views_Click"/>
-
-            <Button Content="Keymapping"
-                    Padding="14,6"
-                    Margin="0,0,8,0"
-                    Click="Keymapping_Click"/>
 
             <Button x:Name="StylesButton"
                     Content="Styles"

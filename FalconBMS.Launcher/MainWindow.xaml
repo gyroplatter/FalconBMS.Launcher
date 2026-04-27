@@ -13,20 +13,8 @@
             <views:MainView/>
         </DataTemplate>
 
-        <DataTemplate DataType="{x:Type vm:ControlsViewModel}">
-            <views:ControlsView/>
-        </DataTemplate>
-
-        <DataTemplate DataType="{x:Type vm:AudioViewModel}">
-            <views:AudioView/>
-        </DataTemplate>
-
         <DataTemplate DataType="{x:Type vm:ViewsViewModel}">
             <views:ViewsView/>
-        </DataTemplate>
-
-        <DataTemplate DataType="{x:Type vm:KeymappingViewModel}">
-            <views:KeymappingView/>
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type vm:StylesViewModel}">

@@ -68,14 +68,21 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     private string? _selectedTheater;
+    private bool _isLoadingTheater;
+
     public string? SelectedTheater
     {
         get => _selectedTheater;
         set
         {
             if (!Set(ref _selectedTheater, value)) return;
+            if (_isLoadingTheater) return;
             if (SelectedInstall is null) return;
             if (string.IsNullOrWhiteSpace(value)) return;
+
+            var current = _registry.ReadString(SelectedInstall.RegistryKeyName, "curTheater");
+            if (string.Equals(current, value, StringComparison.Ordinal))
+                return;
 
             DebugDiagnosticsService.Info($"Writing theater selection: {value}");
             _registry.WriteString(SelectedInstall.RegistryKeyName, "curTheater", value!);
@@ -374,27 +381,36 @@ public sealed class MainViewModel : ViewModelBase
 
     private void LoadTheaterForSelectedInstall()
     {
-        Theaters.Clear();
-        SelectedTheater = null;
+        _isLoadingTheater = true;
 
-        if (SelectedInstall is null) return;
-
-        var theaters = _theaterDiscovery.PopulateAndSave(SelectedInstall.BaseDir);
-        foreach (var t in theaters)
-            Theaters.Add(t);
-
-        var cur = _registry.ReadString(SelectedInstall.RegistryKeyName, "curTheater");
-
-        if (!string.IsNullOrWhiteSpace(cur))
+        try
         {
-            if (!Theaters.Any(x => string.Equals(x, cur, StringComparison.Ordinal)))
-                Theaters.Insert(0, cur!);
+            Theaters.Clear();
+            SelectedTheater = null;
 
-            SelectedTheater = cur;
+            if (SelectedInstall is null) return;
+
+            var theaters = _theaterDiscovery.PopulateAndSave(SelectedInstall.BaseDir);
+            foreach (var t in theaters)
+                Theaters.Add(t);
+
+            var cur = _registry.ReadString(SelectedInstall.RegistryKeyName, "curTheater");
+
+            if (!string.IsNullOrWhiteSpace(cur))
+            {
+                if (!Theaters.Any(x => string.Equals(x, cur, StringComparison.Ordinal)))
+                    Theaters.Insert(0, cur!);
+
+                SelectedTheater = cur;
+            }
+            else
+            {
+                SelectedTheater = Theaters.Count > 0 ? Theaters[0] : null;
+            }
         }
-        else
+        finally
         {
-            SelectedTheater = Theaters.Count > 0 ? Theaters[0] : null;
+            _isLoadingTheater = false;
         }
     }
 
@@ -716,7 +732,7 @@ public sealed class MainViewModel : ViewModelBase
             DebugDiagnosticsService.Info("RSS fetch starting.");
             NewsStatusText = "Loading news…";
 
-            var items = await _rss.FetchAsync(maxItems: 12, CancellationToken.None);
+            var items = await _rss.FetchAsync(maxItems: 8, CancellationToken.None);
 
             NewsItems.Clear();
             foreach (var i in items)
