@@ -8,7 +8,8 @@ public enum LauncherTab
 {
     Main = 0,
     Views = 1,
+    Controls = 2,
 #if DEBUG
-    Styles = 2,
+    Styles = 3,
 #endif
 }

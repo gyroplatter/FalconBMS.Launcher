@@ -1,0 +1,67 @@
+﻿<UserControl x:Class="FalconBMS.Launcher.Views.ControlsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="16"
+          Background="{DynamicResource AppWindowBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Controls"
+                   Style="{StaticResource HeadingTextBlockStyle}"
+                   Margin="0,0,0,10"/>
+
+        <Border Grid.Row="1"
+                Padding="12"
+                Margin="0,0,0,12"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                Background="{DynamicResource AppSurfaceBrush}">
+            <DockPanel LastChildFill="False">
+                <TextBlock Text="Profile"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <ComboBox Width="180"
+                          ItemsSource="{Binding Profiles}"
+                          SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                          DisplayMemberPath="AircraftProfile"
+                          Margin="0,0,16,0"/>
+
+                <TextBlock Text="{Binding SummaryText}"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource MutedTextBlockStyle}"/>
+            </DockPanel>
+        </Border>
+
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  IsReadOnly="True"
+                  HeadersVisibility="Column"
+                  RowHeaderWidth="0"
+                  GridLinesVisibility="Horizontal"
+                  Background="{DynamicResource AppSurfaceBrush}"
+                  Foreground="{DynamicResource AppForegroundBrush}"
+                  BorderBrush="{DynamicResource AppBorderBrush}"
+                  HorizontalGridLinesBrush="{DynamicResource AppBorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource AppBorderBrush}">
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Mapping"
+                                    Binding="{Binding Mapping}"
+                                    Width="*"/>
+
+                <DataGridTextColumn Header="Key"
+                                    Binding="{Binding Key}"
+                                    Width="220"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

@@ -15,14 +15,19 @@
                     Click="Main_Click"/>
 
             <Button Content="Views"
-                    Padding="14,6"
-                    Margin="0,0,8,0"
-                    Click="Views_Click"/>
+        Padding="14,6"
+        Margin="0,0,8,0"
+        Click="Views_Click"/>
+
+            <Button Content="Controls"
+        Padding="14,6"
+        Margin="0,0,8,0"
+        Click="Controls_Click"/>
 
             <Button x:Name="StylesButton"
-                    Content="Styles"
-                    Padding="14,6"
-                    Click="Styles_Click"/>
+        Content="Styles"
+        Padding="14,6"
+        Click="Styles_Click"/>
         </StackPanel>
     </Border>
 </UserControl>

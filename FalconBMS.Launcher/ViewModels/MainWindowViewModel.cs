@@ -11,6 +11,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 {
     public MainViewModel Main { get; } = new();
     public ViewsViewModel Views { get; } = new();
+    public ControlsViewModel Controls { get; } = new();
     public StylesViewModel Styles { get; } = new();
 
     private LauncherTab _currentTab = LauncherTab.Main;
@@ -29,6 +30,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         CurrentTab switch
         {
             LauncherTab.Views => Views,
+            LauncherTab.Controls => Controls,
             LauncherTab.Styles => Styles,
             _ => Main
         };
@@ -38,6 +40,14 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel()
     {
         SetTabCommand = new RelayCommand(() => { }, () => true);
+
+        Main.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Main.CurrentBindingModel))
+                Controls.LoadBindingModel(Main.CurrentBindingModel);
+        };
+
+        Controls.LoadBindingModel(Main.CurrentBindingModel);
     }
 
     public void SetTab(LauncherTab tab) => CurrentTab = tab;
