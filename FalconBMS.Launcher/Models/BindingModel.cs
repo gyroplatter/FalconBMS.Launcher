@@ -16,6 +16,8 @@ public sealed class BindingModel
 {
     public List<BindingAircraftProfile> AircraftProfiles { get; } = new();
 
+    public List<DeviceBindingProfile> DeviceProfiles { get; } = new();
+
     public int ProfileCount => AircraftProfiles.Count;
     public int TotalRows => AircraftProfiles.Sum(x => x.TotalRows);
     public int VisibleRows => AircraftProfiles.Sum(x => x.VisibleRows);
@@ -23,4 +25,6 @@ public sealed class BindingModel
     public int EditableRows => AircraftProfiles.Sum(x => x.EditableRows);
     public int LockedRows => AircraftProfiles.Sum(x => x.LockedRows);
     public int HiddenRows => AircraftProfiles.Sum(x => x.HiddenRows);
+
+    public int DeviceProfileCount => DeviceProfiles.Count;
 }
