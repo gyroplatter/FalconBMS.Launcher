@@ -29,6 +29,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly KeyCatalogService _keyCatalogService = new();
     private readonly BindingModelBuilderService _bindingModelBuilder = new();
     private readonly JsonKeyboardBindingReaderService _jsonKeyboardBindingReader = new();
+    private readonly DeviceDiscoveryService _deviceDiscovery = new();
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
@@ -56,6 +57,7 @@ public sealed class MainViewModel : ViewModelBase
                 Properties.Settings.Default.Save();
 
                 LoadBindingModelForSelectedInstall();
+                _deviceDiscovery.DiscoverAndMatchStockXml(value.BaseDir);
                 LoadTheaterForSelectedInstall();
                 RefreshLauncherStrips();
             }
