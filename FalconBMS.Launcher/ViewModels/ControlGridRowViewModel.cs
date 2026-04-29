@@ -8,6 +8,9 @@ public sealed class ControlGridRowViewModel : ViewModelBase
 
     public int SourceLineNumber { get; init; }
 
+    public string CategoryName { get; init; } = "";
+    public string SectionName { get; init; } = "";
+
     public string Mapping { get; init; } = "";
     public string Key { get; init; } = "";
 

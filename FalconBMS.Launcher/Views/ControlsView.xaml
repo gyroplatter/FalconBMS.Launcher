@@ -22,6 +22,7 @@
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 Background="{DynamicResource AppSurfaceBrush}">
             <DockPanel LastChildFill="False">
+
                 <TextBlock Text="Profile"
                            VerticalAlignment="Center"
                            Margin="0,0,8,0"/>
@@ -32,14 +33,38 @@
                           DisplayMemberPath="AircraftProfile"
                           Margin="0,0,16,0"/>
 
+                <TextBlock Text="Category"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <ComboBox Width="260"
+                          ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Margin="0,0,16,0"/>
+
+                <TextBlock Text="Filter"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+
+                <TextBox Width="220"
+                         Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Margin="0,0,12,0"/>
+
+                <Button Content="Clear"
+                        Width="70"
+                        Command="{Binding ClearFilterCommand}"
+                        Margin="0,0,16,0"/>
+
                 <TextBlock Text="{Binding SummaryText}"
                            VerticalAlignment="Center"
                            Style="{StaticResource MutedTextBlockStyle}"/>
             </DockPanel>
         </Border>
 
-        <DataGrid Grid.Row="2"
+        <DataGrid x:Name="ControlsGrid"
+                  Grid.Row="2"
                   ItemsSource="{Binding Rows}"
+                  SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
                   AutoGenerateColumns="False"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"

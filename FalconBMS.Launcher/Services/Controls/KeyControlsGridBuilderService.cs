@@ -27,6 +27,8 @@ public sealed class KeyControlsGridBuilderService
         {
             RowKind = row.RowKind,
             SourceLineNumber = row.SourceLineNumber,
+            CategoryName = row.CategoryName,
+            SectionName = row.SectionName,
             Mapping = GetMappingText(row),
             Key = GetKeyText(row)
         };
