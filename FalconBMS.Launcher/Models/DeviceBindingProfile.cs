@@ -5,8 +5,8 @@ namespace FalconBMS.Launcher.Models;
 
 /// <summary>
 /// Represents the in-memory binding profile for one discovered DirectInput device.
-/// This shell stores device identity and source information only; button, POV,
-/// and axis binding extraction will be added after XML/JSON parsing is implemented.
+/// Device-level data includes identity, source, capabilities, axes, and detents.
+/// Aircraft-specific data lives under AircraftProfiles.
 /// </summary>
 public sealed class DeviceBindingProfile
 {
@@ -29,12 +29,34 @@ public sealed class DeviceBindingProfile
     public string ProductIdHex { get; init; } = "";
     public string PidVid => ProductIdHex + VendorIdHex;
 
+    /// <summary>
+    /// One-based sequence number assigned only when multiple discovered devices
+    /// share the same PID/VID.
+    /// </summary>
+    public int? DuplicatePidVidSequenceNumber { get; init; }
+
+    public bool HasDuplicatePidVidSequence => DuplicatePidVidSequenceNumber.HasValue;
+
+    /// <summary>
+    /// Stable filename identity segment for future JSON names. Normal devices use PIDVID.
+    /// Duplicate PID/VID devices use PIDVID_sequence.
+    /// </summary>
+    public string DurableDeviceKey =>
+        HasDuplicatePidVidSequence
+            ? $"{PidVid}_{DuplicatePidVidSequenceNumber!.Value}"
+            : PidVid;
+
+    public int AxisCount { get; init; }
+    public int ButtonCount { get; init; }
+    public int PovCount { get; init; }
+    public bool CapabilitiesReadSuccessfully { get; init; }
+
     public DeviceBindingSource Source { get; init; }
 
     public string? StockXmlPath { get; init; }
     public string? JsonPath { get; init; }
 
-    public List<object> ButtonBindings { get; } = new();
-    public List<object> PovBindings { get; } = new();
-    public List<object> AxisBindings { get; } = new();
+    public List<DeviceAxisBinding> AxisBindings { get; } = new();
+
+    public List<DeviceAircraftBindingProfile> AircraftProfiles { get; } = new();
 }

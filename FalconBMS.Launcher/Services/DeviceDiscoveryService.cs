@@ -33,7 +33,7 @@ public sealed class DeviceDiscoveryService
             foreach (InputDeviceInfo device in devices)
             {
                 DebugDiagnosticsService.Info(
-                    $"Device discovered | Index={device.DiscoveryIndex} | ProductName=\"{device.ProductName}\" | InstanceName=\"{device.InstanceName}\" | PIDVID={device.PidVid} | ProductGuid={device.ProductGuid:B} | InstanceGuid={device.InstanceGuid:B} | ActionId={actionId}");
+                    $"Device discovered | Index={device.DiscoveryIndex} | ProductName=\"{device.ProductName}\" | InstanceName=\"{device.InstanceName}\" | PIDVID={device.PidVid} | DurableKey={device.DurableDeviceKey} | DuplicateSeq={FormatNullable(device.DuplicatePidVidSequenceNumber)} | CapsRead={device.Capabilities.WasReadSuccessfully} | Axes={device.Capabilities.AxisCount} | Buttons={device.Capabilities.ButtonCount} | POVs={device.Capabilities.PovCount} | ProductGuid={device.ProductGuid:B} | InstanceGuid={device.InstanceGuid:B} | ActionId={actionId}");
             }
 
             IReadOnlyList<StockDeviceSetupMatch> matches = _stockMatcher.Match(installBaseDir, devices);
@@ -43,12 +43,12 @@ public sealed class DeviceDiscoveryService
                 if (match.HasStockXml)
                 {
                     DebugDiagnosticsService.Info(
-                        $"Stock XML matched | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | File=\"{Path.GetFileName(match.StockXmlPath!)}\" | Path=\"{match.StockXmlPath}\" | ActionId={actionId}");
+                        $"Stock XML matched | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | File=\"{Path.GetFileName(match.StockXmlPath!)}\" | Path=\"{match.StockXmlPath}\" | ActionId={actionId}");
                 }
                 else
                 {
                     DebugDiagnosticsService.Warn(
-                        $"Stock XML missing | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | ProductGuid={match.Device.ProductGuid:B} | ActionId={actionId}");
+                        $"Stock XML missing | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | ProductGuid={match.Device.ProductGuid:B} | ActionId={actionId}");
                 }
             }
 
@@ -59,5 +59,10 @@ public sealed class DeviceDiscoveryService
             DebugDiagnosticsService.Exception(ex, $"Device discovery failed. | ActionId={actionId}");
             return Array.Empty<StockDeviceSetupMatch>();
         }
+    }
+
+    private static string FormatNullable(int? value)
+    {
+        return value.HasValue ? value.Value.ToString() : "";
     }
 }

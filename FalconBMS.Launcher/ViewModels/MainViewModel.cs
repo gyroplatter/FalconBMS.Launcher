@@ -63,8 +63,9 @@ public sealed class MainViewModel : ViewModelBase
                     _deviceDiscovery.DiscoverAndMatchStockXml(value.BaseDir);
 
                 CurrentBindingModel.DeviceProfiles.Clear();
-                CurrentBindingModel.DeviceProfiles.AddRange(
-                    _deviceBindingProfileBuilder.Build(stockDeviceMatches));
+
+                foreach (DeviceBindingProfile deviceProfile in _deviceBindingProfileBuilder.Build(stockDeviceMatches))
+                    CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
 
                 OnPropertyChanged(nameof(CurrentBindingModel));
 

@@ -29,4 +29,24 @@ public sealed class InputDeviceInfo
     public string ProductIdHex { get; init; } = "";
 
     public string PidVid => ProductIdHex + VendorIdHex;
+
+    /// <summary>
+    /// One-based sequence number assigned only when multiple discovered devices share
+    /// the same PID/VID. This supports vJoy-style devices that cannot be distinguished
+    /// by PID/VID alone.
+    /// </summary>
+    public int? DuplicatePidVidSequenceNumber { get; init; }
+
+    public bool HasDuplicatePidVidSequence => DuplicatePidVidSequenceNumber.HasValue;
+
+    /// <summary>
+    /// Stable filename identity segment for future JSON names. Normal devices use PIDVID.
+    /// Duplicate PID/VID devices use PIDVID_sequence.
+    /// </summary>
+    public string DurableDeviceKey =>
+        HasDuplicatePidVidSequence
+            ? $"{PidVid}_{DuplicatePidVidSequenceNumber!.Value}"
+            : PidVid;
+
+    public InputDeviceCapabilities Capabilities { get; init; } = InputDeviceCapabilities.Unknown;
 }
