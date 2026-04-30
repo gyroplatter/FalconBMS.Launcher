@@ -1,6 +1,7 @@
 ﻿using FalconBMS.Launcher.Models;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -12,6 +13,9 @@ namespace FalconBMS.Launcher.Services;
 public sealed class DeviceBindingProfileBuilderService
 {
     private readonly AxisDefinitionService _axisDefinitions = new();
+    private readonly DeviceStockXmlAxisParserService _stockXmlAxisParser = new();
+    private readonly DeviceStockXmlButtonParserService _stockXmlButtonParser = new();
+    private readonly DeviceStockXmlPovParserService _stockXmlPovParser = new();
 
     public IReadOnlyList<DeviceBindingProfile> Build(IReadOnlyList<StockDeviceSetupMatch> matches)
     {
@@ -20,10 +24,22 @@ public sealed class DeviceBindingProfileBuilderService
         foreach (StockDeviceSetupMatch match in matches)
         {
             DeviceBindingProfile profile = CreateProfile(match);
+
+            if (profile.Source == DeviceBindingSource.StockXml)
+            {
+                _stockXmlAxisParser.ApplyAxes(profile);
+                _stockXmlButtonParser.ApplyButtons(profile);
+                _stockXmlPovParser.ApplyPovs(profile);
+            }
+
             profiles.Add(profile);
 
+            int assignedAxes = profile.AxisBindings.Count(axis => axis.PhysicalAxisIndex.HasValue);
+            int buttonBindings = profile.AircraftProfiles.Sum(a => a.ButtonBindings.Count);
+            int povBindings = profile.AircraftProfiles.Sum(a => a.PovBindings.Count);
+
             DebugDiagnosticsService.Info(
-                $"Device binding profile built | Device=\"{profile.ProductName}\" | PIDVID={profile.PidVid} | DurableKey={profile.DurableDeviceKey} | DuplicateSeq={FormatNullable(profile.DuplicatePidVidSequenceNumber)} | Source={profile.Source} | StockXml=\"{Path.GetFileName(profile.StockXmlPath ?? "")}\" | CapsRead={profile.CapabilitiesReadSuccessfully} | Axes={profile.AxisCount} | Buttons={profile.ButtonCount} | POVs={profile.PovCount} | AxisBindings={profile.AxisBindings.Count} | AircraftProfiles={profile.AircraftProfiles.Count}");
+                $"Device binding profile built | Device=\"{profile.ProductName}\" | PIDVID={profile.PidVid} | DurableKey={profile.DurableDeviceKey} | DuplicateSeq={FormatNullable(profile.DuplicatePidVidSequenceNumber)} | Source={profile.Source} | StockXml=\"{Path.GetFileName(profile.StockXmlPath ?? "")}\" | CapsRead={profile.CapabilitiesReadSuccessfully} | Axes={profile.AxisCount} | Buttons={profile.ButtonCount} | POVs={profile.PovCount} | AxisBindings={profile.AxisBindings.Count} | AssignedAxes={assignedAxes} ... | ButtonBindings={buttonBindings} | PovBindings={povBindings} | AircraftProfiles=...{profile.AircraftProfiles.Count}");
         }
 
         DebugDiagnosticsService.Info(

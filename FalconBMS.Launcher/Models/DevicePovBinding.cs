@@ -1,15 +1,19 @@
 ﻿namespace FalconBMS.Launcher.Models;
 
 /// <summary>
-/// Represents one POV hat binding for a device.
-/// POV index is zero-based; POV number is the user-facing POV number.
+/// Represents one POV direction binding.
+/// PovIndex is zero-based (POV0, POV1, etc).
+/// Direction is the slot (0=Up,1=Right,2=Down,3=Left).
 /// </summary>
 public sealed class DevicePovBinding
 {
     public int PovIndex { get; init; }
 
-    public int PovNumber => PovIndex + 1;
+    public int Direction { get; init; }
 
-    public string Direction { get; set; } = "";
     public string CallbackName { get; set; } = "";
+
+    public string Invoke { get; set; } = "Default";
+
+    public int SoundId { get; set; }
 }
