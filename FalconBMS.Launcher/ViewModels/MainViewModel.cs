@@ -487,6 +487,34 @@ public sealed class MainViewModel : ViewModelBase
     private bool CanLaunchFirstParty(object? parameter) =>
         SelectedInstall is not null && parameter is string id && !string.IsNullOrWhiteSpace(id);
 
+    public void SaveOutputsForClose()
+    {
+        if (SelectedInstall is null)
+            return;
+
+        try
+        {
+            DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
+            DebugDiagnosticsService.Info($"Launcher close requested output save for install: {SelectedInstall.RegistryKeyName}");
+            DebugDiagnosticsService.Info("PrepareForLaunch on close start.");
+
+            bool vrEnabled = VrSteamVr || VrOpenXr;
+
+            _launchPrep.PrepareForLaunch(
+                SelectedInstall.BaseDir,
+                SelectedInstall.RegistryKeyName,
+                ExportRttTextures,
+                vrEnabled,
+                CurrentBindingModel);
+
+            DebugDiagnosticsService.Info("PrepareForLaunch on close complete.");
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(ex, "SaveOutputsForClose failed");
+        }
+    }
+
     private void LaunchSelected()
     {
         if (SelectedInstall is null) return;

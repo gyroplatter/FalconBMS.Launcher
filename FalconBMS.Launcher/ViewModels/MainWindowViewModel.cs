@@ -51,4 +51,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     }
 
     public void SetTab(LauncherTab tab) => CurrentTab = tab;
+
+    public void SaveOutputsForClose()
+    {
+        Main.SaveOutputsForClose();
+    }
 }
