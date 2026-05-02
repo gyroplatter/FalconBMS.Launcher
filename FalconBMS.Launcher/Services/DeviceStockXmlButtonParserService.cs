@@ -35,11 +35,16 @@ public sealed class DeviceStockXmlButtonParserService
             XElement? rootDx = document.Root?.Element("dx");
             if (rootDx is not null)
             {
-                // Root-level DX assignments are the stock/default assignment set.
-                // Until aircraft-specific XML sections are parsed, apply them to all
-                // aircraft containers so both profiles have the same baseline.
-                foreach (DeviceAircraftBindingProfile aircraftProfile in profile.AircraftProfiles)
-                    ApplyDxSection(profile, aircraftProfile, rootDx, "root", actionId);
+                DeviceAircraftBindingProfile? f16Profile = profile.AircraftProfiles.FirstOrDefault(aircraft =>
+                    string.Equals(aircraft.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase));
+
+                if (f16Profile is not null)
+                {
+                    // Legacy stock XML root DX assignments are the F-16/default set.
+                    // Do not copy root DX assignments into F-15ABCD unless the XML
+                    // explicitly contains a profileF15ABCD section.
+                    ApplyDxSection(profile, f16Profile, rootDx, "root", actionId);
+                }
             }
 
             ApplyAircraftSpecificDxSection(profile, document, "profileDefaultF16", "F-16", actionId);

@@ -13,6 +13,9 @@ public sealed class LaunchPrepService
 {
     private readonly JsonKeyboardBindingWriterService _jsonKeyboardBindingWriter = new();
     private readonly LegacyAutoKeyWriterService _legacyAutoKeyWriter = new();
+    private readonly LegacyDeviceSortingWriterService _legacyDeviceSortingWriter = new();
+    private readonly LegacyDeviceSetupXmlWriterService _legacyDeviceSetupXmlWriter = new();
+    private readonly LegacyAxisMappingDatWriterService _legacyAxisMappingDatWriter = new();
     private readonly UserCfgOverrideService _userCfg = new();
     private readonly PopFileService _pop = new();
 
@@ -28,7 +31,12 @@ public sealed class LaunchPrepService
 
         _jsonKeyboardBindingWriter.Write(baseDir, bindingModel);
         _legacyAutoKeyWriter.Write(baseDir, bindingModel);
-        _userCfg.SaveOverrides(baseDir, exportRttTextures, vrEnabled);
+
+        _legacyDeviceSortingWriter.Write(baseDir, bindingModel.DeviceProfiles);
+        _legacyDeviceSetupXmlWriter.Write(baseDir, bindingModel.DeviceProfiles);
+        _legacyAxisMappingDatWriter.Write(baseDir, bindingModel.DeviceProfiles);
+
+        _userCfg.SaveOverrides(baseDir, bindingModel.DeviceProfiles, exportRttTextures, vrEnabled);
         _pop.SavePop(baseDir, installKeyName);
 
         DebugDiagnosticsService.Info($"PREPARE FOR LAUNCH END | ActionId={actionId}");

@@ -34,9 +34,20 @@ public sealed class DeviceStockXmlPovParserService
 
             if (rootPov != null)
             {
-                foreach (var aircraft in profile.AircraftProfiles)
-                    ApplyPovSection(profile, aircraft, rootPov, "root", actionId);
+                DeviceAircraftBindingProfile? f16Profile = profile.AircraftProfiles.FirstOrDefault(aircraft =>
+                    string.Equals(aircraft.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase));
+
+                if (f16Profile is not null)
+                {
+                    // Legacy stock XML root POV assignments are the F-16/default set.
+                    // Do not copy root POV assignments into F-15ABCD unless the XML
+                    // explicitly contains a profileF15ABCD section.
+                    ApplyPovSection(profile, f16Profile, rootPov, "root", actionId);
+                }
             }
+
+            ApplyAircraftSpecificPovSection(profile, doc, "profileDefaultF16", "F-16", actionId);
+            ApplyAircraftSpecificPovSection(profile, doc, "profileF15ABCD", "F-15ABCD", actionId);
 
             int total = profile.AircraftProfiles.Sum(a => a.PovBindings.Count);
 
@@ -51,6 +62,36 @@ public sealed class DeviceStockXmlPovParserService
         }
     }
 
+    private void ApplyAircraftSpecificPovSection(
+    DeviceBindingProfile profile,
+    XDocument document,
+    string xmlProfileElementName,
+    string aircraftProfileName,
+    string actionId)
+    {
+        XElement? profileElement = document.Root?.Element(xmlProfileElementName);
+        XElement? povElement = profileElement?.Element("pov");
+
+        if (povElement is null)
+            return;
+
+        DeviceAircraftBindingProfile? aircraftProfile = profile.AircraftProfiles.FirstOrDefault(aircraft =>
+            string.Equals(aircraft.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+        if (aircraftProfile is null)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Stock XML POV profile skipped: aircraft profile missing | Device=\"{profile.ProductName}\" | XmlProfile={xmlProfileElementName} | Aircraft={aircraftProfileName} | ActionId={actionId}");
+            return;
+        }
+
+        // Aircraft-specific sections override the baseline/root assignments.
+        aircraftProfile.PovBindings.Clear();
+
+        ApplyPovSection(profile, aircraftProfile, povElement, xmlProfileElementName, actionId);
+    }
+
+
     private void ApplyPovSection(
         DeviceBindingProfile device,
         DeviceAircraftBindingProfile aircraft,
@@ -58,47 +99,81 @@ public sealed class DeviceStockXmlPovParserService
         string source,
         string actionId)
     {
-        var povElements = povRoot.Elements("PovAssgn").ToList();
+        var povElements = povRoot.Elements("PovAssgn").Take(4).ToList();
 
         int added = 0;
 
         for (int povIndex = 0; povIndex < povElements.Count; povIndex++)
         {
             XElement povElement = povElements[povIndex];
-            XElement? assignRoot = povElement.Element("assign");
 
-            if (assignRoot == null)
-                continue;
+            XElement? directionRoot = povElement.Element("direction");
 
-            var directions = assignRoot.Elements("Assgn").ToList();
+            var directions = (directionRoot != null
+                    ? directionRoot.Elements("DirAssgn")
+                    : povElement.Elements("DirAssgn"))
+                .Take(8)
+                .ToList();
 
             for (int dir = 0; dir < directions.Count; dir++)
             {
-                XElement assgn = directions[dir];
+                XElement dirAssgn = directions[dir];
 
-                string callback = assgn.Element("Callback")?.Value?.Trim() ?? "";
+                var callbackValues = dirAssgn
+                    .Element("Callback")
+                    ?.Elements("string")
+                    .ToList();
 
-                if (string.IsNullOrWhiteSpace(callback) ||
-                    string.Equals(callback, DoNothingCallback, StringComparison.OrdinalIgnoreCase))
-                    continue;
+                var soundValues = dirAssgn
+                    .Element("SoundID")
+                    ?.Elements("int")
+                    .ToList();
 
-                aircraft.PovBindings.Add(new DevicePovBinding
+                string unshiftedCallback = callbackValues?.ElementAtOrDefault(0)?.Value?.Trim() ?? DoNothingCallback;
+                string shiftedCallback = callbackValues?.ElementAtOrDefault(1)?.Value?.Trim() ?? DoNothingCallback;
+
+                int unshiftedSoundId = int.TryParse(soundValues?.ElementAtOrDefault(0)?.Value, out int s0) ? s0 : 0;
+                int shiftedSoundId = int.TryParse(soundValues?.ElementAtOrDefault(1)?.Value, out int s1) ? s1 : 0;
+
+                if (!string.IsNullOrWhiteSpace(unshiftedCallback) &&
+                    !string.Equals(unshiftedCallback, DoNothingCallback, StringComparison.OrdinalIgnoreCase))
                 {
-                    PovIndex = povIndex,
-                    Direction = dir,
-                    CallbackName = callback,
-                    Invoke = assgn.Element("Invoke")?.Value ?? "Default",
-                    SoundId = int.TryParse(assgn.Element("SoundID")?.Value, out int s) ? s : 0
-                });
+                    aircraft.PovBindings.Add(new DevicePovBinding
+                    {
+                        PovIndex = povIndex,
+                        Direction = dir,
+                        CallbackName = unshiftedCallback,
+                        Invoke = "Default",
+                        SoundId = unshiftedSoundId
+                    });
 
-                added++;
+                    added++;
 
-                DebugDiagnosticsService.Info(
-                    $"Stock XML POV mapped | Device=\"{device.ProductName}\" | Aircraft={aircraft.AircraftProfile} | POV={povIndex} | Dir={dir} | Callback={callback} | ActionId={actionId}");
+                    DebugDiagnosticsService.Info(
+                        $"Stock XML POV mapped | Device=\"{device.ProductName}\" | Aircraft={aircraft.AircraftProfile} | POV={povIndex} | Dir={dir} | Shift=False | Callback={unshiftedCallback} | ActionId={actionId}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(shiftedCallback) &&
+                    !string.Equals(shiftedCallback, DoNothingCallback, StringComparison.OrdinalIgnoreCase))
+                {
+                    aircraft.PovBindings.Add(new DevicePovBinding
+                    {
+                        PovIndex = povIndex,
+                        Direction = dir,
+                        CallbackName = shiftedCallback,
+                        Invoke = "Shift",
+                        SoundId = shiftedSoundId
+                    });
+
+                    added++;
+
+                    DebugDiagnosticsService.Info(
+                        $"Stock XML POV mapped | Device=\"{device.ProductName}\" | Aircraft={aircraft.AircraftProfile} | POV={povIndex} | Dir={dir} | Shift=True | Callback={shiftedCallback} | ActionId={actionId}");
+                }
             }
         }
 
         DebugDiagnosticsService.Info(
-            $"Stock XML POV section parsed | Device=\"{device.ProductName}\" | Aircraft={aircraft.AircraftProfile} | PovBindingsAdded={added} | ActionId={actionId}");
+            $"Stock XML POV section parsed | Device=\"{device.ProductName}\" | Aircraft={aircraft.AircraftProfile} | Source={source} | PovBindingsAdded={added} | ActionId={actionId}");
     }
 }
