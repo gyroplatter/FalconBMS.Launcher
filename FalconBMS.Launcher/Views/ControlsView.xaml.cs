@@ -85,7 +85,7 @@ public partial class ControlsView : UserControl
             ControlsGrid.Columns.Add(new DataGridTextColumn
             {
                 Header = GetDeviceColumnHeader(deviceProfile),
-                Binding = new Binding(nameof(ControlGridRowViewModel.DeviceCellText)),
+                Binding = new Binding($"{nameof(ControlGridRowViewModel.DeviceCellTextByDeviceKey)}[{deviceProfile.DurableDeviceKey}]"),
 
                 // Match Key column behavior: fixed, consistent device columns.
                 Width = new DataGridLength(140),

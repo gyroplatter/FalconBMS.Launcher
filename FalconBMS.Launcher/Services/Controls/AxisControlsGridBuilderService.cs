@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -15,8 +16,10 @@ public sealed class AxisControlsGridBuilderService
 
     private readonly AxisDefinitionService _axisDefinitionService = new();
 
-    public List<ControlGridRowViewModel> Build()
+    public List<ControlGridRowViewModel> Build(IEnumerable<DeviceBindingProfile> deviceProfiles)
     {
+        var devices = deviceProfiles.ToList();
+
         var rows = new List<ControlGridRowViewModel>
         {
             new()
@@ -30,13 +33,28 @@ public sealed class AxisControlsGridBuilderService
 
         rows.AddRange(_axisDefinitionService
             .GetDefinitions()
-            .Select(CreateAxisRow));
+            .Select(axisDefinition => CreateAxisRow(axisDefinition, devices)));
 
         return rows;
     }
 
-    private static ControlGridRowViewModel CreateAxisRow(DeviceAxisDefinition axisDefinition)
+    private static ControlGridRowViewModel CreateAxisRow(
+        DeviceAxisDefinition axisDefinition,
+        IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
+        var deviceCellTextByDeviceKey = new Dictionary<string, string>();
+
+        foreach (DeviceBindingProfile deviceProfile in deviceProfiles)
+        {
+            DeviceAxisBinding? binding = deviceProfile.AxisBindings.FirstOrDefault(axis =>
+                string.Equals(axis.LogicalAxisName, axisDefinition.LogicalAxisName, StringComparison.OrdinalIgnoreCase));
+
+            deviceCellTextByDeviceKey[deviceProfile.DurableDeviceKey] =
+                binding?.PhysicalAxisIndex is int physicalAxisIndex
+                    ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
+                    : "";
+        }
+
         return new ControlGridRowViewModel
         {
             SourceRow = null,
@@ -45,7 +63,8 @@ public sealed class AxisControlsGridBuilderService
             SectionName = AxisCategoryName,
             Mapping = GetDisplayName(axisDefinition.LogicalAxisName),
             IsAxisRow = true,
-            AxisLogicalAxisName = axisDefinition.LogicalAxisName
+            AxisLogicalAxisName = axisDefinition.LogicalAxisName,
+            DeviceCellTextByDeviceKey = deviceCellTextByDeviceKey
         };
     }
 

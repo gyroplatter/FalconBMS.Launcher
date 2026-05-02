@@ -111,7 +111,7 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (var row in _keyGridBuilder.Build(SelectedProfile))
             _allRows.Add(row);
 
-        foreach (var row in _axisGridBuilder.Build())
+        foreach (var row in _axisGridBuilder.Build(DeviceColumns))
             _allRows.Add(row);
     }
 

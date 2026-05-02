@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Input;
 using FalconBMS.Launcher.Models;
+using System.Collections.Generic;
 
 namespace FalconBMS.Launcher.ViewModels;
 
@@ -26,9 +27,7 @@ public sealed class ControlGridRowViewModel : ViewModelBase
         private set => Set(ref _key, value);
     }
 
-    // Placeholder for discovered device columns.
-    // Later phases will replace this with button/axis/POV display text per device.
-    public string DeviceCellText => "";
+    public Dictionary<string, string> DeviceCellTextByDeviceKey { get; init; } = new();
 
     public bool IsCategoryHeader => RowKind == BindingRowKind.CategoryHeader;
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
