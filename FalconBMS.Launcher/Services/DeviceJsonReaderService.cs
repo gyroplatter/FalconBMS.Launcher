@@ -20,12 +20,12 @@ public sealed class DeviceJsonReaderService
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTASREAD");
         DebugDiagnosticsService.Info($"Device JSON read begin. DeviceCount={matches.Count} | ActionId={actionId}");
 
-        string configDir = Path.Combine(baseDir, "User", "Config");
+        string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
         var profiles = new List<DeviceBindingProfile>();
 
         foreach (StockDeviceSetupMatch match in matches)
         {
-            string? jsonPath = FindDeviceJsonPath(configDir, match.Device.DurableDeviceKey);
+            string? jsonPath = FindDeviceJsonPath(jsonDir, match.Device.DurableDeviceKey);
 
             if (jsonPath is null)
             {
@@ -81,7 +81,7 @@ public sealed class DeviceJsonReaderService
         if (!Directory.Exists(configDir))
             return null;
 
-        string prefix = $"HotasBindings_{durableDeviceKey}_";
+        string prefix = $"DevicesBinding_{durableDeviceKey}_";
 
         return Directory
             .GetFiles(configDir, prefix + "*.json")

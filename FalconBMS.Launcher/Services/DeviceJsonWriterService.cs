@@ -14,11 +14,11 @@ public sealed class DeviceJsonWriterService
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTAS");
         DebugDiagnosticsService.Info($"Device JSON write begin. DeviceCount={deviceProfiles.Count} | ActionId={actionId}");
 
-        string configDir = Path.Combine(baseDir, "User", "Config");
-        Directory.CreateDirectory(configDir);
+        string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
+        Directory.CreateDirectory(jsonDir);
 
         foreach (DeviceBindingProfile profile in deviceProfiles)
-            WriteProfile(configDir, profile, actionId);
+            WriteProfile(jsonDir, profile, actionId);
 
         DebugDiagnosticsService.Info($"Device JSON write end. | ActionId={actionId}");
     }
@@ -61,7 +61,7 @@ public sealed class DeviceJsonWriterService
         // Preserve the real product name in JSON, but avoid a filename boundary like "H.O.T.A.S..json".
         string fileNameProductName = productName.TrimEnd('.');
 
-        return $"HotasBindings_{profile.DurableDeviceKey}_{fileNameProductName}.json";
+        return $"DeviceBindings_{profile.DurableDeviceKey}_{fileNameProductName}.json";
     }
 
     private static string BuildProfileJson(DeviceBindingProfile profile)

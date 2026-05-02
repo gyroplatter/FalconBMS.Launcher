@@ -22,10 +22,10 @@ public sealed class JsonKeyboardBindingReaderService
         string actionId = DebugDiagnosticsService.CreateActionId("JSONREAD");
         DebugDiagnosticsService.Info($"Keyboard JSON read begin. | ActionId={actionId}");
 
-        string configDir = Path.Combine(baseDir, "User", "Config");
+        string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
 
-        ApplyProfile(configDir, bindingModel, "F-16", "KeyboardBindings.json", actionId);
-        ApplyProfile(configDir, bindingModel, "F-15ABCD", "KeyboardBindings_F-15ABCD.json", actionId);
+        ApplyProfile(jsonDir, bindingModel, "F-16", "KeyboardBindings.json", actionId);
+        ApplyProfile(jsonDir, bindingModel, "F-15ABCD", "KeyboardBindings_F-15ABCD.json", actionId);
 
         DebugDiagnosticsService.Info($"Keyboard JSON read end. | ActionId={actionId}");
     }

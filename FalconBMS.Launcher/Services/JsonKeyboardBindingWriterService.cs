@@ -24,18 +24,18 @@ public sealed class JsonKeyboardBindingWriterService
         string actionId = DebugDiagnosticsService.CreateActionId("JSONKEY");
         DebugDiagnosticsService.Info($"Keyboard JSON write begin. | ActionId={actionId}");
 
-        string configDir = Path.Combine(baseDir, "User", "Config");
-        Directory.CreateDirectory(configDir);
+        string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
+        Directory.CreateDirectory(jsonDir);
 
         WriteProfile(
-            configDir,
+            jsonDir,
             bindingModel,
             aircraftProfile: "F-16",
             fileName: "KeyboardBindings.json",
             actionId: actionId);
 
         WriteProfile(
-            configDir,
+            jsonDir,
             bindingModel,
             aircraftProfile: "F-15ABCD",
             fileName: "KeyboardBindings_F-15ABCD.json",
