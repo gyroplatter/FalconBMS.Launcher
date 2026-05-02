@@ -115,8 +115,7 @@ public sealed class LegacyDeviceSetupXmlWriterService
     private static XElement BuildAxisBlock(DeviceBindingProfile profile)
     {
         var byPhysicalAxis = profile.AxisBindings
-            .Where(axis => axis.PhysicalAxisIndex.HasValue)
-            .Where(axis => axis.PhysicalAxisIndex.Value >= 0 && axis.PhysicalAxisIndex.Value < 8)
+            .Where(axis => axis.PhysicalAxisIndex is >= 0 and < 8)
             .GroupBy(axis => axis.PhysicalAxisIndex!.Value)
             .ToDictionary(group => group.Key, group => group.First());
 
@@ -129,7 +128,7 @@ public sealed class LegacyDeviceSetupXmlWriterService
             axisElements.Add(
             new XElement(
                 "AxAssgn",
-                string.IsNullOrWhiteSpace(axis?.LogicalAxisName)
+                axis is null || string.IsNullOrWhiteSpace(axis.LogicalAxisName)
                     ? new XElement("AxisName")
                     : new XElement("AxisName", axis.LogicalAxisName),
                 new XElement("AssgnDate", "1998-12-12T12:00:00"),

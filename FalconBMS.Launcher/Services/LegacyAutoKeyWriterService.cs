@@ -357,7 +357,7 @@ public sealed class LegacyAutoKeyWriterService
     {
         string callback = string.IsNullOrWhiteSpace(callbackName)
             ? DoNothingCallback
-            : callbackName;
+            : callbackName!;
 
         if (string.Equals(callback, DoNothingCallback, StringComparison.OrdinalIgnoreCase))
             sb.Append("# ");
