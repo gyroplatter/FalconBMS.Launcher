@@ -14,6 +14,7 @@ public sealed class ControlsViewModel : ViewModelBase
     private const string AllCategoriesLabel = "ALL KEYS & AXES";
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
+    private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
 
@@ -73,7 +74,7 @@ public sealed class ControlsViewModel : ViewModelBase
     public string SummaryText =>
         SelectedProfile is null
             ? "No binding profile loaded."
-            : $"{SelectedProfile.AircraftProfile}: {Rows.Count} visible key rows";
+            : $"{SelectedProfile.AircraftProfile}: {Rows.Count} visible rows";
 
     public RelayCommand ClearFilterCommand { get; }
 
@@ -108,6 +109,9 @@ public sealed class ControlsViewModel : ViewModelBase
         _allRows.Clear();
 
         foreach (var row in _keyGridBuilder.Build(SelectedProfile))
+            _allRows.Add(row);
+
+        foreach (var row in _axisGridBuilder.Build())
             _allRows.Add(row);
     }
 

@@ -16,6 +16,9 @@ public sealed class ControlGridRowViewModel : ViewModelBase
 
     public string Mapping { get; init; } = "";
 
+    public bool IsAxisRow { get; init; }
+    public string AxisLogicalAxisName { get; init; } = "";
+
     private string _key = "";
     public string Key
     {
