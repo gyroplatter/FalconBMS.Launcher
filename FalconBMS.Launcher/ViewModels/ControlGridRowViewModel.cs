@@ -4,6 +4,8 @@ namespace FalconBMS.Launcher.ViewModels;
 
 public sealed class ControlGridRowViewModel : ViewModelBase
 {
+    public BindingRow? SourceRow { get; init; }
+
     public BindingRowKind RowKind { get; init; }
 
     public int SourceLineNumber { get; init; }
@@ -17,4 +19,6 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsCategoryHeader => RowKind == BindingRowKind.CategoryHeader;
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
     public bool IsRemark => RowKind == BindingRowKind.Remark;
+
+    public bool IsEditable => SourceRow?.IsEditable == true;
 }

@@ -76,7 +76,8 @@
                   Foreground="{DynamicResource AppForegroundBrush}"
                   BorderBrush="{DynamicResource AppBorderBrush}"
                   HorizontalGridLinesBrush="{DynamicResource AppBorderBrush}"
-                  VerticalGridLinesBrush="{DynamicResource AppBorderBrush}">
+                  VerticalGridLinesBrush="{DynamicResource AppBorderBrush}"
+                  MouseDoubleClick="ControlsGrid_MouseDoubleClick">
 
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Mapping"

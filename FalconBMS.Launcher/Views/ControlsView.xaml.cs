@@ -37,6 +37,34 @@ public partial class ControlsView : UserControl
         StopKeyboardSearchCapture();
     }
 
+    private void ControlsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        if (viewModel.SelectedRow?.SourceRow is null)
+            return;
+
+        if (!viewModel.SelectedRow.IsEditable)
+            return;
+
+        StopKeyboardSearchCapture();
+
+        var window = new KeyMappingWindow
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        window.DataContext = new KeyMappingWindowViewModel(
+            viewModel.SelectedRow.SourceRow,
+            viewModel.SelectedProfileRows,
+            () => window.Close());
+
+        window.ShowDialog();
+
+        StartKeyboardSearchCapture();
+    }
+
     private void StartKeyboardSearchCapture()
     {
         StopKeyboardSearchCapture();

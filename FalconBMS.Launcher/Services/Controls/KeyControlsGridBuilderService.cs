@@ -25,6 +25,7 @@ public sealed class KeyControlsGridBuilderService
     {
         return new ControlGridRowViewModel
         {
+            SourceRow = row,
             RowKind = row.RowKind,
             SourceLineNumber = row.SourceLineNumber,
             CategoryName = row.CategoryName,

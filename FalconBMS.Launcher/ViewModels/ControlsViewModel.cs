@@ -20,6 +20,9 @@ public sealed class ControlsViewModel : ViewModelBase
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<ControlGridRowViewModel> Rows { get; } = new();
 
+    public IReadOnlyList<BindingRow> SelectedProfileRows =>
+        SelectedProfile?.Rows ?? Array.Empty<BindingRow>().ToList();
+
     private ControlGridRowViewModel? _selectedRow;
     public ControlGridRowViewModel? SelectedRow
     {
