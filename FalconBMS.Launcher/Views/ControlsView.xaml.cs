@@ -58,6 +58,7 @@ public partial class ControlsView : UserControl
         window.DataContext = new KeyMappingWindowViewModel(
             viewModel.SelectedRow.SourceRow,
             viewModel.SelectedProfileRows,
+            viewModel.ApplyKeyboardMappingFromPopup,
             () => window.Close());
 
         window.ShowDialog();

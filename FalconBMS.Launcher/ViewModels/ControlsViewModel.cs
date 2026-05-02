@@ -1,4 +1,5 @@
-﻿using FalconBMS.Launcher.Models;
+﻿using FalconBMS.Launcher.Input;
+using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services.Controls;
 using FalconBMS.Launcher.Utils;
 using System;
@@ -169,6 +170,80 @@ public sealed class ControlsViewModel : ViewModelBase
 
         SelectedRow = match;
         return true;
+    }
+
+    public void ApplyKeyboardMappingFromPopup(
+    BindingRow selectedRow,
+    string keyScancode,
+    int keyModifierFlags,
+    string chordScancode,
+    int chordModifierFlags)
+    {
+        BindingRow? duplicateRow = FindDuplicateKeyboardAssignment(
+            selectedRow,
+            keyScancode,
+            keyModifierFlags,
+            chordScancode,
+            chordModifierFlags);
+
+        if (duplicateRow is not null)
+        {
+            ClearKeyboardAssignment(duplicateRow);
+            RefreshGridRowForSource(duplicateRow);
+        }
+
+        selectedRow.KeyScancode = keyScancode;
+        selectedRow.KeyModifierFlags = keyModifierFlags;
+        selectedRow.ChordScancode = chordScancode;
+        selectedRow.ChordModifierFlags = chordModifierFlags;
+        selectedRow.IsModified = true;
+
+        RefreshGridRowForSource(selectedRow);
+        OnPropertyChanged(nameof(SummaryText));
+    }
+
+    private BindingRow? FindDuplicateKeyboardAssignment(
+        BindingRow selectedRow,
+        string keyScancode,
+        int keyModifierFlags,
+        string chordScancode,
+        int chordModifierFlags)
+    {
+        string newAssignment = KeyAssgn.GetKeyAssignmentStatus(
+            keyScancode,
+            keyModifierFlags,
+            chordScancode,
+            chordModifierFlags);
+
+        if (string.IsNullOrWhiteSpace(newAssignment))
+            return null;
+
+        return SelectedProfileRows.FirstOrDefault(row =>
+            !ReferenceEquals(row, selectedRow) &&
+            row.IsEditable &&
+            string.Equals(
+                KeyAssgn.GetKeyAssignmentStatus(
+                    row.KeyScancode,
+                    row.KeyModifierFlags,
+                    row.ChordScancode,
+                    row.ChordModifierFlags),
+                newAssignment,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static void ClearKeyboardAssignment(BindingRow row)
+    {
+        row.KeyScancode = "0xFFFFFFFF";
+        row.KeyModifierFlags = 0;
+        row.ChordScancode = "0";
+        row.ChordModifierFlags = 0;
+        row.IsModified = true;
+    }
+
+    private void RefreshGridRowForSource(BindingRow sourceRow)
+    {
+        foreach (ControlGridRowViewModel row in _allRows.Where(row => ReferenceEquals(row.SourceRow, sourceRow)))
+            row.RefreshFromSource();
     }
 
     private void ClearFilters()

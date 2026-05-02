@@ -23,16 +23,19 @@ public sealed class KeyControlsGridBuilderService
 
     private static ControlGridRowViewModel CreateRow(BindingRow row)
     {
-        return new ControlGridRowViewModel
+        var viewModel = new ControlGridRowViewModel
         {
             SourceRow = row,
             RowKind = row.RowKind,
             SourceLineNumber = row.SourceLineNumber,
             CategoryName = row.CategoryName,
             SectionName = row.SectionName,
-            Mapping = GetMappingText(row),
-            Key = GetKeyText(row)
+            Mapping = GetMappingText(row)
         };
+
+        viewModel.RefreshFromSource();
+
+        return viewModel;
     }
 
     private static string GetMappingText(BindingRow row)

@@ -15,6 +15,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly BindingRow _row;
     private readonly List<BindingRow> _profileRows;
+    private readonly Action<BindingRow, string, int, string, int> _saveKeyboardBinding;
     private readonly Action _closeWindow;
     private readonly DirectInputManager _di = new();
 
@@ -65,10 +66,12 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     public KeyMappingWindowViewModel(
         BindingRow row,
         IEnumerable<BindingRow> profileRows,
+        Action<BindingRow, string, int, string, int> saveKeyboardBinding,
         Action closeWindow)
     {
         _row = row;
         _profileRows = profileRows.ToList();
+        _saveKeyboardBinding = saveKeyboardBinding;
         _closeWindow = closeWindow;
 
         // Match original launcher behavior: show only description, no callback name.
@@ -101,12 +104,15 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         SaveCommand = new RelayCommand(() =>
         {
-            // Phase 1 only opens/captures/closes.
-            // Phase 2 will commit these temp values into the in-memory binding model.
-            //
-            // Duplicate-key behavior is already detected here and scoped only to
-            // _profileRows, which means F-16 conflicts only with F-16 and
-            // F-15ABCD conflicts only with F-15ABCD.
+            // Phase 2: commit only to the in-memory keyboard model.
+            // File output still happens through the normal Launch/Close flush pipeline.
+            _saveKeyboardBinding(
+                _row,
+                _tempKeyScancode,
+                _tempModifierFlags,
+                _tempChordScancode,
+                _tempChordModifierFlags);
+
             _closeWindow();
         });
 
