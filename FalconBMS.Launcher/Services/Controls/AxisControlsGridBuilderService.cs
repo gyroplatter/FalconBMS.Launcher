@@ -40,7 +40,7 @@ public sealed class AxisControlsGridBuilderService
         return new ControlGridRowViewModel
         {
             SourceRow = null,
-            RowKind = BindingRowKind.Callback,
+            RowKind = BindingRowKind.EditableCallback,
             CategoryName = AxisCategoryName,
             SectionName = AxisCategoryName,
             Mapping = GetDisplayName(axisDefinition.LogicalAxisName),
