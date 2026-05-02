@@ -42,17 +42,23 @@ public sealed class AxisControlsGridBuilderService
         DeviceAxisDefinition axisDefinition,
         IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
-        var deviceCellTextByDeviceKey = new Dictionary<string, string>();
+        var deviceCellsByDeviceKey = new Dictionary<string, ControlGridDeviceCellViewModel>();
 
         foreach (DeviceBindingProfile deviceProfile in deviceProfiles)
         {
             DeviceAxisBinding? binding = deviceProfile.AxisBindings.FirstOrDefault(axis =>
                 string.Equals(axis.LogicalAxisName, axisDefinition.LogicalAxisName, StringComparison.OrdinalIgnoreCase));
 
-            deviceCellTextByDeviceKey[deviceProfile.DurableDeviceKey] =
-                binding?.PhysicalAxisIndex is int physicalAxisIndex
+            bool hasAxisBinding = binding?.PhysicalAxisIndex is int;
+
+            deviceCellsByDeviceKey[deviceProfile.DurableDeviceKey] = new ControlGridDeviceCellViewModel
+            {
+                DisplayText = binding?.PhysicalAxisIndex is int physicalAxisIndex
                     ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
-                    : "";
+                    : "",
+                HasAxisBinding = hasAxisBinding,
+                PhysicalAxisIndex = binding?.PhysicalAxisIndex ?? -1
+            };
         }
 
         return new ControlGridRowViewModel
@@ -64,7 +70,7 @@ public sealed class AxisControlsGridBuilderService
             Mapping = GetDisplayName(axisDefinition.LogicalAxisName),
             IsAxisRow = true,
             AxisLogicalAxisName = axisDefinition.LogicalAxisName,
-            DeviceCellTextByDeviceKey = deviceCellTextByDeviceKey
+            DeviceCellsByDeviceKey = deviceCellsByDeviceKey
         };
     }
 

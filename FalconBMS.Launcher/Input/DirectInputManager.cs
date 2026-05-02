@@ -70,6 +70,35 @@ public sealed class DirectInputManager : IDisposable
         return new KeyboardSession(device);
     }
 
+    public JoystickSession OpenJoystick(Guid instanceGuid, IntPtr hwnd)
+    {
+        var device = _di.CreateDevice(instanceGuid);
+
+        device.SetCooperativeLevel(hwnd, CooperativeLevel.NonExclusive | CooperativeLevel.Background);
+        device.SetDataFormat<RawJoystickState>();
+        device.Acquire();
+
+        return new JoystickSession(device);
+    }
+
+    public static int[] ReadAxisVector(JoystickState state)
+    {
+        int slider0 = state.Sliders is { Length: > 0 } ? state.Sliders[0] : 0;
+        int slider1 = state.Sliders is { Length: > 1 } ? state.Sliders[1] : 0;
+
+        return new[]
+        {
+            state.X,
+            state.Y,
+            state.Z,
+            state.RotationX,
+            state.RotationY,
+            state.RotationZ,
+            slider0,
+            slider1
+        };
+    }
+
     public void Dispose()
     {
         _di.Dispose();
@@ -275,6 +304,28 @@ public sealed class KeyboardSession : IDisposable
     {
         _device.Poll();
         return _device.GetCurrentKeyboardState();
+    }
+
+    public void Dispose()
+    {
+        try { _device.Unacquire(); } catch { }
+        _device.Dispose();
+    }
+}
+
+public sealed class JoystickSession : IDisposable
+{
+    private readonly IDirectInputDevice8 _device;
+
+    internal JoystickSession(IDirectInputDevice8 device)
+    {
+        _device = device;
+    }
+
+    public JoystickState ReadState()
+    {
+        _device.Poll();
+        return _device.GetCurrentJoystickState();
     }
 
     public void Dispose()

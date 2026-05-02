@@ -11,6 +11,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using static FalconBMS.Launcher.Input.KeyboardSession;
 using DiKey = Vortice.DirectInput.Key;
 
 namespace FalconBMS.Launcher.Views;
@@ -19,6 +20,7 @@ public partial class ControlsView : UserControl
 {
     private readonly DirectInputManager _di = new();
     private KeyboardSession? _keyboard;
+    private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
     private HashSet<DiKey> _previousPressedKeys = new();
     private DispatcherTimer? _timer;
     private ControlsViewModel? _subscribedViewModel;
@@ -82,15 +84,32 @@ public partial class ControlsView : UserControl
 
         foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns)
         {
-            ControlsGrid.Columns.Add(new DataGridTextColumn
+            var template = new DataTemplate(typeof(ControlGridDeviceCellViewModel));
+
+            var gridFactory = new FrameworkElementFactory(typeof(Grid));
+
+            var textFactory = new FrameworkElementFactory(typeof(TextBlock));
+            textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText)));
+            textFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+            textFactory.SetValue(TextBlock.MarginProperty, new Thickness(4, 0, 4, 0));
+
+            var progressFactory = new FrameworkElementFactory(typeof(ProgressBar));
+            progressFactory.SetValue(ProgressBar.MinimumProperty, 0.0);
+            progressFactory.SetValue(ProgressBar.MaximumProperty, 1.0);
+            progressFactory.SetValue(ProgressBar.HeightProperty, 14.0);
+            progressFactory.SetValue(ProgressBar.MarginProperty, new Thickness(4, 1, 4, 1));
+            progressFactory.SetBinding(ProgressBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue)));
+
+            gridFactory.AppendChild(progressFactory);
+            gridFactory.AppendChild(textFactory);
+            template.VisualTree = gridFactory;
+
+            ControlsGrid.Columns.Add(new DataGridTemplateColumn
             {
                 Header = GetDeviceColumnHeader(deviceProfile),
-                Binding = new Binding($"{nameof(ControlGridRowViewModel.DeviceCellTextByDeviceKey)}[{deviceProfile.DurableDeviceKey}]"),
-
-                // Match Key column behavior: fixed, consistent device columns.
+                CellTemplate = CreateDeviceCellTemplate(deviceProfile.DurableDeviceKey),
                 Width = new DataGridLength(140),
                 MinWidth = 140,
-
                 IsReadOnly = true
             });
         }
@@ -105,6 +124,46 @@ public partial class ControlsView : UserControl
             return deviceProfile.InstanceName;
 
         return deviceProfile.DurableDeviceKey;
+    }
+
+    private static DataTemplate CreateDeviceCellTemplate(string durableDeviceKey)
+    {
+        var template = new DataTemplate();
+
+        var gridFactory = new FrameworkElementFactory(typeof(Grid));
+        gridFactory.SetBinding(
+            FrameworkElement.DataContextProperty,
+            new Binding($"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
+
+        var progressStyle = new Style(typeof(ProgressBar));
+        progressStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
+
+        var showWhenMappedTrigger = new DataTrigger
+        {
+            Binding = new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
+            Value = true
+        };
+        showWhenMappedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
+        progressStyle.Triggers.Add(showWhenMappedTrigger);
+
+        var progressFactory = new FrameworkElementFactory(typeof(ProgressBar));
+        progressFactory.SetValue(ProgressBar.MinimumProperty, 0.0);
+        progressFactory.SetValue(ProgressBar.MaximumProperty, 1.0);
+        progressFactory.SetValue(ProgressBar.HeightProperty, 14.0);
+        progressFactory.SetValue(ProgressBar.MarginProperty, new Thickness(4, 1, 4, 1));
+        progressFactory.SetValue(FrameworkElement.StyleProperty, progressStyle);
+        progressFactory.SetBinding(ProgressBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue)));
+
+        var textFactory = new FrameworkElementFactory(typeof(TextBlock));
+        textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText)));
+        textFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+        textFactory.SetValue(TextBlock.MarginProperty, new Thickness(4, 0, 4, 0));
+
+        gridFactory.AppendChild(progressFactory);
+        gridFactory.AppendChild(textFactory);
+
+        template.VisualTree = gridFactory;
+        return template;
     }
 
     private void ControlsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
@@ -164,12 +223,17 @@ public partial class ControlsView : UserControl
             _keyboard = null;
         }
 
+        foreach (JoystickSession session in _joystickSessionsByDeviceKey.Values)
+            session.Dispose();
+
+        _joystickSessionsByDeviceKey.Clear();
         _previousPressedKeys.Clear();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
         PollKeyboardSearch();
+        PollLiveAxes();
     }
 
     private void PollKeyboardSearch()
@@ -255,6 +319,73 @@ public partial class ControlsView : UserControl
             ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
         }, DispatcherPriority.Background);
     }
+
+    private void PollLiveAxes()
+    {
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        Window? window = Window.GetWindow(this);
+        if (window is null)
+            return;
+
+        IntPtr hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero)
+            return;
+
+        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.AxisCount > 0))
+        {
+            if (!_joystickSessionsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out JoystickSession session))
+            {
+                try
+                {
+                    session = _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
+                    _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] = session;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+
+            int[] axisValues;
+
+            try
+            {
+                axisValues = DirectInputManager.ReadAxisVector(session.ReadState());
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (ControlGridRowViewModel row in viewModel.Rows.Where(row => row.IsAxisRow))
+            {
+                if (!row.DeviceCellsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out ControlGridDeviceCellViewModel? cell))
+                    continue;
+
+                if (!cell.HasAxisBinding)
+                    continue;
+
+                if (cell.PhysicalAxisIndex < 0 || cell.PhysicalAxisIndex >= axisValues.Length)
+                    continue;
+
+                cell.AxisBarValue = NormalizeAxisValue(axisValues[cell.PhysicalAxisIndex]);
+            }
+        }
+    }
+
+    private static double NormalizeAxisValue(int rawValue)
+    {
+        if (rawValue <= 0)
+            return 0;
+
+        if (rawValue >= 65535)
+            return 1;
+
+        return rawValue / 65535.0;
+    }
+
 
     private void EnsureKeyboardOpened()
     {

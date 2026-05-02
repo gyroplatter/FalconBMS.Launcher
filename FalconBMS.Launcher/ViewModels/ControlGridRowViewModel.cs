@@ -27,7 +27,7 @@ public sealed class ControlGridRowViewModel : ViewModelBase
         private set => Set(ref _key, value);
     }
 
-    public Dictionary<string, string> DeviceCellTextByDeviceKey { get; init; } = new();
+    public Dictionary<string, ControlGridDeviceCellViewModel> DeviceCellsByDeviceKey { get; init; } = new();
 
     public bool IsCategoryHeader => RowKind == BindingRowKind.CategoryHeader;
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
