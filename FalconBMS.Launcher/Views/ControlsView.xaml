@@ -69,9 +69,14 @@
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   IsReadOnly="True"
+                  
                   HeadersVisibility="Column"
                   RowHeaderWidth="0"
-                  GridLinesVisibility="Horizontal"
+                  FrozenColumnCount="2"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  GridLinesVisibility="All"
+                  
                   Background="{DynamicResource AppSurfaceBrush}"
                   Foreground="{DynamicResource AppForegroundBrush}"
                   BorderBrush="{DynamicResource AppBorderBrush}"
@@ -82,11 +87,13 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Mapping"
                                     Binding="{Binding Mapping}"
-                                    Width="*"/>
+                                    Width="380"
+                                    MinWidth="380"/>
 
                 <DataGridTextColumn Header="Key"
                                     Binding="{Binding Key}"
-                                    Width="220"/>
+                                    Width="140"
+                                    MinWidth="140"/>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

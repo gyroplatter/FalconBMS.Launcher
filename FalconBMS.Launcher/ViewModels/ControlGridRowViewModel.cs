@@ -23,6 +23,10 @@ public sealed class ControlGridRowViewModel : ViewModelBase
         private set => Set(ref _key, value);
     }
 
+    // Placeholder for discovered device columns.
+    // Later phases will replace this with button/axis/POV display text per device.
+    public string DeviceCellText => "";
+
     public bool IsCategoryHeader => RowKind == BindingRowKind.CategoryHeader;
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
     public bool IsRemark => RowKind == BindingRowKind.Remark;

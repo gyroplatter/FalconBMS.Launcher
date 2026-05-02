@@ -1,10 +1,13 @@
 ﻿using FalconBMS.Launcher.Input;
+using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
@@ -18,6 +21,7 @@ public partial class ControlsView : UserControl
     private KeyboardSession? _keyboard;
     private HashSet<DiKey> _previousPressedKeys = new();
     private DispatcherTimer? _timer;
+    private ControlsViewModel? _subscribedViewModel;
 
     public ControlsView()
     {
@@ -25,16 +29,82 @@ public partial class ControlsView : UserControl
 
         Loaded += ControlsView_Loaded;
         Unloaded += ControlsView_Unloaded;
+        DataContextChanged += ControlsView_DataContextChanged;
     }
 
     private void ControlsView_Loaded(object sender, RoutedEventArgs e)
     {
+        SubscribeToViewModel(DataContext as ControlsViewModel);
+        RebuildDeviceColumns();
         StartKeyboardSearchCapture();
     }
 
     private void ControlsView_Unloaded(object sender, RoutedEventArgs e)
     {
         StopKeyboardSearchCapture();
+        SubscribeToViewModel(null);
+    }
+
+    private void ControlsView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        SubscribeToViewModel(e.NewValue as ControlsViewModel);
+        RebuildDeviceColumns();
+    }
+
+    private void SubscribeToViewModel(ControlsViewModel? viewModel)
+    {
+        if (ReferenceEquals(_subscribedViewModel, viewModel))
+            return;
+
+        if (_subscribedViewModel is not null)
+            _subscribedViewModel.DeviceColumns.CollectionChanged -= DeviceColumns_CollectionChanged;
+
+        _subscribedViewModel = viewModel;
+
+        if (_subscribedViewModel is not null)
+            _subscribedViewModel.DeviceColumns.CollectionChanged += DeviceColumns_CollectionChanged;
+    }
+
+    private void DeviceColumns_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        RebuildDeviceColumns();
+    }
+
+    private void RebuildDeviceColumns()
+    {
+        const int fixedColumnCount = 2;
+
+        while (ControlsGrid.Columns.Count > fixedColumnCount)
+            ControlsGrid.Columns.RemoveAt(fixedColumnCount);
+
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns)
+        {
+            ControlsGrid.Columns.Add(new DataGridTextColumn
+            {
+                Header = GetDeviceColumnHeader(deviceProfile),
+                Binding = new Binding(nameof(ControlGridRowViewModel.DeviceCellText)),
+
+                // Match Key column behavior: fixed, consistent device columns.
+                Width = new DataGridLength(140),
+                MinWidth = 140,
+
+                IsReadOnly = true
+            });
+        }
+    }
+
+    private static string GetDeviceColumnHeader(DeviceBindingProfile deviceProfile)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
+            return deviceProfile.ProductName;
+
+        if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+            return deviceProfile.InstanceName;
+
+        return deviceProfile.DurableDeviceKey;
     }
 
     private void ControlsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)

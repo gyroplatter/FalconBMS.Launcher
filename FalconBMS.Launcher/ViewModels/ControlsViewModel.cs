@@ -21,6 +21,8 @@ public sealed class ControlsViewModel : ViewModelBase
     public ObservableCollection<string> Categories { get; } = new();
     public ObservableCollection<ControlGridRowViewModel> Rows { get; } = new();
 
+    public ObservableCollection<DeviceBindingProfile> DeviceColumns { get; } = new();
+
     public IReadOnlyList<BindingRow> SelectedProfileRows =>
         SelectedProfile?.Rows ?? Array.Empty<BindingRow>().ToList();
 
@@ -83,9 +85,13 @@ public sealed class ControlsViewModel : ViewModelBase
     public void LoadBindingModel(BindingModel bindingModel)
     {
         Profiles.Clear();
+        DeviceColumns.Clear();
 
         foreach (var profile in bindingModel.AircraftProfiles)
             Profiles.Add(profile);
+
+        foreach (var deviceProfile in bindingModel.DeviceProfiles.OrderBy(device => device.DiscoveryIndex))
+            DeviceColumns.Add(deviceProfile);
 
         SelectedProfile = Profiles.FirstOrDefault(
             profile => string.Equals(profile.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase))
