@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using static FalconBMS.Launcher.Input.KeyboardSession;
 using DiKey = Vortice.DirectInput.Key;
@@ -84,26 +85,6 @@ public partial class ControlsView : UserControl
 
         foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns)
         {
-            var template = new DataTemplate(typeof(ControlGridDeviceCellViewModel));
-
-            var gridFactory = new FrameworkElementFactory(typeof(Grid));
-
-            var textFactory = new FrameworkElementFactory(typeof(TextBlock));
-            textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText)));
-            textFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
-            textFactory.SetValue(TextBlock.MarginProperty, new Thickness(4, 0, 4, 0));
-
-            var progressFactory = new FrameworkElementFactory(typeof(ProgressBar));
-            progressFactory.SetValue(ProgressBar.MinimumProperty, 0.0);
-            progressFactory.SetValue(ProgressBar.MaximumProperty, 1.0);
-            progressFactory.SetValue(ProgressBar.HeightProperty, 14.0);
-            progressFactory.SetValue(ProgressBar.MarginProperty, new Thickness(4, 1, 4, 1));
-            progressFactory.SetBinding(ProgressBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue)));
-
-            gridFactory.AppendChild(progressFactory);
-            gridFactory.AppendChild(textFactory);
-            template.VisualTree = gridFactory;
-
             ControlsGrid.Columns.Add(new DataGridTemplateColumn
             {
                 Header = GetDeviceColumnHeader(deviceProfile),
@@ -130,13 +111,13 @@ public partial class ControlsView : UserControl
     {
         var template = new DataTemplate();
 
-        var gridFactory = new FrameworkElementFactory(typeof(Grid));
-        gridFactory.SetBinding(
+        var axisBarFactory = new FrameworkElementFactory(typeof(AxisBar));
+        axisBarFactory.SetBinding(
             FrameworkElement.DataContextProperty,
             new Binding($"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
 
-        var progressStyle = new Style(typeof(ProgressBar));
-        progressStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
+        var axisBarStyle = new Style(typeof(AxisBar));
+        axisBarStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
 
         var showWhenMappedTrigger = new DataTrigger
         {
@@ -144,25 +125,43 @@ public partial class ControlsView : UserControl
             Value = true
         };
         showWhenMappedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
-        progressStyle.Triggers.Add(showWhenMappedTrigger);
+        axisBarStyle.Triggers.Add(showWhenMappedTrigger);
 
-        var progressFactory = new FrameworkElementFactory(typeof(ProgressBar));
-        progressFactory.SetValue(ProgressBar.MinimumProperty, 0.0);
-        progressFactory.SetValue(ProgressBar.MaximumProperty, 1.0);
-        progressFactory.SetValue(ProgressBar.HeightProperty, 14.0);
-        progressFactory.SetValue(ProgressBar.MarginProperty, new Thickness(4, 1, 4, 1));
-        progressFactory.SetValue(FrameworkElement.StyleProperty, progressStyle);
-        progressFactory.SetBinding(ProgressBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue)));
+        axisBarFactory.SetValue(FrameworkElement.HeightProperty, 14.0);
+        axisBarFactory.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 1, 4, 1));
+        axisBarFactory.SetValue(FrameworkElement.StyleProperty, axisBarStyle);
 
-        var textFactory = new FrameworkElementFactory(typeof(TextBlock));
-        textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText)));
-        textFactory.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
-        textFactory.SetValue(TextBlock.MarginProperty, new Thickness(4, 0, 4, 0));
+        axisBarFactory.SetBinding(AxisBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue))
+        {
+            Mode = BindingMode.OneWay
+        });
 
-        gridFactory.AppendChild(progressFactory);
-        gridFactory.AppendChild(textFactory);
+        axisBarFactory.SetBinding(AxisBar.IsActiveProperty, new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding))
+        {
+            Mode = BindingMode.OneWay
+        });
 
-        template.VisualTree = gridFactory;
+        axisBarFactory.SetBinding(AxisBar.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText))
+        {
+            Mode = BindingMode.OneWay
+        });
+
+        axisBarFactory.SetBinding(AxisBar.ShowDetentsProperty, new Binding(nameof(ControlGridDeviceCellViewModel.ShowDetents))
+        {
+            Mode = BindingMode.OneWay
+        });
+
+        axisBarFactory.SetBinding(AxisBar.IdleDetentFractionProperty, new Binding(nameof(ControlGridDeviceCellViewModel.IdleDetentFraction))
+        {
+            Mode = BindingMode.OneWay
+        });
+
+        axisBarFactory.SetBinding(AxisBar.AfterburnerDetentFractionProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AfterburnerDetentFraction))
+        {
+            Mode = BindingMode.OneWay
+        });
+
+        template.VisualTree = axisBarFactory;
         return template;
     }
 
@@ -178,10 +177,21 @@ public partial class ControlsView : UserControl
         {
             StopKeyboardSearchCapture();
 
-            var axisWindow = new AxisAssignWindow(viewModel.SelectedRow)
+            var axisWindow = new AxisAssignWindow
             {
                 Owner = Window.GetWindow(this)
             };
+
+            string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
+            IntPtr hwnd = new WindowInteropHelper(axisWindow.Owner).Handle;
+
+            axisWindow.DataContext = new AxisAssignViewModel(
+                viewModel.SelectedRow,
+                viewModel.DeviceColumns,
+                clickedDeviceKey,
+                hwnd,
+                viewModel.ApplyAxisMappingFromPopup,
+                () => axisWindow.Close());
 
             axisWindow.ShowDialog();
 
@@ -388,22 +398,41 @@ public partial class ControlsView : UserControl
                 if (cell.PhysicalAxisIndex < 0 || cell.PhysicalAxisIndex >= axisValues.Length)
                     continue;
 
-                cell.AxisBarValue = NormalizeAxisValue(axisValues[cell.PhysicalAxisIndex]);
+                cell.AxisBarValue = AxisAssignViewModel.NormalizeAxisValue(axisValues[cell.PhysicalAxisIndex], row.AxisLogicalAxisName);
             }
         }
     }
 
-    private static double NormalizeAxisValue(int rawValue)
+    private string? GetClickedDeviceKey(DependencyObject? originalSource, ControlsViewModel viewModel)
     {
-        if (rawValue <= 0)
-            return 0;
+        DataGridCell? cell = FindVisualParent<DataGridCell>(originalSource);
+        if (cell is null)
+            return null;
 
-        if (rawValue >= 65535)
-            return 1;
+        int columnIndex = cell.Column.DisplayIndex;
+        const int deviceColumnStartIndex = 2;
 
-        return rawValue / 65535.0;
+        if (columnIndex < deviceColumnStartIndex)
+            return null;
+
+        int deviceIndex = columnIndex - deviceColumnStartIndex;
+        return deviceIndex >= 0 && deviceIndex < viewModel.DeviceColumns.Count
+            ? viewModel.DeviceColumns[deviceIndex].DurableDeviceKey
+            : null;
     }
 
+    private static T? FindVisualParent<T>(DependencyObject? child) where T : DependencyObject
+    {
+        while (child is not null)
+        {
+            if (child is T typedParent)
+                return typedParent;
+
+            child = VisualTreeHelper.GetParent(child);
+        }
+
+        return null;
+    }
 
     private void EnsureKeyboardOpened()
     {

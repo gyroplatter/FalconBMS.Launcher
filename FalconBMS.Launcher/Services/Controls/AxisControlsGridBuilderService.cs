@@ -50,6 +50,8 @@ public sealed class AxisControlsGridBuilderService
                 string.Equals(axis.LogicalAxisName, axisDefinition.LogicalAxisName, StringComparison.OrdinalIgnoreCase));
 
             bool hasAxisBinding = binding?.PhysicalAxisIndex is int;
+            bool showDetents = hasAxisBinding &&
+                               axisDefinition.LayoutKind == DeviceAxisAssignmentLayoutKind.Throttle;
 
             deviceCellsByDeviceKey[deviceProfile.DurableDeviceKey] = new ControlGridDeviceCellViewModel
             {
@@ -57,7 +59,10 @@ public sealed class AxisControlsGridBuilderService
                     ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
                     : "",
                 HasAxisBinding = hasAxisBinding,
-                PhysicalAxisIndex = binding?.PhysicalAxisIndex ?? -1
+                PhysicalAxisIndex = binding?.PhysicalAxisIndex ?? -1,
+                ShowDetents = showDetents,
+                IdleDetentFraction = (binding?.IdleDetent ?? DetentPosition.DefaultIdleDetent) / (double)DetentPosition.MaxAxisValue,
+                AfterburnerDetentFraction = (binding?.AfterburnerDetent ?? DetentPosition.DefaultAfterburnerDetent) / (double)DetentPosition.MaxAxisValue
             };
         }
 

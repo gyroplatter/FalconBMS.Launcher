@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Input;
 using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.Services.Controls;
 using FalconBMS.Launcher.Utils;
 using System;
@@ -15,6 +16,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
     private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
+    private readonly AxisDefinitionService _axisDefinitionService = new();
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
 
@@ -254,6 +256,115 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         foreach (ControlGridRowViewModel row in _allRows.Where(row => ReferenceEquals(row.SourceRow, sourceRow)))
             row.RefreshFromSource();
+    }
+
+
+    public void ApplyAxisMappingFromPopup(AxisAssignViewModel popup)
+    {
+        string logicalAxisName = popup.LogicalAxisName;
+
+        var changedLogicalAxisNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        logicalAxisName
+    };
+
+        // A logical BMS axis should resolve to one physical device axis total.
+        // Clear this logical axis from every device before applying the new assignment.
+        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        {
+            foreach (DeviceAxisBinding binding in deviceProfile.AxisBindings.Where(binding =>
+                         string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
+            {
+                if (binding.PhysicalAxisIndex.HasValue)
+                    changedLogicalAxisNames.Add(binding.LogicalAxisName);
+
+                binding.PhysicalAxisIndex = null;
+            }
+        }
+
+        if (!popup.IsCleared && !string.IsNullOrWhiteSpace(popup.SelectedDeviceKey) && popup.SelectedPhysicalAxisIndex.HasValue)
+        {
+            DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
+                string.Equals(device.DurableDeviceKey, popup.SelectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            if (selectedDevice is not null)
+            {
+                foreach (DeviceAxisBinding conflict in selectedDevice.AxisBindings.Where(binding =>
+                             binding.PhysicalAxisIndex == popup.SelectedPhysicalAxisIndex.Value &&
+                             !string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    // Same device + same physical axis cannot be assigned to multiple logical BMS axes.
+                    // Match keyboard behavior: assigning it here removes it from the previous row.
+                    changedLogicalAxisNames.Add(conflict.LogicalAxisName);
+                    conflict.PhysicalAxisIndex = null;
+                }
+
+                DeviceAxisBinding selectedBinding = selectedDevice.AxisBindings.FirstOrDefault(binding =>
+                    string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase))
+                    ?? CreateAxisBinding(selectedDevice, logicalAxisName);
+
+                selectedBinding.PhysicalAxisIndex = popup.SelectedPhysicalAxisIndex.Value;
+                selectedBinding.Deadzone = popup.DeadzoneCurve.ToString();
+                selectedBinding.Saturation = popup.SaturationCurve.ToString();
+                selectedBinding.Invert = popup.Invert;
+                selectedBinding.IdleDetent = popup.IdleDetent;
+                selectedBinding.AfterburnerDetent = popup.AfterburnerDetent;
+
+                changedLogicalAxisNames.Add(selectedBinding.LogicalAxisName);
+            }
+        }
+
+        foreach (string changedLogicalAxisName in changedLogicalAxisNames)
+            RefreshAxisRows(changedLogicalAxisName);
+
+        OnPropertyChanged(nameof(SummaryText));
+    }
+
+    private static DeviceAxisBinding CreateAxisBinding(DeviceBindingProfile deviceProfile, string logicalAxisName)
+    {
+        var binding = new DeviceAxisBinding
+        {
+            LogicalAxisName = logicalAxisName
+        };
+
+        deviceProfile.AxisBindings.Add(binding);
+        return binding;
+    }
+
+    private void RefreshAxisRows(string logicalAxisName)
+    {
+        DeviceAxisDefinition? axisDefinition = _axisDefinitionService.Find(logicalAxisName);
+
+        foreach (ControlGridRowViewModel row in _allRows.Where(row =>
+                     row.IsAxisRow &&
+                     string.Equals(row.AxisLogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
+        {
+            foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+            {
+                if (!row.DeviceCellsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out ControlGridDeviceCellViewModel? cell))
+                    continue;
+
+                DeviceAxisBinding? binding = deviceProfile.AxisBindings.FirstOrDefault(axis =>
+                    string.Equals(axis.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase));
+
+                bool hasAxisBinding = binding?.PhysicalAxisIndex is int;
+                bool showDetents = hasAxisBinding &&
+                                   axisDefinition?.LayoutKind == DeviceAxisAssignmentLayoutKind.Throttle;
+
+                cell.PhysicalAxisIndex = binding?.PhysicalAxisIndex ?? -1;
+                cell.HasAxisBinding = hasAxisBinding;
+                cell.DisplayText = binding?.PhysicalAxisIndex is int physicalAxisIndex
+                    ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
+                    : "";
+
+                cell.ShowDetents = showDetents;
+                cell.IdleDetentFraction = (binding?.IdleDetent ?? DetentPosition.DefaultIdleDetent) / (double)DetentPosition.MaxAxisValue;
+                cell.AfterburnerDetentFraction = (binding?.AfterburnerDetent ?? DetentPosition.DefaultAfterburnerDetent) / (double)DetentPosition.MaxAxisValue;
+
+                // Reset to neutral until the next live polling tick updates the assigned physical axis.
+                cell.AxisBarValue = 0.5;
+            }
+        }
     }
 
     private void ClearFilters()
