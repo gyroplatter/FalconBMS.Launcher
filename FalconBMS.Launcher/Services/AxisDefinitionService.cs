@@ -6,33 +6,32 @@ using System.Linq;
 namespace FalconBMS.Launcher.Services;
 
 /// <summary>
-/// Provides the logical BMS axis capability table used by the binding model and future UI.
-/// This centralizes which axes support saturation, deadzone, invert, and detent controls.
+/// Provides the logical BMS axis capability table used by the binding model and axis assignment UI.
 /// </summary>
 public sealed class AxisDefinitionService
 {
     private readonly List<DeviceAxisDefinition> _definitions = new()
     {
-        Throttle("Throttle"),
+        Throttle("Throttle", "Throttle", "Afterward", "Forward"),
 
-        DeadzoneAxis("Pitch"),
-        DeadzoneAxis("Roll"),
-        DeadzoneAxis("Yaw"),
-        DeadzoneAxis("Trim_Pitch"),
-        DeadzoneAxis("Trim_Yaw"),
-        DeadzoneAxis("Trim_Roll"),
-        DeadzoneAxis("Radar_Antenna_Elevation"),
-        DeadzoneAxis("Cursor_X"),
-        DeadzoneAxis("Cursor_Y"),
-        DeadzoneAxis("Range_Knob"),
+        FlightAxis("Pitch", "Pitch", "Pitch Down", "Pitch Up"),
+        FlightAxis("Roll", "Roll", "Left Wing Down", "Right Wing Down"),
+        FlightAxis("Yaw", "Yaw", "Yaw Left", "Yaw Right"),
+        FlightAxis("Trim_Pitch", "Trim Pitch", "Pitch Down", "Pitch Up"),
+        FlightAxis("Trim_Yaw", "Trim Yaw", "Yaw Left", "Yaw Right"),
+        FlightAxis("Trim_Roll", "Trim Roll", "Left Wing Down", "Right Wing Down"),
+        FlightAxis("Radar_Antenna_Elevation", "Radar Antenna Elevation", "Elevation Down", "Elevation Up"),
+        FlightAxis("Cursor_X", "Cursor X", "Cursor Left", "Cursor Right"),
+        FlightAxis("Cursor_Y", "Cursor Y", "Cursor Afterward", "Cursor Forward"),
+        FlightAxis("Range_Knob", "Range Knob", "Clock Wise", "Counter CW"),
 
-        SimpleAxis("HUD_Brightness"),
-        SimpleAxis("Comm_Ch_1"),
-        SimpleAxis("Comm_Ch_2"),
-        SimpleAxis("MSL_Volume"),
-        SimpleAxis("Threat_Volume"),
-        SimpleAxis("UHF_Volume"),
-        SimpleAxis("VHF_Volume")
+        GenericAxis("HUD_Brightness", "HUD Brightness", "Dark", "Bright"),
+        GenericAxis("Comm_Ch_1", "Comm Ch 1", "Volume Down", "Volume Up"),
+        GenericAxis("Comm_Ch_2", "Comm Ch 2", "Volume Down", "Volume Up"),
+        GenericAxis("MSL_Volume", "MSL Volume", "Volume Down", "Volume Up"),
+        GenericAxis("Threat_Volume", "Threat Volume", "Volume Down", "Volume Up"),
+        GenericAxis("UHF_Volume", "UHF Volume", "Volume Down", "Volume Up"),
+        GenericAxis("VHF_Volume", "VHF Volume", "Volume Down", "Volume Up")
     };
 
     public IReadOnlyList<DeviceAxisDefinition> GetDefinitions()
@@ -49,24 +48,40 @@ public sealed class AxisDefinitionService
             string.Equals(definition.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static DeviceAxisDefinition Throttle(string logicalAxisName)
+    private static DeviceAxisDefinition Throttle(
+        string logicalAxisName,
+        string displayName,
+        string leftLabel,
+        string rightLabel)
     {
         return new DeviceAxisDefinition
         {
             LogicalAxisName = logicalAxisName,
+            DisplayName = displayName,
+            LeftLabel = leftLabel,
+            RightLabel = rightLabel,
+            LayoutKind = DeviceAxisAssignmentLayoutKind.Throttle,
             SupportsSaturation = true,
             SupportsDeadzone = false,
-            SupportsInvert = false,
+            SupportsInvert = true,
             SupportsAfterburnerDetent = true,
             SupportsIdleDetent = true
         };
     }
 
-    private static DeviceAxisDefinition DeadzoneAxis(string logicalAxisName)
+    private static DeviceAxisDefinition FlightAxis(
+        string logicalAxisName,
+        string displayName,
+        string leftLabel,
+        string rightLabel)
     {
         return new DeviceAxisDefinition
         {
             LogicalAxisName = logicalAxisName,
+            DisplayName = displayName,
+            LeftLabel = leftLabel,
+            RightLabel = rightLabel,
+            LayoutKind = DeviceAxisAssignmentLayoutKind.Flight,
             SupportsSaturation = true,
             SupportsDeadzone = true,
             SupportsInvert = true,
@@ -75,14 +90,22 @@ public sealed class AxisDefinitionService
         };
     }
 
-    private static DeviceAxisDefinition SimpleAxis(string logicalAxisName)
+    private static DeviceAxisDefinition GenericAxis(
+        string logicalAxisName,
+        string displayName,
+        string leftLabel,
+        string rightLabel)
     {
         return new DeviceAxisDefinition
         {
             LogicalAxisName = logicalAxisName,
+            DisplayName = displayName,
+            LeftLabel = leftLabel,
+            RightLabel = rightLabel,
+            LayoutKind = DeviceAxisAssignmentLayoutKind.Generic,
             SupportsSaturation = true,
             SupportsDeadzone = false,
-            SupportsInvert = false,
+            SupportsInvert = true,
             SupportsAfterburnerDetent = false,
             SupportsIdleDetent = false
         };

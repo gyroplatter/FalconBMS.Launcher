@@ -10,6 +10,14 @@ public sealed class DeviceAxisDefinition
 {
     public string LogicalAxisName { get; init; } = "";
 
+    public string DisplayName { get; init; } = "";
+
+    public string LeftLabel { get; init; } = "";
+
+    public string RightLabel { get; init; } = "";
+
+    public DeviceAxisAssignmentLayoutKind LayoutKind { get; init; }
+
     public bool SupportsSaturation { get; init; }
     public bool SupportsDeadzone { get; init; }
     public bool SupportsInvert { get; init; }
