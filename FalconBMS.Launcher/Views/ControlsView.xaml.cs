@@ -171,7 +171,25 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        if (viewModel.SelectedRow?.SourceRow is null)
+        if (viewModel.SelectedRow is null)
+            return;
+
+        if (viewModel.SelectedRow.IsAxisRow)
+        {
+            StopKeyboardSearchCapture();
+
+            var axisWindow = new AxisAssignWindow(viewModel.SelectedRow)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            axisWindow.ShowDialog();
+
+            StartKeyboardSearchCapture();
+            return;
+        }
+
+        if (viewModel.SelectedRow.SourceRow is null)
             return;
 
         if (!viewModel.SelectedRow.IsEditable)
