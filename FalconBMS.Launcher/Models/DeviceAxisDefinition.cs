@@ -3,14 +3,18 @@
 namespace FalconBMS.Launcher.Models;
 
 /// <summary>
-/// Defines the UI/editing capabilities for one logical BMS axis.
-/// This prevents every axis from incorrectly showing every possible option.
+/// Defines one logical Falcon BMS axis row and which editing controls it supports.
+/// 
+/// MappingIndex is the Falcon-native axismapping.dat slot number.
+/// Falcon BMS uses 30 logical axis slots, indexed 0..29.
 /// </summary>
 public sealed class DeviceAxisDefinition
 {
     public string LogicalAxisName { get; init; } = "";
 
     public string DisplayName { get; init; } = "";
+
+    public int MappingIndex { get; init; }
 
     public string LeftLabel { get; init; } = "";
 
@@ -19,9 +23,13 @@ public sealed class DeviceAxisDefinition
     public DeviceAxisAssignmentLayoutKind LayoutKind { get; init; }
 
     public bool SupportsSaturation { get; init; }
+
     public bool SupportsDeadzone { get; init; }
+
     public bool SupportsInvert { get; init; }
+
     public bool SupportsAfterburnerDetent { get; init; }
+
     public bool SupportsIdleDetent { get; init; }
 
     public IReadOnlyList<DeviceAxisControlKind> SupportedControls

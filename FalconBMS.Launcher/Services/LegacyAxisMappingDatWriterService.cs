@@ -14,42 +14,7 @@ public sealed class LegacyAxisMappingDatWriterService
     private const int TotalSize = HeaderSize + AxisCount * EntrySize;
     private const int JoyNumOffset = 2;
 
-    private static readonly Dictionary<string, int> AxisMappingIndexByLogicalName =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Pitch"] = 0,
-            ["Roll"] = 1,
-            ["Yaw"] = 2,
-            ["Throttle"] = 3,
-            ["Throttle_Right"] = 4,
-            ["Toe_Brake"] = 5,
-            ["Toe_Brake_Right"] = 6,
-            ["FOV"] = 7,
-            ["Trim_Pitch"] = 8,
-            ["Trim_Yaw"] = 9,
-            ["Trim_Roll"] = 10,
-            ["Radar_Antenna_Elevation"] = 11,
-            ["Range_Knob"] = 12,
-            ["Cursor_X"] = 13,
-            ["Cursor_Y"] = 14,
-            ["Comm_Ch_1"] = 15,
-            ["COMM_Channel_1"] = 15,
-            ["Comm_Ch_2"] = 16,
-            ["COMM_Channel_2"] = 16,
-            ["MSL_Volume"] = 17,
-            ["Threat_Volume"] = 18,
-            ["IntercomVolume"] = 19,
-            ["AI_vs_IVC"] = 20,
-            ["HUD_Brightness"] = 21,
-            ["FLIR_Brightness"] = 22,
-            ["HMS_Brightness"] = 23,
-            ["Reticle_Depression"] = 24,
-            ["Camera_Distance"] = 25,
-            ["HSI_Course_Knob"] = 26,
-            ["HSI_Heading_Knob"] = 27,
-            ["Altimeter_Knob"] = 28,
-            ["ILS_Volume_Knob"] = 29
-        };
+    private readonly AxisDefinitionService _axisDefinitions = new();
 
     public void Write(string baseDir, IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
@@ -78,7 +43,7 @@ public sealed class LegacyAxisMappingDatWriterService
             actionId);
     }
 
-    private static byte[] BuildAxisMappingBytes(IReadOnlyList<DeviceBindingProfile> deviceProfiles)
+    private byte[] BuildAxisMappingBytes(IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
         var bytes = new byte[TotalSize];
 
@@ -107,7 +72,7 @@ public sealed class LegacyAxisMappingDatWriterService
                 if (!axis.PhysicalAxisIndex.HasValue)
                     continue;
 
-                if (!AxisMappingIndexByLogicalName.TryGetValue(axis.LogicalAxisName, out int mappingIndex))
+                if (!_axisDefinitions.TryGetMappingIndex(axis.LogicalAxisName, out int mappingIndex))
                     continue;
 
                 int offset = HeaderSize + mappingIndex * EntrySize;

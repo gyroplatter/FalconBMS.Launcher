@@ -539,10 +539,17 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     private static bool ShouldReverseDisplay(string logicalAxisName)
     {
-        return string.Equals(logicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase) ||
-               logicalAxisName.IndexOf("Throttle", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               logicalAxisName.IndexOf("Comm_Ch_", StringComparison.OrdinalIgnoreCase) >= 0 ||
-               logicalAxisName.IndexOf("Volume", StringComparison.OrdinalIgnoreCase) >= 0;
+        string normalizedName = AxisDefinitionService.NormalizeLogicalAxisName(logicalAxisName);
+
+        return string.Equals(normalizedName, "Throttle", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "Throttle_Right", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "COMM_Channel_1", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "COMM_Channel_2", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "MSL_Volume", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "Threat_Volume", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "IntercomVolumeVolume", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "AI_vs_IVC", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "ILS_Volume_Knob", StringComparison.OrdinalIgnoreCase);
     }
 
     public void Dispose()

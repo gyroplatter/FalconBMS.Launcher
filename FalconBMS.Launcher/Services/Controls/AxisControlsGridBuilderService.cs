@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -72,7 +73,7 @@ public sealed class AxisControlsGridBuilderService
             RowKind = BindingRowKind.EditableCallback,
             CategoryName = AxisCategoryName,
             SectionName = AxisCategoryName,
-            Mapping = GetDisplayName(axisDefinition.LogicalAxisName),
+            Mapping = axisDefinition.DisplayName,
             IsAxisRow = true,
             AxisLogicalAxisName = axisDefinition.LogicalAxisName,
             DeviceCellsByDeviceKey = deviceCellsByDeviceKey

@@ -149,15 +149,35 @@ public sealed class DeviceJsonReaderService
 
         foreach (JsonDeviceAxisBinding axis in axisBindings)
         {
+            string logicalAxisName = AxisDefinitionService.NormalizeLogicalAxisName(axis.LogicalAxisName ?? "");
+
             profile.AxisBindings.Add(new DeviceAxisBinding
             {
-                LogicalAxisName = axis.LogicalAxisName ?? "",
+                LogicalAxisName = logicalAxisName,
                 PhysicalAxisIndex = axis.PhysicalAxisIndex,
                 Saturation = axis.Saturation ?? "None",
                 Deadzone = axis.Deadzone ?? "None",
                 Invert = axis.Invert.GetValueOrDefault(),
                 AfterburnerDetent = axis.AfterburnerDetent,
                 IdleDetent = axis.IdleDetent
+            });
+        }
+
+        // Older JSON files may only contain the first partial axis set.
+        // Add any newly-supported Falcon logical axes as unmapped rows so the UI and
+        // regenerated JSON always converge to the full 30-axis model.
+        foreach (DeviceAxisDefinition definition in _axisDefinitions.GetDefinitions())
+        {
+            bool alreadyExists = profile.AxisBindings.Any(axis =>
+                string.Equals(axis.LogicalAxisName, definition.LogicalAxisName, StringComparison.OrdinalIgnoreCase));
+
+            if (alreadyExists)
+                continue;
+
+            profile.AxisBindings.Add(new DeviceAxisBinding
+            {
+                LogicalAxisName = definition.LogicalAxisName,
+                PhysicalAxisIndex = null
             });
         }
     }

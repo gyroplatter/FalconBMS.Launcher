@@ -6,32 +6,58 @@ using System.Linq;
 namespace FalconBMS.Launcher.Services;
 
 /// <summary>
-/// Provides the logical BMS axis capability table used by the binding model and axis assignment UI.
+/// Provides the complete Falcon BMS logical axis table used by:
+/// - the Controls grid axis rows
+/// - device JSON profile shells
+/// - stock XML axis parsing
+/// - axismapping.dat output
+/// - axis assignment popup labels/options
+/// 
+/// Keep this as the single source of truth for Falcon's 30 axis mapping slots.
 /// </summary>
 public sealed class AxisDefinitionService
 {
     private readonly List<DeviceAxisDefinition> _definitions = new()
     {
-        Throttle("Throttle", "Throttle", "Afterward", "Forward"),
+        FlightAxis(0, "Pitch", "Pitch", "Pitch Down", "Pitch Up"),
+        FlightAxis(1, "Roll", "Roll", "Left Wing Down", "Right Wing Down"),
+        FlightAxis(2, "Yaw", "Rudder / Yaw", "Yaw Left", "Yaw Right"),
 
-        FlightAxis("Pitch", "Pitch", "Pitch Down", "Pitch Up"),
-        FlightAxis("Roll", "Roll", "Left Wing Down", "Right Wing Down"),
-        FlightAxis("Yaw", "Yaw", "Yaw Left", "Yaw Right"),
-        FlightAxis("Trim_Pitch", "Trim Pitch", "Pitch Down", "Pitch Up"),
-        FlightAxis("Trim_Yaw", "Trim Yaw", "Yaw Left", "Yaw Right"),
-        FlightAxis("Trim_Roll", "Trim Roll", "Left Wing Down", "Right Wing Down"),
-        FlightAxis("Radar_Antenna_Elevation", "Radar Antenna Elevation", "Elevation Down", "Elevation Up"),
-        FlightAxis("Cursor_X", "Cursor X", "Cursor Left", "Cursor Right"),
-        FlightAxis("Cursor_Y", "Cursor Y", "Cursor Afterward", "Cursor Forward"),
-        FlightAxis("Range_Knob", "Range Knob", "Clock Wise", "Counter CW"),
+        Throttle(3, "Throttle", "Throttle", "Afterward", "Forward"),
+        GenericAxis(4, "Throttle_Right", "Throttle Right", "Afterward", "Forward"),
 
-        GenericAxis("HUD_Brightness", "HUD Brightness", "Dark", "Bright"),
-        GenericAxis("Comm_Ch_1", "Comm Ch 1", "Volume Down", "Volume Up"),
-        GenericAxis("Comm_Ch_2", "Comm Ch 2", "Volume Down", "Volume Up"),
-        GenericAxis("MSL_Volume", "MSL Volume", "Volume Down", "Volume Up"),
-        GenericAxis("Threat_Volume", "Threat Volume", "Volume Down", "Volume Up"),
-        GenericAxis("UHF_Volume", "UHF Volume", "Volume Down", "Volume Up"),
-        GenericAxis("VHF_Volume", "VHF Volume", "Volume Down", "Volume Up")
+        GenericAxis(5, "Toe_Brake", "Toe Brake", "Release", "Apply"),
+        GenericAxis(6, "Toe_Brake_Right", "Toe Brake Right", "Release", "Apply"),
+
+        GenericAxis(7, "FOV", "FOV", "Narrow", "Wide"),
+
+        FlightAxis(8, "Trim_Pitch", "Trim Pitch", "Pitch Down", "Pitch Up"),
+        FlightAxis(9, "Trim_Yaw", "Trim Yaw", "Yaw Left", "Yaw Right"),
+        FlightAxis(10, "Trim_Roll", "Trim Roll", "Left Wing Down", "Right Wing Down"),
+
+        FlightAxis(11, "Radar_Antenna_Elevation", "TQS Antenna Elevation", "Elevation Down", "Elevation Up"),
+        FlightAxis(12, "Range_Knob", "TQS Range Knob", "Clock Wise", "Counter CW"),
+        FlightAxis(13, "Cursor_X", "TQS Cursor X", "Cursor Left", "Cursor Right"),
+        FlightAxis(14, "Cursor_Y", "TQS Cursor Y", "Cursor Afterward", "Cursor Forward"),
+
+        GenericAxis(15, "COMM_Channel_1", "Audio Comm Ch1", "Volume Down", "Volume Up"),
+        GenericAxis(16, "COMM_Channel_2", "Audio Comm Ch2", "Volume Down", "Volume Up"),
+        GenericAxis(17, "MSL_Volume", "Audio Missile Volume", "Volume Down", "Volume Up"),
+        GenericAxis(18, "Threat_Volume", "Audio Threat Volume", "Volume Down", "Volume Up"),
+        GenericAxis(19, "IntercomVolumeVolume", "Audio IntercomVolumem Volume", "Volume Down", "Volume Up"),
+        GenericAxis(20, "AI_vs_IVC", "Audio AI vs IVC", "Volume Down", "Volume Up"),
+
+        GenericAxis(21, "HUD_Brightness", "ICP HUD Brightness", "Dark", "Bright"),
+        GenericAxis(22, "FLIR_Brightness", "ICP FLIR Brightness", "Dark", "Bright"),
+        GenericAxis(23, "HMS_Brightness", "ICP HMS Brightness", "Dark", "Bright"),
+        GenericAxis(24, "Reticle_Depression", "ICP Reticle Depr", "Dark", "Bright"),
+
+        GenericAxis(25, "Camera_Distance", "Camera Distance", "Close", "Leave"),
+
+        GenericAxis(26, "HSI_Course_Knob", "HSI Course", "Decrease", "Increase"),
+        GenericAxis(27, "HSI_Heading_Knob", "HSI Heading", "Decrease", "Increase"),
+        GenericAxis(28, "Altimeter_Knob", "Altimeter Setting", "Decrease", "Increase"),
+        GenericAxis(29, "ILS_Volume_Knob", "Audio ILS Vol", "Volume Down", "Volume Up")
     };
 
     public IReadOnlyList<DeviceAxisDefinition> GetDefinitions()
@@ -44,11 +70,49 @@ public sealed class AxisDefinitionService
         if (string.IsNullOrWhiteSpace(logicalAxisName))
             return null;
 
+        string canonicalName = NormalizeLogicalAxisName(logicalAxisName);
+
         return _definitions.FirstOrDefault(definition =>
-            string.Equals(definition.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(definition.LogicalAxisName, canonicalName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool TryGetMappingIndex(string logicalAxisName, out int mappingIndex)
+    {
+        DeviceAxisDefinition? definition = Find(logicalAxisName);
+
+        if (definition is null)
+        {
+            mappingIndex = -1;
+            return false;
+        }
+
+        mappingIndex = definition.MappingIndex;
+        return true;
+    }
+
+    /// <summary>
+    /// Keeps old/transitional JSON names readable.
+    /// Earlier binding-project builds used Comm_Ch_1 / Comm_Ch_2, while the
+    /// old launcher and Falcon axis table use COMM_Channel_1 / COMM_Channel_2.
+    /// </summary>
+    public static string NormalizeLogicalAxisName(string logicalAxisName)
+    {
+        if (string.IsNullOrWhiteSpace(logicalAxisName))
+            return "";
+
+        string trimmedName = logicalAxisName.Trim();
+
+        if (string.Equals(trimmedName, "Comm_Ch_1", StringComparison.OrdinalIgnoreCase))
+            return "COMM_Channel_1";
+
+        if (string.Equals(trimmedName, "Comm_Ch_2", StringComparison.OrdinalIgnoreCase))
+            return "COMM_Channel_2";
+
+        return trimmedName;
     }
 
     private static DeviceAxisDefinition Throttle(
+        int mappingIndex,
         string logicalAxisName,
         string displayName,
         string leftLabel,
@@ -58,6 +122,7 @@ public sealed class AxisDefinitionService
         {
             LogicalAxisName = logicalAxisName,
             DisplayName = displayName,
+            MappingIndex = mappingIndex,
             LeftLabel = leftLabel,
             RightLabel = rightLabel,
             LayoutKind = DeviceAxisAssignmentLayoutKind.Throttle,
@@ -70,6 +135,7 @@ public sealed class AxisDefinitionService
     }
 
     private static DeviceAxisDefinition FlightAxis(
+        int mappingIndex,
         string logicalAxisName,
         string displayName,
         string leftLabel,
@@ -79,6 +145,7 @@ public sealed class AxisDefinitionService
         {
             LogicalAxisName = logicalAxisName,
             DisplayName = displayName,
+            MappingIndex = mappingIndex,
             LeftLabel = leftLabel,
             RightLabel = rightLabel,
             LayoutKind = DeviceAxisAssignmentLayoutKind.Flight,
@@ -91,6 +158,7 @@ public sealed class AxisDefinitionService
     }
 
     private static DeviceAxisDefinition GenericAxis(
+        int mappingIndex,
         string logicalAxisName,
         string displayName,
         string leftLabel,
@@ -100,6 +168,7 @@ public sealed class AxisDefinitionService
         {
             LogicalAxisName = logicalAxisName,
             DisplayName = displayName,
+            MappingIndex = mappingIndex,
             LeftLabel = leftLabel,
             RightLabel = rightLabel,
             LayoutKind = DeviceAxisAssignmentLayoutKind.Generic,

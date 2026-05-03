@@ -60,7 +60,7 @@ public sealed class DeviceStockXmlAxisParserService
         {
             XElement axisElement = axisElements[physicalAxisIndex];
 
-            string logicalAxisName = ReadString(axisElement, "AxisName");
+            string logicalAxisName = AxisDefinitionService.NormalizeLogicalAxisName(ReadString(axisElement, "AxisName"));
             if (string.IsNullOrWhiteSpace(logicalAxisName))
                 continue;
 
