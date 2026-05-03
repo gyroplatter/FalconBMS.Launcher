@@ -108,8 +108,8 @@ public sealed class LegacyDeviceSetupXmlWriterService
 
         return new XElement(
             "detentPosition",
-            new XElement("AB", throttle?.AfterburnerDetent ?? 65536),
-            new XElement("IDLE", throttle?.IdleDetent ?? 0));
+            new XElement("AB", throttle?.AfterburnerDetent ?? DetentPosition.DefaultAfterburnerDetent),
+            new XElement("IDLE", throttle?.IdleDetent ?? DetentPosition.DefaultIdleDetent));
     }
 
     private static XElement BuildAxisBlock(DeviceBindingProfile profile)

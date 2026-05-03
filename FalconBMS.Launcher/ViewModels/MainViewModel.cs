@@ -32,7 +32,6 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DeviceDiscoveryService _deviceDiscovery = new();
     private readonly DeviceBindingProfileBuilderService _deviceBindingProfileBuilder = new();
     private readonly DeviceJsonReaderService _deviceJsonReader = new();
-    private readonly DeviceJsonWriterService _deviceJsonWriter = new();
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
@@ -68,8 +67,6 @@ public sealed class MainViewModel : ViewModelBase
 
                 foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(value.BaseDir, stockDeviceMatches))
                     CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
-
-                _deviceJsonWriter.Write(value.BaseDir, CurrentBindingModel.DeviceProfiles);
 
                 OnPropertyChanged(nameof(CurrentBindingModel));
 

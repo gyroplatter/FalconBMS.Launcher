@@ -81,7 +81,7 @@ public sealed class DeviceJsonReaderService
         if (!Directory.Exists(configDir))
             return null;
 
-        string prefix = $"DevicesBinding_{durableDeviceKey}_";
+        string prefix = $"DeviceBindings_{durableDeviceKey}_";
 
         return Directory
             .GetFiles(configDir, prefix + "*.json")
@@ -133,51 +133,40 @@ public sealed class DeviceJsonReaderService
         DeviceBindingProfile profile,
         List<JsonDeviceAxisBinding>? axisBindings)
     {
-        if (axisBindings is null || axisBindings.Count == 0)
+        var jsonAxisByLogicalName = new Dictionary<string, JsonDeviceAxisBinding>(StringComparer.OrdinalIgnoreCase);
+
+        if (axisBindings is not null)
         {
-            foreach (DeviceAxisDefinition definition in _axisDefinitions.GetDefinitions())
+            foreach (JsonDeviceAxisBinding axis in axisBindings)
             {
-                profile.AxisBindings.Add(new DeviceAxisBinding
-                {
-                    LogicalAxisName = definition.LogicalAxisName,
-                    PhysicalAxisIndex = null
-                });
+                string logicalAxisName = AxisDefinitionService.NormalizeLogicalAxisName(axis.LogicalAxisName ?? "");
+
+                if (string.IsNullOrWhiteSpace(logicalAxisName))
+                    continue;
+
+                // Canonicalize older/transitional names while loading. If an older JSON
+                // somehow contains both the transitional and current name, the last value
+                // wins and the writer will output one clean row.
+                jsonAxisByLogicalName[logicalAxisName] = axis;
             }
-
-            return;
         }
 
-        foreach (JsonDeviceAxisBinding axis in axisBindings)
-        {
-            string logicalAxisName = AxisDefinitionService.NormalizeLogicalAxisName(axis.LogicalAxisName ?? "");
-
-            profile.AxisBindings.Add(new DeviceAxisBinding
-            {
-                LogicalAxisName = logicalAxisName,
-                PhysicalAxisIndex = axis.PhysicalAxisIndex,
-                Saturation = axis.Saturation ?? "None",
-                Deadzone = axis.Deadzone ?? "None",
-                Invert = axis.Invert.GetValueOrDefault(),
-                AfterburnerDetent = axis.AfterburnerDetent,
-                IdleDetent = axis.IdleDetent
-            });
-        }
-
-        // Older JSON files may only contain the first partial axis set.
-        // Add any newly-supported Falcon logical axes as unmapped rows so the UI and
-        // regenerated JSON always converge to the full 30-axis model.
+        // Always rebuild axis bindings in AxisDefinitionService order.
+        // This guarantees the in-memory model has the current full 30-axis table
+        // even when loading an older partial JSON file.
         foreach (DeviceAxisDefinition definition in _axisDefinitions.GetDefinitions())
         {
-            bool alreadyExists = profile.AxisBindings.Any(axis =>
-                string.Equals(axis.LogicalAxisName, definition.LogicalAxisName, StringComparison.OrdinalIgnoreCase));
-
-            if (alreadyExists)
-                continue;
+            jsonAxisByLogicalName.TryGetValue(definition.LogicalAxisName, out JsonDeviceAxisBinding? axis);
 
             profile.AxisBindings.Add(new DeviceAxisBinding
             {
                 LogicalAxisName = definition.LogicalAxisName,
-                PhysicalAxisIndex = null
+                PhysicalAxisIndex = axis?.PhysicalAxisIndex,
+                Saturation = axis?.Saturation ?? "None",
+                Deadzone = axis?.Deadzone ?? "None",
+                Invert = axis?.Invert.GetValueOrDefault() ?? false,
+                AfterburnerDetent = axis?.AfterburnerDetent,
+                IdleDetent = axis?.IdleDetent
             });
         }
     }
