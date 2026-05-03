@@ -356,6 +356,7 @@ public sealed class ControlsViewModel : ViewModelBase
                 cell.DisplayText = binding?.PhysicalAxisIndex is int physicalAxisIndex
                     ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
                     : "";
+                cell.Invert = binding?.Invert ?? false;
 
                 cell.ShowDetents = showDetents;
                 cell.IdleDetentFraction = (binding?.IdleDetent ?? DetentPosition.DefaultIdleDetent) / (double)DetentPosition.MaxAxisValue;

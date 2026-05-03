@@ -28,6 +28,13 @@ public sealed class ControlGridDeviceCellViewModel : ViewModelBase
         set => Set(ref _physicalAxisIndex, value);
     }
 
+    private bool _invert;
+    public bool Invert
+    {
+        get => _invert;
+        set => Set(ref _invert, value);
+    }
+
     private double _axisBarValue = 0.5;
     public double AxisBarValue
     {

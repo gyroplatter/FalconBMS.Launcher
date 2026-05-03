@@ -398,7 +398,10 @@ public partial class ControlsView : UserControl
                 if (cell.PhysicalAxisIndex < 0 || cell.PhysicalAxisIndex >= axisValues.Length)
                     continue;
 
-                cell.AxisBarValue = AxisAssignViewModel.NormalizeAxisValue(axisValues[cell.PhysicalAxisIndex], row.AxisLogicalAxisName);
+                cell.AxisBarValue = AxisAssignViewModel.NormalizeAxisValue(
+                    axisValues[cell.PhysicalAxisIndex],
+                    row.AxisLogicalAxisName,
+                    cell.Invert);
             }
         }
     }

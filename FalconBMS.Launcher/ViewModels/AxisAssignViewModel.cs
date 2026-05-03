@@ -328,7 +328,10 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         if (axisIndex < 0 || axisIndex >= axisValues.Length)
             return;
 
-        AxisBarValue = NormalizeAxisValue(axisValues[axisIndex], LogicalAxisName);
+        // Match the official launcher: visual axis direction depends on both the
+        // logical axis type and the saved Invert checkbox state. This affects only
+        // the live UI bar; it does not force Invert=true in output files.
+        AxisBarValue = NormalizeAxisValue(axisValues[axisIndex], LogicalAxisName, Invert);
         HasLiveAxis = true;
     }
 
@@ -527,27 +530,49 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         return value;
     }
 
-    public static double NormalizeAxisValue(int rawValue, string logicalAxisName)
+    public static double NormalizeAxisValue(int rawValue, string logicalAxisName, bool invert)
     {
         int clamped = ClampAxisValue(rawValue);
         double normalized = clamped / (double)AxisMax;
 
-        return ShouldReverseDisplay(logicalAxisName)
+        /*
+        Match the official launcher.
+
+        Some axes are visually reversed by default because their physical movement
+        reads opposite to the direction label shown in the UI. That default visual
+        reversal is separate from the saved Invert checkbox.
+
+        Opposite-movement axes:
+        - Invert unchecked = reversed visual bar
+        - Invert checked   = normal visual bar
+
+        Normal axes:
+        - Invert unchecked = normal visual bar
+        - Invert checked   = reversed visual bar
+        */
+        bool reverseDisplay = HasOppositeVisualMovement(logicalAxisName)
+            ? !invert
+            : invert;
+
+        return reverseDisplay
             ? 1.0 - normalized
             : normalized;
     }
 
-    private static bool ShouldReverseDisplay(string logicalAxisName)
+    private static bool HasOppositeVisualMovement(string logicalAxisName)
     {
         string normalizedName = AxisDefinitionService.NormalizeLogicalAxisName(logicalAxisName);
 
         return string.Equals(normalizedName, "Throttle", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "Throttle_Right", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "Toe_Brake", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "Toe_Brake_Right", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "Intercom", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "IntercomVolumeVolume", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "COMM_Channel_1", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "COMM_Channel_2", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "MSL_Volume", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "Threat_Volume", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(normalizedName, "IntercomVolumeVolume", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "AI_vs_IVC", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "ILS_Volume_Knob", StringComparison.OrdinalIgnoreCase);
     }

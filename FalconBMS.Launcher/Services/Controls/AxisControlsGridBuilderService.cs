@@ -61,6 +61,7 @@ public sealed class AxisControlsGridBuilderService
                     : "",
                 HasAxisBinding = hasAxisBinding,
                 PhysicalAxisIndex = binding?.PhysicalAxisIndex ?? -1,
+                Invert = binding?.Invert ?? false,
                 ShowDetents = showDetents,
                 IdleDetentFraction = (binding?.IdleDetent ?? DetentPosition.DefaultIdleDetent) / (double)DetentPosition.MaxAxisValue,
                 AfterburnerDetentFraction = (binding?.AfterburnerDetent ?? DetentPosition.DefaultAfterburnerDetent) / (double)DetentPosition.MaxAxisValue
@@ -80,8 +81,4 @@ public sealed class AxisControlsGridBuilderService
         };
     }
 
-    private static string GetDisplayName(string logicalAxisName)
-    {
-        return logicalAxisName.Replace("_", " ");
-    }
 }
