@@ -15,11 +15,16 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 {
     private readonly BindingRow _row;
     private readonly List<BindingRow> _profileRows;
+    private readonly List<DeviceBindingProfile> _deviceProfiles;
+    private readonly string _aircraftProfileName;
     private readonly Action<BindingRow, string, int, string, int> _saveKeyboardBinding;
+    private readonly Action<BindingRow, string?, int?> _saveDeviceButtonBinding;
     private readonly Action _closeWindow;
     private readonly DirectInputManager _di = new();
 
     private KeyboardSession? _keyboard;
+    private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
+    private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
     private DispatcherTimer? _timer;
     private HashSet<DiKey> _previousPressedKeys = new();
 
@@ -27,6 +32,9 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private int _tempModifierFlags;
     private string _tempChordScancode;
     private int _tempChordModifierFlags;
+
+    private string? _tempDxDeviceKey;
+    private int? _tempDxButtonIndex;
 
     public string TitleText { get; }
 
@@ -66,15 +74,20 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     public KeyMappingWindowViewModel(
         BindingRow row,
         IEnumerable<BindingRow> profileRows,
+        IEnumerable<DeviceBindingProfile> deviceProfiles,
+        string aircraftProfileName,
         Action<BindingRow, string, int, string, int> saveKeyboardBinding,
+        Action<BindingRow, string?, int?> saveDeviceButtonBinding,
         Action closeWindow)
     {
         _row = row;
         _profileRows = profileRows.ToList();
+        _deviceProfiles = deviceProfiles.ToList();
+        _aircraftProfileName = aircraftProfileName;
         _saveKeyboardBinding = saveKeyboardBinding;
+        _saveDeviceButtonBinding = saveDeviceButtonBinding;
         _closeWindow = closeWindow;
 
-        // Match original launcher behavior: show only description, no callback name.
         TitleText = row.Description;
 
         _tempKeyScancode = row.KeyScancode;
@@ -82,12 +95,23 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _tempChordScancode = row.ChordScancode;
         _tempChordModifierFlags = row.ChordModifierFlags;
 
+        DeviceButtonBinding? existingDx = FindExistingDxBinding(row.CallbackName);
+        if (existingDx is not null)
+        {
+            DeviceBindingProfile? existingDevice = FindDeviceForButtonBinding(existingDx);
+            _tempDxDeviceKey = existingDevice?.DurableDeviceKey;
+            _tempDxButtonIndex = existingDx.ButtonIndex;
+        }
+
         _assignmentText = BuildAssignmentPreview();
-        UpdateKeyboardConflict();
+        UpdateConflict();
 
         ClearDxCommand = new RelayCommand(() =>
         {
-            UpdateKeyboardConflict();
+            _tempDxDeviceKey = null;
+            _tempDxButtonIndex = null;
+
+            UpdateConflict();
             AssignmentText = BuildAssignmentPreview();
         });
 
@@ -98,14 +122,12 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _tempChordScancode = "0";
             _tempChordModifierFlags = 0;
 
-            UpdateKeyboardConflict();
+            UpdateConflict();
             AssignmentText = BuildAssignmentPreview();
         });
 
         SaveCommand = new RelayCommand(() =>
         {
-            // Phase 2: commit only to the in-memory keyboard model.
-            // File output still happens through the normal Launch/Close flush pipeline.
             _saveKeyboardBinding(
                 _row,
                 _tempKeyScancode,
@@ -113,13 +135,15 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 _tempChordScancode,
                 _tempChordModifierFlags);
 
+            _saveDeviceButtonBinding(
+                _row,
+                _tempDxDeviceKey,
+                _tempDxButtonIndex);
+
             _closeWindow();
         });
 
-        CancelCommand = new RelayCommand(() =>
-        {
-            _closeWindow();
-        });
+        CancelCommand = new RelayCommand(_closeWindow);
     }
 
     public void StartCapture(IntPtr hwnd)
@@ -133,6 +157,19 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         catch
         {
             _keyboard = null;
+        }
+
+        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device => device.ButtonCount > 0))
+        {
+            try
+            {
+                _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] =
+                    _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
+            }
+            catch
+            {
+                // Keep keyboard capture working even if one controller cannot be opened.
+            }
         }
 
         _timer = new DispatcherTimer(DispatcherPriority.Background)
@@ -159,12 +196,20 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _keyboard = null;
         }
 
+        foreach (JoystickSession session in _joystickSessionsByDeviceKey.Values)
+        {
+            try { session.Dispose(); } catch { }
+        }
+
+        _joystickSessionsByDeviceKey.Clear();
+        _previousButtonsByDeviceKey.Clear();
         _previousPressedKeys.Clear();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
         PollKeyboard();
+        PollJoystickButtons();
     }
 
     private void PollKeyboard()
@@ -226,31 +271,103 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _tempChordModifierFlags = 0;
 
         AssignmentText = BuildAssignmentPreview();
-        UpdateKeyboardConflict();
+        UpdateConflict();
     }
 
-    private void UpdateKeyboardConflict()
+    private void PollJoystickButtons()
     {
-        string selectedAssignment = BuildAssignmentPreview();
-
-        if (string.IsNullOrWhiteSpace(selectedAssignment) ||
-            selectedAssignment == "Awaiting input: Press any key")
+        foreach (KeyValuePair<string, JoystickSession> pair in _joystickSessionsByDeviceKey)
         {
-            ConflictText = "";
-            return;
+            JoystickState state;
+
+            try
+            {
+                state = pair.Value.ReadState();
+            }
+            catch
+            {
+                continue;
+            }
+
+            bool[] buttons = state.Buttons ?? Array.Empty<bool>();
+
+            if (!_previousButtonsByDeviceKey.TryGetValue(pair.Key, out bool[]? previousButtons))
+            {
+                _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+                continue;
+            }
+
+            int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
+
+            for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
+            {
+                if (!buttons[buttonIndex] || previousButtons[buttonIndex])
+                    continue;
+
+                _tempDxDeviceKey = pair.Key;
+                _tempDxButtonIndex = buttonIndex;
+
+                AssignmentText = BuildAssignmentPreview();
+                UpdateConflict();
+
+                break;
+            }
+
+            _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+        }
+    }
+
+    private void UpdateConflict()
+    {
+        string selectedAssignment = BuildKeyboardAssignmentText();
+
+        string keyboardConflict = "";
+
+        if (!string.IsNullOrWhiteSpace(selectedAssignment))
+        {
+            BindingRow? conflict = _profileRows.FirstOrDefault(row =>
+                !ReferenceEquals(row, _row) &&
+                row.IsEditable &&
+                string.Equals(GetAssignmentText(row), selectedAssignment, StringComparison.OrdinalIgnoreCase));
+
+            if (conflict is not null)
+                keyboardConflict = "Keyboard input currently bound to: " + conflict.Description.Trim();
         }
 
-        BindingRow? conflict = _profileRows.FirstOrDefault(row =>
-            !ReferenceEquals(row, _row) &&
-            row.IsEditable &&
-            string.Equals(
-                GetAssignmentText(row),
-                selectedAssignment,
-                StringComparison.OrdinalIgnoreCase));
+        string dxConflict = "";
 
-        ConflictText = conflict is null
+        if (!string.IsNullOrWhiteSpace(_tempDxDeviceKey) && _tempDxButtonIndex.HasValue)
+        {
+            DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
+                string.Equals(d.DurableDeviceKey, _tempDxDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            DeviceAircraftBindingProfile? aircraft = device?.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            DeviceButtonBinding? conflict = aircraft?.ButtonBindings.FirstOrDefault(binding =>
+                binding.ButtonIndex == _tempDxButtonIndex.Value &&
+                !string.Equals(binding.CallbackName, _row.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+            if (conflict is not null)
+            {
+                BindingRow? conflictRow = _profileRows.FirstOrDefault(row =>
+                    string.Equals(row.CallbackName, conflict.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+                dxConflict = "DX input currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName);
+            }
+        }
+
+        var parts = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(keyboardConflict))
+            parts.Add(keyboardConflict);
+
+        if (!string.IsNullOrWhiteSpace(dxConflict))
+            parts.Add(dxConflict);
+
+        ConflictText = parts.Count == 0
             ? ""
-            : "Keyboard input currently bound to: " + conflict.Description.Trim() + "\nClick \"Save\" to replace the existing assignment.";
+            : string.Join("\n", parts) + "\nClick \"Save\" to replace the existing assignment.";
     }
 
     private static string GetAssignmentText(BindingRow row)
@@ -264,16 +381,65 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
     private string BuildAssignmentPreview()
     {
-        string keyText = KeyAssgn.GetKeyAssignmentStatus(
+        var parts = new List<string>();
+
+        string keyText = BuildKeyboardAssignmentText();
+        if (!string.IsNullOrWhiteSpace(keyText))
+            parts.Add(keyText);
+
+        if (!string.IsNullOrWhiteSpace(_tempDxDeviceKey) && _tempDxButtonIndex.HasValue)
+        {
+            DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
+                string.Equals(d.DurableDeviceKey, _tempDxDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            string deviceName = device?.ProductName
+                ?? device?.InstanceName
+                ?? _tempDxDeviceKey
+                ?? "Unknown device";
+
+            parts.Add(deviceName + " DX" + (_tempDxButtonIndex.Value + 1));
+        }
+
+        return parts.Count == 0
+            ? "Awaiting input: Press any key or DX button"
+            : string.Join(" / ", parts);
+    }
+
+    private string BuildKeyboardAssignmentText()
+    {
+        return KeyAssgn.GetKeyAssignmentStatus(
             _tempKeyScancode,
             _tempModifierFlags,
             _tempChordScancode,
             _tempChordModifierFlags);
+    }
 
-        if (string.IsNullOrWhiteSpace(keyText))
-            return "Awaiting input: Press any key";
+    private DeviceButtonBinding? FindExistingDxBinding(string callbackName)
+    {
+        foreach (DeviceBindingProfile device in _deviceProfiles)
+        {
+            DeviceAircraftBindingProfile? aircraft = device.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
 
-        return keyText;
+            DeviceButtonBinding? binding = aircraft?.ButtonBindings.FirstOrDefault(button =>
+                string.Equals(button.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase));
+
+            if (binding is not null)
+                return binding;
+        }
+
+        return null;
+    }
+
+    private DeviceBindingProfile? FindDeviceForButtonBinding(DeviceButtonBinding target)
+    {
+        return _deviceProfiles.FirstOrDefault(device =>
+        {
+            DeviceAircraftBindingProfile? aircraft = device.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            return aircraft?.ButtonBindings.Contains(target) == true;
+        });
     }
 
     public void Dispose()

@@ -110,7 +110,7 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         _allRows.Clear();
 
-        foreach (var row in _keyGridBuilder.Build(SelectedProfile))
+        foreach (var row in _keyGridBuilder.Build(SelectedProfile, DeviceColumns))
             _allRows.Add(row);
 
         foreach (var row in _axisGridBuilder.Build(DeviceColumns))
@@ -214,6 +214,73 @@ public sealed class ControlsViewModel : ViewModelBase
         OnPropertyChanged(nameof(SummaryText));
     }
 
+    public void ApplyDeviceButtonMappingFromPopup(
+        BindingRow selectedRow,
+        string? selectedDeviceKey,
+        int? selectedButtonIndex)
+    {
+        if (SelectedProfile is null)
+            return;
+
+        string aircraftProfileName = SelectedProfile.AircraftProfile;
+        var affectedCallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        selectedRow.CallbackName
+    };
+
+        // Remove this callback from every device button first. A callback should only
+        // appear once for this aircraft/device-button mapping pass.
+        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        {
+            DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            if (aircraftProfile is null)
+                continue;
+
+            foreach (DeviceButtonBinding existing in aircraftProfile.ButtonBindings
+                         .Where(binding => string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
+                         .ToList())
+            {
+                aircraftProfile.ButtonBindings.Remove(existing);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(selectedDeviceKey) && selectedButtonIndex.HasValue)
+        {
+            DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
+                string.Equals(device.DurableDeviceKey, selectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            DeviceAircraftBindingProfile? selectedAircraftProfile = selectedDevice?.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            if (selectedDevice is not null && selectedAircraftProfile is not null)
+            {
+                foreach (DeviceButtonBinding conflict in selectedAircraftProfile.ButtonBindings
+                             .Where(binding => binding.ButtonIndex == selectedButtonIndex.Value)
+                             .ToList())
+                {
+                    affectedCallbackNames.Add(conflict.CallbackName);
+                    selectedAircraftProfile.ButtonBindings.Remove(conflict);
+                }
+
+                selectedAircraftProfile.ButtonBindings.Add(new DeviceButtonBinding
+                {
+                    ButtonIndex = selectedButtonIndex.Value,
+                    AssignmentIndex = 0,
+                    CallbackName = selectedRow.CallbackName,
+                    Invoke = "Default",
+                    SoundId = selectedRow.SoundId
+                });
+            }
+        }
+
+        foreach (string callbackName in affectedCallbackNames)
+            RefreshDeviceCellsForCallback(callbackName);
+
+        OnPropertyChanged(nameof(SummaryText));
+    }
+
     private BindingRow? FindDuplicateKeyboardAssignment(
         BindingRow selectedRow,
         string keyScancode,
@@ -256,6 +323,55 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         foreach (ControlGridRowViewModel row in _allRows.Where(row => ReferenceEquals(row.SourceRow, sourceRow)))
             row.RefreshFromSource();
+    }
+
+    private void RefreshDeviceCellsForCallback(string callbackName)
+    {
+        if (SelectedProfile is null)
+            return;
+
+        foreach (ControlGridRowViewModel row in _allRows.Where(row =>
+                     row.SourceRow is not null &&
+                     string.Equals(row.SourceRow.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase)))
+        {
+            foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+            {
+                if (!row.DeviceCellsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out ControlGridDeviceCellViewModel? cell))
+                    continue;
+
+                DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+                    string.Equals(profile.AircraftProfile, SelectedProfile.AircraftProfile, StringComparison.OrdinalIgnoreCase));
+
+                if (aircraftProfile is null)
+                {
+                    cell.DisplayText = "";
+                    continue;
+                }
+
+                List<string> parts = aircraftProfile.ButtonBindings
+                    .Where(binding => string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
+                    .Select(binding => "DX" + binding.ButtonNumber)
+                    .ToList();
+
+                parts.AddRange(aircraftProfile.PovBindings
+                    .Where(binding => string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
+                    .Select(binding => "POV" + (binding.PovIndex + 1) + " " + GetPovDirectionName(binding.Direction)));
+
+                cell.DisplayText = string.Join(", ", parts);
+            }
+        }
+    }
+
+    private static string GetPovDirectionName(int direction)
+    {
+        return direction switch
+        {
+            0 => "Up",
+            1 => "Right",
+            2 => "Down",
+            3 => "Left",
+            _ => direction.ToString()
+        };
     }
 
 

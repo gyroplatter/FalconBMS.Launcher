@@ -51,6 +51,11 @@ public sealed class LaunchPrepService
 
         _userCfg.SaveOverrides(baseDir, bindingModel.DeviceProfiles, exportRttTextures, vrEnabled);
 
+        // BMS reads the active key profile from the pilot .pop file.
+        // This must set byte offset 336 to "BMS - Auto"; otherwise BMS keeps loading
+        // "BMS - Full" and device DX callbacks show as "No Function Assigned" in game.
+        _pop.SavePop(baseDir, installKeyName);
+
         DebugDiagnosticsService.Info($"PREPARE FOR LAUNCH END | ActionId={actionId}");
     }
 }

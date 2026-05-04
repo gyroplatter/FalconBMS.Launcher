@@ -111,22 +111,23 @@ public partial class ControlsView : UserControl
     {
         var template = new DataTemplate();
 
-        var axisBarFactory = new FrameworkElementFactory(typeof(AxisBar));
-        axisBarFactory.SetBinding(
+        var gridFactory = new FrameworkElementFactory(typeof(Grid));
+        gridFactory.SetBinding(
             FrameworkElement.DataContextProperty,
             new Binding($"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
 
         var axisBarStyle = new Style(typeof(AxisBar));
         axisBarStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
 
-        var showWhenMappedTrigger = new DataTrigger
+        var showAxisWhenMappedTrigger = new DataTrigger
         {
             Binding = new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
             Value = true
         };
-        showWhenMappedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
-        axisBarStyle.Triggers.Add(showWhenMappedTrigger);
+        showAxisWhenMappedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
+        axisBarStyle.Triggers.Add(showAxisWhenMappedTrigger);
 
+        var axisBarFactory = new FrameworkElementFactory(typeof(AxisBar));
         axisBarFactory.SetValue(FrameworkElement.HeightProperty, 14.0);
         axisBarFactory.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 1, 4, 1));
         axisBarFactory.SetValue(FrameworkElement.StyleProperty, axisBarStyle);
@@ -161,7 +162,31 @@ public partial class ControlsView : UserControl
             Mode = BindingMode.OneWay
         });
 
-        template.VisualTree = axisBarFactory;
+        var textStyle = new Style(typeof(TextBlock));
+        textStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
+
+        var hideTextWhenAxisTrigger = new DataTrigger
+        {
+            Binding = new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
+            Value = true
+        };
+        hideTextWhenAxisTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
+        textStyle.Triggers.Add(hideTextWhenAxisTrigger);
+
+        var textFactory = new FrameworkElementFactory(typeof(TextBlock));
+        textFactory.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 0, 4, 0));
+        textFactory.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+        textFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
+        textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText))
+        {
+            Mode = BindingMode.OneWay
+        });
+        textFactory.SetValue(FrameworkElement.StyleProperty, textStyle);
+
+        gridFactory.AppendChild(axisBarFactory);
+        gridFactory.AppendChild(textFactory);
+
+        template.VisualTree = gridFactory;
         return template;
     }
 
@@ -212,10 +237,16 @@ public partial class ControlsView : UserControl
             Owner = Window.GetWindow(this)
         };
 
+        if (viewModel.SelectedProfile is null)
+            return;
+
         window.DataContext = new KeyMappingWindowViewModel(
             viewModel.SelectedRow.SourceRow,
             viewModel.SelectedProfileRows,
+            viewModel.DeviceColumns,
+            viewModel.SelectedProfile.AircraftProfile,
             viewModel.ApplyKeyboardMappingFromPopup,
+            viewModel.ApplyDeviceButtonMappingFromPopup,
             () => window.Close());
 
         window.ShowDialog();

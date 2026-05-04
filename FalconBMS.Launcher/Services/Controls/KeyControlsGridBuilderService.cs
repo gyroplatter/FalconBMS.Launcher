@@ -1,6 +1,7 @@
 ﻿using FalconBMS.Launcher.Input;
 using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,20 +9,27 @@ namespace FalconBMS.Launcher.Services.Controls;
 
 public sealed class KeyControlsGridBuilderService
 {
-    public List<ControlGridRowViewModel> Build(BindingAircraftProfile? profile)
+    public List<ControlGridRowViewModel> Build(
+        BindingAircraftProfile? profile,
+        IEnumerable<DeviceBindingProfile> deviceProfiles)
     {
         if (profile is null)
             return new List<ControlGridRowViewModel>();
+
+        var devices = deviceProfiles.ToList();
 
         return profile.Rows
             .Where(row => row.RowKind != BindingRowKind.HiddenCallback)
             .Where(row => row.RowKind != BindingRowKind.Other)
             .OrderBy(row => row.SourceLineNumber)
-            .Select(CreateRow)
+            .Select(row => CreateRow(row, profile.AircraftProfile, devices))
             .ToList();
     }
 
-    private static ControlGridRowViewModel CreateRow(BindingRow row)
+    private static ControlGridRowViewModel CreateRow(
+        BindingRow row,
+        string aircraftProfileName,
+        IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
         var viewModel = new ControlGridRowViewModel
         {
@@ -30,12 +38,77 @@ public sealed class KeyControlsGridBuilderService
             SourceLineNumber = row.SourceLineNumber,
             CategoryName = row.CategoryName,
             SectionName = row.SectionName,
-            Mapping = GetMappingText(row)
+            Mapping = GetMappingText(row),
+            DeviceCellsByDeviceKey = BuildDeviceCells(row, aircraftProfileName, deviceProfiles)
         };
 
         viewModel.RefreshFromSource();
 
         return viewModel;
+    }
+
+    private static Dictionary<string, ControlGridDeviceCellViewModel> BuildDeviceCells(
+        BindingRow row,
+        string aircraftProfileName,
+        IReadOnlyList<DeviceBindingProfile> deviceProfiles)
+    {
+        var cells = new Dictionary<string, ControlGridDeviceCellViewModel>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (DeviceBindingProfile deviceProfile in deviceProfiles)
+        {
+            string displayText = "";
+
+            if (row.IsCallback && !string.IsNullOrWhiteSpace(row.CallbackName))
+            {
+                DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+                    string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+                if (aircraftProfile is not null)
+                    displayText = BuildDxDisplayText(aircraftProfile, row.CallbackName);
+            }
+
+            cells[deviceProfile.DurableDeviceKey] = new ControlGridDeviceCellViewModel
+            {
+                DisplayText = displayText,
+                HasAxisBinding = false,
+                PhysicalAxisIndex = -1
+            };
+        }
+
+        return cells;
+    }
+
+    private static string BuildDxDisplayText(
+        DeviceAircraftBindingProfile aircraftProfile,
+        string callbackName)
+    {
+        var parts = new List<string>();
+
+        foreach (DeviceButtonBinding button in aircraftProfile.ButtonBindings.Where(binding =>
+                     string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase)))
+        {
+            parts.Add("DX" + button.ButtonNumber);
+        }
+
+        foreach (DevicePovBinding pov in aircraftProfile.PovBindings.Where(binding =>
+                     string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase)))
+        {
+            parts.Add("POV" + (pov.PovIndex + 1) + " " + GetPovDirectionName(pov.Direction));
+        }
+
+        return string.Join(", ", parts);
+    }
+
+    private static string GetPovDirectionName(int direction)
+    {
+        return direction switch
+        {
+            0 => "Up",
+            1 => "Right",
+            2 => "Down",
+            3 => "Left",
+            _ => direction.ToString()
+        };
     }
 
     private static string GetMappingText(BindingRow row)
@@ -47,17 +120,5 @@ public sealed class KeyControlsGridBuilderService
             return row.SectionName;
 
         return row.Description;
-    }
-
-    private static string GetKeyText(BindingRow row)
-    {
-        if (!row.IsCallback)
-            return "";
-
-        return KeyAssgn.GetKeyAssignmentStatus(
-            row.KeyScancode,
-            row.KeyModifierFlags,
-            row.ChordScancode,
-            row.ChordModifierFlags);
     }
 }
