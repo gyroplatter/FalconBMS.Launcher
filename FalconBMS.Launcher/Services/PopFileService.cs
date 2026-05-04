@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace FalconBMS.Launcher.Services;
@@ -22,6 +24,9 @@ public sealed class PopFileService
 
         Directory.CreateDirectory(configDir);
         Directory.CreateDirectory(backupDir);
+
+        string actionId = DebugDiagnosticsService.CreateActionId("POP");
+        string beforeSignature = DebugDiagnosticsService.GetFileSignature(filename);
 
         if (!File.Exists(filename))
             File.WriteAllBytes(filename, CreateFreshPopTemplate437());
@@ -70,6 +75,44 @@ public sealed class PopFileService
             bs[0] &= 0b11011111;
 
         File.WriteAllBytes(filename, bs);
+
+        string activeKeyFile = ReadFixedAscii(bs, 336, 16);
+
+        DebugDiagnosticsService.LogFileWriteResult(
+            Path.GetFileName(filename),
+            filename,
+            beforeSignature,
+            "PopFileService.SavePop",
+            $"PilotCallsign={pilotCallsign} | ActiveKeyFile={activeKeyFile}",
+            actionId);
+
+        DebugDiagnosticsService.Info(
+            $"POP saved | ActionId={actionId} | File={Path.GetFileName(filename)} | Path={filename} | PilotCallsign={pilotCallsign} | ActiveKeyFile={activeKeyFile}");
+
+        if (!string.Equals(activeKeyFile, "BMS - Auto", StringComparison.Ordinal))
+        {
+            DebugDiagnosticsService.Warn(
+                $"POP active key file did not verify as BMS - Auto. Actual='{activeKeyFile}' | Path={filename} | ActionId={actionId}");
+        }
+    }
+
+    private static string ReadFixedAscii(byte[] bytes, int offset, int length)
+    {
+        if (offset < 0 || offset >= bytes.Length)
+            return "";
+
+        int availableLength = Math.Min(length, bytes.Length - offset);
+
+        byte[] slice = bytes
+            .Skip(offset)
+            .Take(availableLength)
+            .ToArray();
+
+        int zeroIndex = Array.IndexOf(slice, (byte)0x00);
+        if (zeroIndex >= 0)
+            slice = slice.Take(zeroIndex).ToArray();
+
+        return Encoding.ASCII.GetString(slice).Trim();
     }
 
     private static byte[] CreateFreshPopTemplate437() =>
