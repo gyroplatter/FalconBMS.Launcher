@@ -33,8 +33,14 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private string _tempChordScancode;
     private int _tempChordModifierFlags;
 
-    private string? _tempDxDeviceKey;
-    private int? _tempDxButtonIndex;
+    private readonly List<PendingDxButton> _pendingDxButtons = new();
+
+    private sealed class PendingDxButton
+    {
+        public string DeviceKey { get; set; } = "";
+        public int ButtonIndex { get; set; }
+    }
+
 
     public string TitleText { get; }
 
@@ -95,21 +101,14 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _tempChordScancode = row.ChordScancode;
         _tempChordModifierFlags = row.ChordModifierFlags;
 
-        DeviceButtonBinding? existingDx = FindExistingDxBinding(row.CallbackName);
-        if (existingDx is not null)
-        {
-            DeviceBindingProfile? existingDevice = FindDeviceForButtonBinding(existingDx);
-            _tempDxDeviceKey = existingDevice?.DurableDeviceKey;
-            _tempDxButtonIndex = existingDx.ButtonIndex;
-        }
+        LoadExistingDxBindings(row.CallbackName);
 
         _assignmentText = BuildAssignmentPreview();
         UpdateConflict();
 
         ClearDxCommand = new RelayCommand(() =>
         {
-            _tempDxDeviceKey = null;
-            _tempDxButtonIndex = null;
+            _pendingDxButtons.Clear();
 
             UpdateConflict();
             AssignmentText = BuildAssignmentPreview();
@@ -135,10 +134,16 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 _tempChordScancode,
                 _tempChordModifierFlags);
 
-            _saveDeviceButtonBinding(
-                _row,
-                _tempDxDeviceKey,
-                _tempDxButtonIndex);
+            // Replace this callback's DX list with the current pending list.
+            _saveDeviceButtonBinding(_row, null, null);
+
+            foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
+            {
+                _saveDeviceButtonBinding(
+                    _row,
+                    pendingDxButton.DeviceKey,
+                    pendingDxButton.ButtonIndex);
+            }
 
             _closeWindow();
         });
@@ -304,8 +309,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 if (!buttons[buttonIndex] || previousButtons[buttonIndex])
                     continue;
 
-                _tempDxDeviceKey = pair.Key;
-                _tempDxButtonIndex = buttonIndex;
+                AddPendingDxButton(pair.Key, buttonIndex);
 
                 AssignmentText = BuildAssignmentPreview();
                 UpdateConflict();
@@ -334,27 +338,33 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 keyboardConflict = "Keyboard input currently bound to: " + conflict.Description.Trim();
         }
 
-        string dxConflict = "";
+        var dxConflicts = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(_tempDxDeviceKey) && _tempDxButtonIndex.HasValue)
+        foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
         {
             DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
-                string.Equals(d.DurableDeviceKey, _tempDxDeviceKey, StringComparison.OrdinalIgnoreCase));
+                string.Equals(d.DurableDeviceKey, pendingDxButton.DeviceKey, StringComparison.OrdinalIgnoreCase));
 
             DeviceAircraftBindingProfile? aircraft = device?.AircraftProfiles.FirstOrDefault(profile =>
                 string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
 
             DeviceButtonBinding? conflict = aircraft?.ButtonBindings.FirstOrDefault(binding =>
-                binding.ButtonIndex == _tempDxButtonIndex.Value &&
+                binding.ButtonIndex == pendingDxButton.ButtonIndex &&
                 !string.Equals(binding.CallbackName, _row.CallbackName, StringComparison.OrdinalIgnoreCase));
 
-            if (conflict is not null)
-            {
-                BindingRow? conflictRow = _profileRows.FirstOrDefault(row =>
-                    string.Equals(row.CallbackName, conflict.CallbackName, StringComparison.OrdinalIgnoreCase));
+            if (conflict is null)
+                continue;
 
-                dxConflict = "DX input currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName);
-            }
+            BindingRow? conflictRow = _profileRows.FirstOrDefault(row =>
+                string.Equals(row.CallbackName, conflict.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+            string deviceName = device?.ProductName
+                ?? device?.InstanceName
+                ?? pendingDxButton.DeviceKey;
+
+            dxConflicts.Add(
+                deviceName + " DX" + (pendingDxButton.ButtonIndex + 1) +
+                " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
         var parts = new List<string>();
@@ -362,8 +372,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(keyboardConflict))
             parts.Add(keyboardConflict);
 
-        if (!string.IsNullOrWhiteSpace(dxConflict))
-            parts.Add(dxConflict);
+        parts.AddRange(dxConflicts.Distinct(StringComparer.OrdinalIgnoreCase));
 
         ConflictText = parts.Count == 0
             ? ""
@@ -387,17 +396,16 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         if (!string.IsNullOrWhiteSpace(keyText))
             parts.Add(keyText);
 
-        if (!string.IsNullOrWhiteSpace(_tempDxDeviceKey) && _tempDxButtonIndex.HasValue)
+        foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
         {
             DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
-                string.Equals(d.DurableDeviceKey, _tempDxDeviceKey, StringComparison.OrdinalIgnoreCase));
+                string.Equals(d.DurableDeviceKey, pendingDxButton.DeviceKey, StringComparison.OrdinalIgnoreCase));
 
             string deviceName = device?.ProductName
                 ?? device?.InstanceName
-                ?? _tempDxDeviceKey
-                ?? "Unknown device";
+                ?? pendingDxButton.DeviceKey;
 
-            parts.Add(deviceName + " DX" + (_tempDxButtonIndex.Value + 1));
+            parts.Add(deviceName + " DX" + (pendingDxButton.ButtonIndex + 1));
         }
 
         return parts.Count == 0
@@ -414,31 +422,40 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _tempChordModifierFlags);
     }
 
-    private DeviceButtonBinding? FindExistingDxBinding(string callbackName)
+    private void LoadExistingDxBindings(string callbackName)
     {
         foreach (DeviceBindingProfile device in _deviceProfiles)
         {
             DeviceAircraftBindingProfile? aircraft = device.AircraftProfiles.FirstOrDefault(profile =>
                 string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
 
-            DeviceButtonBinding? binding = aircraft?.ButtonBindings.FirstOrDefault(button =>
-                string.Equals(button.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase));
+            if (aircraft is null)
+                continue;
 
-            if (binding is not null)
-                return binding;
+            foreach (DeviceButtonBinding binding in aircraft.ButtonBindings
+                         .Where(button => string.Equals(button.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
+                         .OrderBy(button => button.ButtonIndex)
+                         .ThenBy(button => button.AssignmentIndex))
+            {
+                AddPendingDxButton(device.DurableDeviceKey, binding.ButtonIndex);
+            }
         }
-
-        return null;
     }
 
-    private DeviceBindingProfile? FindDeviceForButtonBinding(DeviceButtonBinding target)
+    private void AddPendingDxButton(string deviceKey, int buttonIndex)
     {
-        return _deviceProfiles.FirstOrDefault(device =>
-        {
-            DeviceAircraftBindingProfile? aircraft = device.AircraftProfiles.FirstOrDefault(profile =>
-                string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+        bool alreadyPending = _pendingDxButtons.Any(button =>
+            string.Equals(button.DeviceKey, deviceKey, StringComparison.OrdinalIgnoreCase) &&
+            button.ButtonIndex == buttonIndex);
 
-            return aircraft?.ButtonBindings.Contains(target) == true;
+        if (alreadyPending)
+            return;
+
+        // Keep the list stable and readable in the popup preview.
+        _pendingDxButtons.Add(new PendingDxButton
+        {
+            DeviceKey = deviceKey,
+            ButtonIndex = buttonIndex
         });
     }
 

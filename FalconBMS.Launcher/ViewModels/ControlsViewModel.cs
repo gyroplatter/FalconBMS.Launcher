@@ -184,6 +184,41 @@ public sealed class ControlsViewModel : ViewModelBase
         return true;
     }
 
+    public bool SelectFirstVisibleDxMatch(string durableDeviceKey, int buttonIndex)
+    {
+        if (SelectedProfile is null)
+            return false;
+
+        DeviceBindingProfile? deviceProfile = DeviceColumns.FirstOrDefault(device =>
+            string.Equals(device.DurableDeviceKey, durableDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+        DeviceAircraftBindingProfile? aircraftProfile = deviceProfile?.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, SelectedProfile.AircraftProfile, StringComparison.OrdinalIgnoreCase));
+
+        if (aircraftProfile is null)
+            return false;
+
+        DeviceButtonBinding? binding = aircraftProfile.ButtonBindings
+            .Where(binding =>
+                binding.ButtonIndex == buttonIndex &&
+                !string.IsNullOrWhiteSpace(binding.CallbackName))
+            .OrderBy(binding => binding.AssignmentIndex)
+            .FirstOrDefault();
+
+        if (binding is null)
+            return false;
+
+        ControlGridRowViewModel? match = Rows.FirstOrDefault(row =>
+            row.SourceRow is not null &&
+            string.Equals(row.SourceRow.CallbackName, binding.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+            return false;
+
+        SelectedRow = match;
+        return true;
+    }
+
     public void ApplyKeyboardMappingFromPopup(
     BindingRow selectedRow,
     string keyScancode,
@@ -228,51 +263,66 @@ public sealed class ControlsViewModel : ViewModelBase
         selectedRow.CallbackName
     };
 
-        // Remove this callback from every device button first. A callback should only
-        // appear once for this aircraft/device-button mapping pass.
-        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        // Null device/button means "clear all DX buttons for this callback."
+        // The popup uses this first, then re-adds every pending DX button one at a time.
+        if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedButtonIndex.HasValue)
         {
-            DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
-                string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
-
-            if (aircraftProfile is null)
-                continue;
-
-            foreach (DeviceButtonBinding existing in aircraftProfile.ButtonBindings
-                         .Where(binding => string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
-                         .ToList())
+            foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
             {
-                aircraftProfile.ButtonBindings.Remove(existing);
-            }
-        }
+                DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+                    string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
 
-        if (!string.IsNullOrWhiteSpace(selectedDeviceKey) && selectedButtonIndex.HasValue)
-        {
-            DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
-                string.Equals(device.DurableDeviceKey, selectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+                if (aircraftProfile is null)
+                    continue;
 
-            DeviceAircraftBindingProfile? selectedAircraftProfile = selectedDevice?.AircraftProfiles.FirstOrDefault(profile =>
-                string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
-
-            if (selectedDevice is not null && selectedAircraftProfile is not null)
-            {
-                foreach (DeviceButtonBinding conflict in selectedAircraftProfile.ButtonBindings
-                             .Where(binding => binding.ButtonIndex == selectedButtonIndex.Value)
+                foreach (DeviceButtonBinding existing in aircraftProfile.ButtonBindings
+                             .Where(binding => string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
                              .ToList())
                 {
-                    affectedCallbackNames.Add(conflict.CallbackName);
-                    selectedAircraftProfile.ButtonBindings.Remove(conflict);
+                    aircraftProfile.ButtonBindings.Remove(existing);
                 }
-
-                selectedAircraftProfile.ButtonBindings.Add(new DeviceButtonBinding
-                {
-                    ButtonIndex = selectedButtonIndex.Value,
-                    AssignmentIndex = 0,
-                    CallbackName = selectedRow.CallbackName,
-                    Invoke = "Default",
-                    SoundId = selectedRow.SoundId
-                });
             }
+
+            RefreshDeviceCellsForCallback(selectedRow.CallbackName);
+            OnPropertyChanged(nameof(SummaryText));
+            return;
+        }
+
+        DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
+            string.Equals(device.DurableDeviceKey, selectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+        DeviceAircraftBindingProfile? selectedAircraftProfile = selectedDevice?.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+        if (selectedDevice is null || selectedAircraftProfile is null)
+            return;
+
+        // One callback may have multiple DX buttons.
+        // One physical DX button may still belong to only one callback.
+        foreach (DeviceButtonBinding conflict in selectedAircraftProfile.ButtonBindings
+                     .Where(binding =>
+                         binding.ButtonIndex == selectedButtonIndex.Value &&
+                         !string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            affectedCallbackNames.Add(conflict.CallbackName);
+            selectedAircraftProfile.ButtonBindings.Remove(conflict);
+        }
+
+        bool alreadyAssigned = selectedAircraftProfile.ButtonBindings.Any(binding =>
+            binding.ButtonIndex == selectedButtonIndex.Value &&
+            string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+        if (!alreadyAssigned)
+        {
+            selectedAircraftProfile.ButtonBindings.Add(new DeviceButtonBinding
+            {
+                ButtonIndex = selectedButtonIndex.Value,
+                AssignmentIndex = 0,
+                CallbackName = selectedRow.CallbackName,
+                Invoke = "Default",
+                SoundId = selectedRow.SoundId
+            });
         }
 
         foreach (string callbackName in affectedCallbackNames)

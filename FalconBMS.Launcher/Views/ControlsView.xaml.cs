@@ -22,6 +22,7 @@ public partial class ControlsView : UserControl
     private readonly DirectInputManager _di = new();
     private KeyboardSession? _keyboard;
     private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
+    private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
     private HashSet<DiKey> _previousPressedKeys = new();
     private DispatcherTimer? _timer;
     private ControlsViewModel? _subscribedViewModel;
@@ -286,12 +287,14 @@ public partial class ControlsView : UserControl
             session.Dispose();
 
         _joystickSessionsByDeviceKey.Clear();
+        _previousButtonsByDeviceKey.Clear();
         _previousPressedKeys.Clear();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
         PollKeyboardSearch();
+        PollDeviceButtonSearch();
         PollLiveAxes();
     }
 
@@ -379,6 +382,72 @@ public partial class ControlsView : UserControl
         }, DispatcherPriority.Background);
     }
 
+    private void PollDeviceButtonSearch()
+    {
+        if (IsFilterControlFocused())
+            return;
+
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        Window? window = Window.GetWindow(this);
+        if (window is null)
+            return;
+
+        IntPtr hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero)
+            return;
+
+        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.ButtonCount > 0))
+        {
+            JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
+            if (session is null)
+                continue;
+
+            bool[] buttons;
+
+            try
+            {
+                buttons = session.ReadState().Buttons ?? Array.Empty<bool>();
+            }
+            catch
+            {
+                continue;
+            }
+
+            if (!_previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons))
+            {
+                _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
+                continue;
+            }
+
+            int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
+
+            for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
+            {
+                if (!buttons[buttonIndex] || previousButtons[buttonIndex])
+                    continue;
+
+                if (!viewModel.SelectFirstVisibleDxMatch(deviceProfile.DurableDeviceKey, buttonIndex))
+                    break;
+
+                if (viewModel.SelectedRow is null)
+                    break;
+
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ControlsGrid.UpdateLayout();
+                    ControlsGrid.SelectedItem = viewModel.SelectedRow;
+                    ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
+                }, DispatcherPriority.Background);
+
+                break;
+            }
+
+            _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
+        }
+    }
+
     private void PollLiveAxes()
     {
         if (DataContext is not ControlsViewModel viewModel)
@@ -394,18 +463,9 @@ public partial class ControlsView : UserControl
 
         foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.AxisCount > 0))
         {
-            if (!_joystickSessionsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out JoystickSession session))
-            {
-                try
-                {
-                    session = _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
-                    _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] = session;
-                }
-                catch
-                {
-                    continue;
-                }
-            }
+            JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
+            if (session is null)
+                continue;
 
             int[] axisValues;
 
@@ -434,6 +494,23 @@ public partial class ControlsView : UserControl
                     row.AxisLogicalAxisName,
                     cell.Invert);
             }
+        }
+    }
+
+    private JoystickSession? EnsureJoystickOpened(DeviceBindingProfile deviceProfile, IntPtr hwnd)
+    {
+        if (_joystickSessionsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out JoystickSession session))
+            return session;
+
+        try
+        {
+            session = _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
+            _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] = session;
+            return session;
+        }
+        catch
+        {
+            return null;
         }
     }
 
