@@ -12,7 +12,9 @@ namespace FalconBMS.Launcher.ViewModels;
 
 public sealed class ControlsViewModel : ViewModelBase
 {
-    private const string AllCategoriesLabel = "ALL KEYS & AXES";
+    private const string AllActionsLabel = "ALL";
+    private const string AllAxesLabel = "All AXES";
+    private const string AxisCategoryName = "AXIS";
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
     private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
@@ -25,6 +27,10 @@ public sealed class ControlsViewModel : ViewModelBase
     public ObservableCollection<ControlGridRowViewModel> Rows { get; } = new();
 
     public ObservableCollection<DeviceBindingProfile> DeviceColumns { get; } = new();
+
+    // Separate left-nav list so the UI can show friendly device names
+    // without changing the real DeviceColumns collection used by the table.
+    public ObservableCollection<ControlsDeviceNavigationItem> DeviceNavigationItems { get; } = new();
 
     public IReadOnlyList<BindingRow> SelectedProfileRows =>
         SelectedProfile?.Rows ?? Array.Empty<BindingRow>().ToList();
@@ -46,12 +52,12 @@ public sealed class ControlsViewModel : ViewModelBase
 
             RebuildRowsFromSelectedProfile();
             RebuildCategories();
-            SelectedCategory = AllCategoriesLabel;
+            SelectedCategory = AllActionsLabel;
             ApplyFilters();
         }
     }
 
-    private string _selectedCategory = AllCategoriesLabel;
+    private string _selectedCategory = AllActionsLabel;
     public string SelectedCategory
     {
         get => _selectedCategory;
@@ -60,6 +66,13 @@ public sealed class ControlsViewModel : ViewModelBase
             if (!Set(ref _selectedCategory, value)) return;
             ApplyFilters();
         }
+    }
+
+    private ControlsDeviceNavigationItem? _selectedDeviceNavigationItem;
+    public ControlsDeviceNavigationItem? SelectedDeviceNavigationItem
+    {
+        get => _selectedDeviceNavigationItem;
+        set => Set(ref _selectedDeviceNavigationItem, value);
     }
 
     private string _filterText = "";
@@ -89,12 +102,17 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         Profiles.Clear();
         DeviceColumns.Clear();
+        DeviceNavigationItems.Clear();
+        SelectedDeviceNavigationItem = null;
 
         foreach (var profile in bindingModel.AircraftProfiles)
             Profiles.Add(profile);
 
         foreach (var deviceProfile in bindingModel.DeviceProfiles.OrderBy(device => device.DiscoveryIndex))
+        {
             DeviceColumns.Add(deviceProfile);
+            DeviceNavigationItems.Add(new ControlsDeviceNavigationItem(deviceProfile));
+        }
 
         SelectedProfile = Profiles.FirstOrDefault(
             profile => string.Equals(profile.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase))
@@ -102,7 +120,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
         RebuildRowsFromSelectedProfile();
         RebuildCategories();
-        SelectedCategory = AllCategoriesLabel;
+        SelectedCategory = AllActionsLabel;
         ApplyFilters();
     }
 
@@ -120,7 +138,10 @@ public sealed class ControlsViewModel : ViewModelBase
     private void RebuildCategories()
     {
         Categories.Clear();
-        Categories.Add(AllCategoriesLabel);
+
+        // Force the two top-level navigation entries to always appear first.
+        Categories.Add(AllActionsLabel);
+        Categories.Add(AllAxesLabel);
 
         foreach (string category in _allRows
                      .Where(row => row.IsCategoryHeader)
@@ -128,6 +149,11 @@ public sealed class ControlsViewModel : ViewModelBase
                      .Where(category => !string.IsNullOrWhiteSpace(category))
                      .Distinct())
         {
+            // The axis builder creates an AXIS category internally.
+            // The UI should show that as "All Axes" in the forced second position instead.
+            if (string.Equals(category, AxisCategoryName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
             Categories.Add(category);
         }
     }
@@ -145,9 +171,15 @@ public sealed class ControlsViewModel : ViewModelBase
     private bool PassesCategoryFilter(ControlGridRowViewModel row)
     {
         if (string.IsNullOrWhiteSpace(SelectedCategory) ||
-            string.Equals(SelectedCategory, AllCategoriesLabel, StringComparison.OrdinalIgnoreCase))
+            string.Equals(SelectedCategory, AllActionsLabel, StringComparison.OrdinalIgnoreCase))
         {
             return true;
+        }
+
+        if (string.Equals(SelectedCategory, AllAxesLabel, StringComparison.OrdinalIgnoreCase))
+        {
+            return row.IsAxisRow ||
+                   string.Equals(row.CategoryName, AxisCategoryName, StringComparison.OrdinalIgnoreCase);
         }
 
         return string.Equals(row.CategoryName, SelectedCategory, StringComparison.OrdinalIgnoreCase);
@@ -537,6 +569,32 @@ public sealed class ControlsViewModel : ViewModelBase
     private void ClearFilters()
     {
         FilterText = "";
-        SelectedCategory = AllCategoriesLabel;
+        SelectedCategory = AllActionsLabel;
     }
+
+
+    public sealed class ControlsDeviceNavigationItem
+    {
+        public ControlsDeviceNavigationItem(DeviceBindingProfile deviceProfile)
+        {
+            DeviceProfile = deviceProfile;
+            DisplayName = GetDisplayName(deviceProfile);
+        }
+
+        public DeviceBindingProfile DeviceProfile { get; }
+
+        public string DisplayName { get; }
+
+        private static string GetDisplayName(DeviceBindingProfile deviceProfile)
+        {
+            if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
+                return deviceProfile.ProductName;
+
+            if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+                return deviceProfile.InstanceName;
+
+            return deviceProfile.DurableDeviceKey;
+        }
+    }
+
 }

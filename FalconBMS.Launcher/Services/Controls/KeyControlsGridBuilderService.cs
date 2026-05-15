@@ -18,12 +18,36 @@ public sealed class KeyControlsGridBuilderService
 
         var devices = deviceProfiles.ToList();
 
-        return profile.Rows
-            .Where(row => row.RowKind != BindingRowKind.HiddenCallback)
-            .Where(row => row.RowKind != BindingRowKind.Other)
+        return GetDisplayRows(profile.Rows)
             .OrderBy(row => row.SourceLineNumber)
             .Select(row => CreateRow(row, profile.AircraftProfile, devices))
             .ToList();
+    }
+
+    private static IEnumerable<BindingRow> GetDisplayRows(IEnumerable<BindingRow> rows)
+    {
+        bool skippedFirstCategoryHeader = false;
+
+        foreach (BindingRow row in rows)
+        {
+            if (row.RowKind == BindingRowKind.HiddenCallback)
+                continue;
+
+            if (row.RowKind == BindingRowKind.Other)
+                continue;
+
+            // The first category-style row in the .key file is the file title.
+            // Example: "BMS - Full"
+            // Skip only the first parsed CategoryHeader row.
+            if (!skippedFirstCategoryHeader &&
+                row.RowKind == BindingRowKind.CategoryHeader)
+            {
+                skippedFirstCategoryHeader = true;
+                continue;
+            }
+
+            yield return row;
+        }
     }
 
     private static ControlGridRowViewModel CreateRow(
