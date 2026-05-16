@@ -14,8 +14,6 @@ public sealed class LegacyAxisMappingDatWriterService
     private const int TotalSize = HeaderSize + AxisCount * EntrySize;
     private const int JoyNumOffset = 2;
 
-    private readonly AxisDefinitionService _axisDefinitions = new();
-
     public void Write(string baseDir, IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("AXISDAT");
@@ -72,7 +70,7 @@ public sealed class LegacyAxisMappingDatWriterService
                 if (!axis.PhysicalAxisIndex.HasValue)
                     continue;
 
-                if (!_axisDefinitions.TryGetMappingIndex(axis.LogicalAxisName, out int mappingIndex))
+                if (!AxisDefinitionService.TryGetMappingIndex(axis.LogicalAxisName, out int mappingIndex))
                     continue;
 
                 int offset = HeaderSize + mappingIndex * EntrySize;

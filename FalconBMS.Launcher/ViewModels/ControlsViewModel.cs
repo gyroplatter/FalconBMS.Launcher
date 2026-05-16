@@ -18,7 +18,6 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
     private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
-    private readonly AxisDefinitionService _axisDefinitionService = new();
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
 
@@ -541,7 +540,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private void RefreshAxisRows(string logicalAxisName)
     {
-        DeviceAxisDefinition? axisDefinition = _axisDefinitionService.Find(logicalAxisName);
+        DeviceAxisDefinition? axisDefinition = AxisDefinitionService.Find(logicalAxisName);
 
         foreach (ControlGridRowViewModel row in _allRows.Where(row =>
                      row.IsAxisRow &&

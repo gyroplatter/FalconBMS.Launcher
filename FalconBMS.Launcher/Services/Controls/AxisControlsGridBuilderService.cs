@@ -15,8 +15,6 @@ public sealed class AxisControlsGridBuilderService
 {
     private const string AxisCategoryName = "AXIS";
 
-    private readonly AxisDefinitionService _axisDefinitionService = new();
-
     public List<ControlGridRowViewModel> Build(IEnumerable<DeviceBindingProfile> deviceProfiles)
     {
         var devices = deviceProfiles.ToList();
@@ -32,7 +30,7 @@ public sealed class AxisControlsGridBuilderService
             }
         };
 
-        rows.AddRange(_axisDefinitionService
+        rows.AddRange(AxisDefinitionService
             .GetDefinitions()
             .Select(axisDefinition => CreateAxisRow(axisDefinition, devices)));
 

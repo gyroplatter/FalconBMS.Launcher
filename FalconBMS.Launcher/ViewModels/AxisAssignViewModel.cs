@@ -193,7 +193,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _saveAxisAssignment = saveAxisAssignment;
         _closeWindow = closeWindow;
 
-        _definition = new AxisDefinitionService().Find(axisRow.AxisLogicalAxisName);
+        _definition = AxisDefinitionService.Find(axisRow.AxisLogicalAxisName);
         TitleText = "Assign " + (_definition?.DisplayName ?? axisRow.Mapping) + " Axis";
         LeftLabel = _definition?.LeftLabel ?? "";
         RightLabel = _definition?.RightLabel ?? "";
@@ -512,7 +512,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     private static string GetLogicalAxisDisplayName(string logicalAxisName)
     {
-        DeviceAxisDefinition? definition = new AxisDefinitionService().Find(logicalAxisName);
+        DeviceAxisDefinition? definition = AxisDefinitionService.Find(logicalAxisName);
         return definition?.DisplayName ?? logicalAxisName;
     }
 

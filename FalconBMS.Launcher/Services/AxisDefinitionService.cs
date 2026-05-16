@@ -12,12 +12,13 @@ namespace FalconBMS.Launcher.Services;
 /// - stock XML axis parsing
 /// - axismapping.dat output
 /// - axis assignment popup labels/options
-/// 
-/// Keep this as the single source of truth for Falcon's 30 axis mapping slots.
+///
+/// Static because the axis table is fixed at compile time and shared across
+/// all services. No instance state exists or is needed.
 /// </summary>
-public sealed class AxisDefinitionService
+public static class AxisDefinitionService
 {
-    private readonly List<DeviceAxisDefinition> _definitions = new()
+    private static readonly List<DeviceAxisDefinition> _definitions = new()
     {
         FlightAxis(0, "Pitch", "Pitch", "Pitch Down", "Pitch Up"),
         FlightAxis(1, "Roll", "Roll", "Left Wing Down", "Right Wing Down"),
@@ -60,12 +61,9 @@ public sealed class AxisDefinitionService
         GenericAxis(29, "ILS_Volume_Knob", "Audio ILS Vol", "Volume Down", "Volume Up")
     };
 
-    public IReadOnlyList<DeviceAxisDefinition> GetDefinitions()
-    {
-        return _definitions;
-    }
+    public static IReadOnlyList<DeviceAxisDefinition> GetDefinitions() => _definitions;
 
-    public DeviceAxisDefinition? Find(string logicalAxisName)
+    public static DeviceAxisDefinition? Find(string logicalAxisName)
     {
         if (string.IsNullOrWhiteSpace(logicalAxisName))
             return null;
@@ -76,7 +74,7 @@ public sealed class AxisDefinitionService
             string.Equals(definition.LogicalAxisName, canonicalName, StringComparison.OrdinalIgnoreCase));
     }
 
-    public bool TryGetMappingIndex(string logicalAxisName, out int mappingIndex)
+    public static bool TryGetMappingIndex(string logicalAxisName, out int mappingIndex)
     {
         DeviceAxisDefinition? definition = Find(logicalAxisName);
 
@@ -111,12 +109,7 @@ public sealed class AxisDefinitionService
         return trimmedName;
     }
 
-    private static DeviceAxisDefinition Throttle(
-        int mappingIndex,
-        string logicalAxisName,
-        string displayName,
-        string leftLabel,
-        string rightLabel)
+    private static DeviceAxisDefinition Throttle(int mappingIndex, string logicalAxisName, string displayName, string leftLabel, string rightLabel)
     {
         return new DeviceAxisDefinition
         {
@@ -134,12 +127,7 @@ public sealed class AxisDefinitionService
         };
     }
 
-    private static DeviceAxisDefinition FlightAxis(
-        int mappingIndex,
-        string logicalAxisName,
-        string displayName,
-        string leftLabel,
-        string rightLabel)
+    private static DeviceAxisDefinition FlightAxis(int mappingIndex, string logicalAxisName, string displayName, string leftLabel, string rightLabel)
     {
         return new DeviceAxisDefinition
         {
@@ -157,12 +145,7 @@ public sealed class AxisDefinitionService
         };
     }
 
-    private static DeviceAxisDefinition GenericAxis(
-        int mappingIndex,
-        string logicalAxisName,
-        string displayName,
-        string leftLabel,
-        string rightLabel)
+    private static DeviceAxisDefinition GenericAxis(int mappingIndex, string logicalAxisName, string displayName, string leftLabel, string rightLabel)
     {
         return new DeviceAxisDefinition
         {

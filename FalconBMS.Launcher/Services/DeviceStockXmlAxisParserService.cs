@@ -13,7 +13,6 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class DeviceStockXmlAxisParserService
 {
-    private readonly AxisDefinitionService _axisDefinitions = new();
 
     public void ApplyAxes(DeviceBindingProfile profile)
     {
@@ -64,7 +63,7 @@ public sealed class DeviceStockXmlAxisParserService
             if (string.IsNullOrWhiteSpace(logicalAxisName))
                 continue;
 
-            DeviceAxisDefinition? definition = _axisDefinitions.Find(logicalAxisName);
+            DeviceAxisDefinition? definition = AxisDefinitionService.Find(logicalAxisName);
             if (definition is null)
             {
                 DebugDiagnosticsService.Warn(
@@ -106,7 +105,7 @@ public sealed class DeviceStockXmlAxisParserService
         if (detentRoot is null)
             return;
 
-        DeviceAxisDefinition? throttleDefinition = _axisDefinitions.Find("Throttle");
+        DeviceAxisDefinition? throttleDefinition = AxisDefinitionService.Find("Throttle");
         if (throttleDefinition is null)
             return;
 

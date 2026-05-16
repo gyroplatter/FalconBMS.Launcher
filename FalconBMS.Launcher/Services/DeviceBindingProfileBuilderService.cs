@@ -12,7 +12,7 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class DeviceBindingProfileBuilderService
 {
-    private readonly AxisDefinitionService _axisDefinitions = new();
+
     private readonly DeviceStockXmlAxisParserService _stockXmlAxisParser = new();
     private readonly DeviceStockXmlButtonParserService _stockXmlButtonParser = new();
     private readonly DeviceStockXmlPovParserService _stockXmlPovParser = new();
@@ -72,7 +72,7 @@ public sealed class DeviceBindingProfileBuilderService
             StockXmlPath = match.StockXmlPath
         };
 
-        foreach (DeviceAxisDefinition definition in _axisDefinitions.GetDefinitions())
+        foreach (DeviceAxisDefinition definition in AxisDefinitionService.GetDefinitions())
         {
             profile.AxisBindings.Add(new DeviceAxisBinding
             {

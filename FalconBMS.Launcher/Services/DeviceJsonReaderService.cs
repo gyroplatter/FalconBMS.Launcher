@@ -11,7 +11,6 @@ namespace FalconBMS.Launcher.Services;
 public sealed class DeviceJsonReaderService
 {
     private readonly DeviceBindingProfileBuilderService _fallbackBuilder = new();
-    private readonly AxisDefinitionService _axisDefinitions = new();
 
     public IReadOnlyList<DeviceBindingProfile> LoadOrBuild(
         string baseDir,
@@ -154,7 +153,7 @@ public sealed class DeviceJsonReaderService
         // Always rebuild axis bindings in AxisDefinitionService order.
         // This guarantees the in-memory model has the current full 30-axis table
         // even when loading an older partial JSON file.
-        foreach (DeviceAxisDefinition definition in _axisDefinitions.GetDefinitions())
+        foreach (DeviceAxisDefinition definition in AxisDefinitionService.GetDefinitions())
         {
             jsonAxisByLogicalName.TryGetValue(definition.LogicalAxisName, out JsonDeviceAxisBinding? axis);
 

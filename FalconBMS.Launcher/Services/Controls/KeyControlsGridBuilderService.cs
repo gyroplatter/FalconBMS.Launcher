@@ -19,9 +19,8 @@ public sealed class KeyControlsGridBuilderService
         var devices = deviceProfiles.ToList();
 
         return GetDisplayRows(profile.Rows)
-            .OrderBy(row => row.SourceLineNumber)
-            .Select(row => CreateRow(row, profile.AircraftProfile, devices))
-            .ToList();
+                    .Select(row => CreateRow(row, profile.AircraftProfile, devices))
+                    .ToList();
     }
 
     private static IEnumerable<BindingRow> GetDisplayRows(IEnumerable<BindingRow> rows)

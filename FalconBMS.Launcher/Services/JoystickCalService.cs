@@ -27,8 +27,6 @@ public sealed class JoystickCalService
     private const int TotalSize = AxisCount * EntrySize;
     private const int JoystickCalDetentScale = 15000;
 
-    private readonly AxisDefinitionService _axisDefinitions = new();
-
     /// <summary>
     /// BMS 4.37+ joystick.cal order.
     /// 
@@ -131,7 +129,7 @@ public sealed class JoystickCalService
         IReadOnlyList<DeviceBindingProfile> deviceProfiles,
         string logicalAxisName)
     {
-        DeviceAxisDefinition? definition = _axisDefinitions.Find(logicalAxisName);
+        DeviceAxisDefinition? definition = AxisDefinitionService.Find(logicalAxisName);
 
         if (definition is null)
             return null;
