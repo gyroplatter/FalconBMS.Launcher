@@ -58,15 +58,10 @@ public sealed class MainViewModel : ViewModelBase
                 Properties.Settings.Default.LastInstall = value.RegistryKeyName;
                 Properties.Settings.Default.Save();
 
-                LoadBindingModelForSelectedInstall();
-
-                IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches =
-                    _deviceDiscovery.DiscoverAndMatchStockXml(value.BaseDir);
-
-                CurrentBindingModel.DeviceProfiles.Clear();
-
-                foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(value.BaseDir, stockDeviceMatches))
-                    CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
+                // Build the complete model (catalogs + keyboard JSON + device JSON) before
+                // firing any notification. Subscribers see a fully populated model on the
+                // first and only notification rather than an incomplete one.
+                LoadFullBindingModelForInstall(value);
 
                 OnPropertyChanged(nameof(CurrentBindingModel));
 
@@ -407,27 +402,34 @@ public sealed class MainViewModel : ViewModelBase
         SelectedInstall = Installs.FirstOrDefault(i => i.RegistryKeyName == last) ?? Installs[0];
     }
 
-    private void LoadBindingModelForSelectedInstall()
+    /// <summary>
+    /// Builds the complete in-memory binding model for the given install in one pass:
+    ///   1. Load BMS - Full*.key catalogs (read-only structure and defaults)
+    ///   2. Overlay saved keyboard JSON onto the catalog rows
+    ///   3. Discover DirectInput devices and match stock XMLs
+    ///   4. Load or build device binding profiles from device JSON (falling back to stock XML)
+    ///
+    /// Deliberately does NOT fire OnPropertyChanged. The caller owns notification timing
+    /// so subscribers always see a complete model on the first notification.
+    /// </summary>
+    private void LoadFullBindingModelForInstall(BmsInstall install)
     {
-        if (SelectedInstall is null)
-        {
-            KeyCatalogs = Array.Empty<KeyCatalog>();
-            CurrentBindingModel = new();
-
-            OnPropertyChanged(nameof(KeyCatalogs));
-            OnPropertyChanged(nameof(CurrentBindingModel));
-            return;
-        }
-
-        KeyCatalogs = _keyCatalogService.LoadForInstall(SelectedInstall.BaseDir);
+        // Step 1+2: keyboard bindings
+        KeyCatalogs = _keyCatalogService.LoadForInstall(install.BaseDir);
         CurrentBindingModel = _bindingModelBuilder.Build(KeyCatalogs);
 
         // FULL key files define the current structure/defaults.
         // JSON overlays saved keyboard state onto that current structure.
-        _jsonKeyboardBindingReader.Apply(SelectedInstall.BaseDir, CurrentBindingModel);
+        _jsonKeyboardBindingReader.Apply(install.BaseDir, CurrentBindingModel);
 
-        OnPropertyChanged(nameof(KeyCatalogs));
-        OnPropertyChanged(nameof(CurrentBindingModel));
+        // Step 3+4: device bindings
+        IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches =
+            _deviceDiscovery.DiscoverAndMatchStockXml(install.BaseDir);
+
+        CurrentBindingModel.DeviceProfiles.Clear();
+
+        foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(install.BaseDir, stockDeviceMatches))
+            CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
     }
 
     private void LoadTheaterForSelectedInstall()
@@ -484,10 +486,24 @@ public sealed class MainViewModel : ViewModelBase
     private bool CanLaunchFirstParty(object? parameter) =>
         SelectedInstall is not null && parameter is string id && !string.IsNullOrWhiteSpace(id);
 
+    // Set by MainWindowViewModel after construction, so SaveOutputsForClose
+    // can check IsDirty and skip the write pipeline when nothing has changed.
+    public ViewModels.ControlsViewModel? ControlsViewModel { get; set; }
+
     public void SaveOutputsForClose()
     {
         if (SelectedInstall is null)
             return;
+
+        // Skip the full write pipeline if the user made no binding changes this session.
+        // PrepareForLaunch already ran before BMS launched, so all files are current.
+        // The individual writers also SHA1-diff before touching disk, but skipping the
+        // entire pass avoids opening every file unnecessarily on close.
+        if (ControlsViewModel is not null && !ControlsViewModel.IsDirty)
+        {
+            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes since last PrepareForLaunch.");
+            return;
+        }
 
         try
         {
@@ -553,6 +569,10 @@ public sealed class MainViewModel : ViewModelBase
                 CurrentBindingModel);
 
             DebugDiagnosticsService.Info("PrepareForLaunch complete.");
+
+            // All outputs are now current. Reset dirty so SaveOutputsForClose
+            // can skip the redundant write if nothing changes while BMS is running.
+            ControlsViewModel?.ResetDirty();
 
             var arguments = BuildFalconArguments();
             DebugDiagnosticsService.Info($"Falcon launch arguments: {arguments}");

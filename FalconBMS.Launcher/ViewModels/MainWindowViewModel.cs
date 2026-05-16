@@ -15,7 +15,6 @@ public sealed class MainWindowViewModel : ViewModelBase
     public StylesViewModel Styles { get; } = new();
 
     private LauncherTab _currentTab = LauncherTab.Main;
-
     public LauncherTab CurrentTab
     {
         get => _currentTab;
@@ -41,10 +40,22 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         SetTabCommand = new RelayCommand(() => { }, () => true);
 
+        // Give MainViewModel a reference to ControlsViewModel so SaveOutputsForClose
+        // can check IsDirty and skip the write pipeline when nothing has changed.
+        Main.ControlsViewModel = Controls;
+
+        // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
+        // and notifies here. ControlsViewModel reloads from the new complete model and its
+        // dirty flag is implicitly reset because LoadBindingModel replaces all state.
         Main.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(Main.CurrentBindingModel))
+            {
                 Controls.LoadBindingModel(Main.CurrentBindingModel);
+
+                // The model was just reloaded from disk — no unsaved changes exist yet.
+                Controls.ResetDirty();
+            }
         };
 
         Controls.LoadBindingModel(Main.CurrentBindingModel);

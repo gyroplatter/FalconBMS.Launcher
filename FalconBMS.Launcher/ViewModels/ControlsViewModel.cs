@@ -33,9 +33,15 @@ public sealed class ControlsViewModel : ViewModelBase
     public ObservableCollection<ControlsDeviceNavigationItem> DeviceNavigationItems { get; } = new();
 
     public IReadOnlyList<BindingRow> SelectedProfileRows =>
-        SelectedProfile?.Rows ?? Array.Empty<BindingRow>().ToList();
+            SelectedProfile?.Rows ?? Array.Empty<BindingRow>().ToList();
+
+    // Tracks whether any binding has been modified since the last PrepareForLaunch.
+    // Used by MainViewModel to skip the on-close save if nothing changed.
+    private bool _isDirty;
+    public bool IsDirty => _isDirty;
 
     private ControlGridRowViewModel? _selectedRow;
+
     public ControlGridRowViewModel? SelectedRow
     {
         get => _selectedRow;
@@ -278,6 +284,7 @@ public sealed class ControlsViewModel : ViewModelBase
         selectedRow.IsModified = true;
 
         RefreshGridRowForSource(selectedRow);
+        _isDirty = true;
         OnPropertyChanged(nameof(SummaryText));
     }
 
@@ -316,6 +323,7 @@ public sealed class ControlsViewModel : ViewModelBase
             }
 
             RefreshDeviceCellsForCallback(selectedRow.CallbackName);
+            _isDirty = true;
             OnPropertyChanged(nameof(SummaryText));
             return;
         }
@@ -360,6 +368,7 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (string callbackName in affectedCallbackNames)
             RefreshDeviceCellsForCallback(callbackName);
 
+        _isDirty = true;
         OnPropertyChanged(nameof(SummaryText));
     }
 
@@ -515,6 +524,7 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (string changedLogicalAxisName in changedLogicalAxisNames)
             RefreshAxisRows(changedLogicalAxisName);
 
+        _isDirty = true;
         OnPropertyChanged(nameof(SummaryText));
     }
 
@@ -570,6 +580,15 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         FilterText = "";
         SelectedCategory = AllActionsLabel;
+    }
+
+    /// <summary>
+    /// Resets the dirty flag after a successful PrepareForLaunch write.
+    /// Call this from MainViewModel after each successful save.
+    /// </summary>
+    public void ResetDirty()
+    {
+        _isDirty = false;
     }
 
 
