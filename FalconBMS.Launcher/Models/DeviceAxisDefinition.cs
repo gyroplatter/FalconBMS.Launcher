@@ -32,6 +32,22 @@ public sealed class DeviceAxisDefinition
 
     public bool SupportsIdleDetent { get; init; }
 
+    /// <summary>
+    /// The section this axis belongs to in the Controls grid, e.g. "2.19 Throttle
+    /// Quadrant System". Must match KeyCatalogRow.SectionName exactly as produced
+    /// by KeyCatalogService.CleanHeaderText (= signs stripped, whitespace collapsed).
+    /// Empty string means no placement is defined for this axis in the current
+    /// aircraft profile — it will appear in the fallback group at the bottom.
+    /// </summary>
+    public string SectionName { get; init; } = "";
+
+    /// <summary>
+    /// True when this axis has a valid section placement defined for the current
+    /// aircraft profile. Axes without placement fall back to the bottom
+    /// of the Controls grid so they always display.
+    /// </summary>
+    public bool HasSectionPlacement => !string.IsNullOrWhiteSpace(SectionName);
+
     public IReadOnlyList<DeviceAxisControlKind> SupportedControls
     {
         get

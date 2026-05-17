@@ -13,7 +13,7 @@ namespace FalconBMS.Launcher.ViewModels;
 public sealed class ControlsViewModel : ViewModelBase
 {
     private const string AllActionsLabel = "ALL";
-    private const string AllAxesLabel = "All AXES";
+    private const string AllAxesLabel = "ALL AXES";
     private const string AxisCategoryName = "AXIS";
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
@@ -133,11 +133,43 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         _allRows.Clear();
 
-        foreach (var row in _keyGridBuilder.Build(SelectedProfile, DeviceColumns))
-            _allRows.Add(row);
+        string aircraftProfile = SelectedProfile?.AircraftProfile ?? "";
 
-        foreach (var row in _axisGridBuilder.Build(DeviceColumns))
-            _allRows.Add(row);
+        List<ControlGridRowViewModel> keyRows = _keyGridBuilder.Build(SelectedProfile, DeviceColumns);
+        List<ControlGridRowViewModel> axisRows = _axisGridBuilder.Build(aircraftProfile, DeviceColumns);
+
+        // Group axis rows by SectionName so we can look them up when iterating key rows.
+        // Axes with no section placement (HasSectionPlacement == false) go to the fallback list.
+        Dictionary<string, List<ControlGridRowViewModel>> axisBySection = axisRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.SectionName) &&
+                          !string.Equals(row.SectionName, AxisControlsGridBuilderService.UnplacedSectionName,
+                              StringComparison.OrdinalIgnoreCase))
+            .GroupBy(row => row.SectionName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+        List<ControlGridRowViewModel> unplacedAxisRows = axisRows
+            .Where(row => string.IsNullOrWhiteSpace(row.SectionName) ||
+                          string.Equals(row.SectionName, AxisControlsGridBuilderService.UnplacedSectionName,
+                              StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // Walk key rows in order. When we hit a SectionHeader row, immediately inject
+        // any axis rows that belong to that section before the regular key rows follow.
+        foreach (ControlGridRowViewModel keyRow in keyRows)
+        {
+            _allRows.Add(keyRow);
+
+            if (keyRow.RowKind == BindingRowKind.SectionHeader &&
+                axisBySection.TryGetValue(keyRow.SectionName, out List<ControlGridRowViewModel>? sectionAxes))
+            {
+                foreach (ControlGridRowViewModel axisRow in sectionAxes)
+                    _allRows.Add(axisRow);
+            }
+        }
+
+        // Append any unplaced axes at the bottom so they are never silently lost.
+        foreach (ControlGridRowViewModel axisRow in unplacedAxisRows)
+            _allRows.Add(axisRow);
     }
 
     private void RebuildCategories()
@@ -155,7 +187,7 @@ public sealed class ControlsViewModel : ViewModelBase
                      .Distinct())
         {
             // The axis builder creates an AXIS category internally.
-            // The UI should show that as "All Axes" in the forced second position instead.
+            // The UI should show always show  "ALL AXES" in the second position.
             if (string.Equals(category, AxisCategoryName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
@@ -167,8 +199,67 @@ public sealed class ControlsViewModel : ViewModelBase
     {
         Rows.Clear();
 
-        foreach (var row in _allRows.Where(PassesCategoryFilter).Where(PassesTextFilter))
-            Rows.Add(row);
+        bool isFiltering = !string.IsNullOrWhiteSpace(FilterText) ||
+                           (!string.IsNullOrWhiteSpace(SelectedCategory) &&
+                            !string.Equals(SelectedCategory, AllActionsLabel, StringComparison.OrdinalIgnoreCase));
+
+        if (!isFiltering)
+        {
+            // No filter active: show everything as-is, headers included
+            foreach (var row in _allRows)
+                Rows.Add(row);
+        }
+        else
+        {
+            // Collect the data rows that pass both filters
+            var matchingRows = _allRows
+                .Where(row => !row.IsCategoryHeader && !row.IsSectionHeader)
+                .Where(PassesCategoryFilter)
+                .Where(PassesTextFilter)
+                .ToHashSet();
+
+            // Walk _allRows in order. For each header, check whether any row
+            // that follows it (before the next same-level header) is in the match set.
+            // If so, emit the header so results always have section context.
+            ControlGridRowViewModel? pendingCategoryHeader = null;
+            ControlGridRowViewModel? pendingSectionHeader = null;
+
+            foreach (ControlGridRowViewModel row in _allRows)
+            {
+                if (row.IsCategoryHeader)
+                {
+                    // Hold the category header: emit it only when a match appears beneath it
+                    pendingCategoryHeader = row;
+                    pendingSectionHeader = null;
+                    continue;
+                }
+
+                if (row.IsSectionHeader)
+                {
+                    // Hold the section header: emit it only when a match appears beneath it
+                    pendingSectionHeader = row;
+                    continue;
+                }
+
+                if (!matchingRows.Contains(row))
+                    continue;
+
+                // This row matched: flush any pending headers before adding it
+                if (pendingCategoryHeader is not null)
+                {
+                    Rows.Add(pendingCategoryHeader);
+                    pendingCategoryHeader = null;
+                }
+
+                if (pendingSectionHeader is not null)
+                {
+                    Rows.Add(pendingSectionHeader);
+                    pendingSectionHeader = null;
+                }
+
+                Rows.Add(row);
+            }
+        }
 
         OnPropertyChanged(nameof(SummaryText));
     }
