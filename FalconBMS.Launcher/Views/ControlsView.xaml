@@ -1,6 +1,11 @@
 ﻿<UserControl x:Class="FalconBMS.Launcher.Views.ControlsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1248"
+             d:DesignHeight="536">
 
     <UserControl.Resources>
         <Style x:Key="ControlsNavHeadingTextBlockStyle"
@@ -27,8 +32,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="16"
-          Background="{DynamicResource AppWindowBackgroundBrush}">
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -106,33 +110,34 @@
                       Grid.Column="2"
                       ItemsSource="{Binding Rows}"
                       SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      CanUserDeleteRows="False"
-                      IsReadOnly="True"
-
-                      HeadersVisibility="Column"
-                      RowHeaderWidth="0"
+                      Style="{StaticResource ControlsTableStyle}"
                       FrozenColumnCount="2"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
-                      GridLinesVisibility="All"
-
-                      Background="{DynamicResource AppSurfaceBrush}"
-                      Foreground="{DynamicResource AppForegroundBrush}"
-                      BorderBrush="{DynamicResource AppBorderBrush}"
-                      HorizontalGridLinesBrush="{DynamicResource AppBorderBrush}"
-                      VerticalGridLinesBrush="{DynamicResource AppBorderBrush}"
                       MouseDoubleClick="ControlsGrid_MouseDoubleClick">
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Mapping"
-                                        Binding="{Binding Mapping}"
-                                        Width="380"
-                                        MinWidth="380"/>
+                    <DataGridTemplateColumn Header="Mapping"
+                                            Width="380"
+                                            MinWidth="380">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Mapping}"
+                                               Style="{StaticResource ControlsTableTextBlockStyle}"/>
+
+                                    <Border Style="{StaticResource ControlsTableAxisBadgeStyle}">
+                                        <TextBlock Style="{StaticResource ControlsTableAxisBadgeTextStyle}"/>
+                                    </Border>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
                     <DataGridTextColumn Header="Key"
                                         Binding="{Binding Key}"
+                                        ElementStyle="{StaticResource ControlsTableTextBlockStyle}"
                                         Width="140"
                                         MinWidth="140"/>
                 </DataGrid.Columns>

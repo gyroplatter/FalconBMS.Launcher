@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d">
+             mc:Ignorable="d"
+             d:DesignWidth="1248"
+             d:DesignHeight="536">
 
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid.ColumnDefinitions>
@@ -247,8 +249,7 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Text="News"
-                           FontSize="16"
-                           FontWeight="SemiBold"
+                           Style="{StaticResource SubheadingTextBlockStyle}"
                            Margin="0,0,0,8"/>
 
                 <ScrollViewer Grid.Row="1"

@@ -44,6 +44,217 @@
         <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
     </Style>
 
+    <!-- Controls table: shared DataGrid styling. Brush values come from the active light/dark theme. -->
+    <Style x:Key="ControlsTableColumnHeaderStyle" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource ControlsTableHeaderBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlsTableGridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        <Setter Property="Padding" Value="7,5"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ControlsTableRowStyle" TargetType="DataGridRow">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="MinHeight" Value="24"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+        <Style.Triggers>
+            <!-- Non-editable and REM rows read like visible comments, not disabled content. -->
+            <DataTrigger Binding="{Binding IsEditable}" Value="False">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableCommentBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsRemark}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableCommentBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <!-- Axis rows use the same base row color as normal keyboard rows. -->
+            <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            </DataTrigger>
+
+            <!-- Subsection = H2 level inside the control list. -->
+            <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableSubsectionBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableSubsectionForegroundBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="MinHeight" Value="26"/>
+            </DataTrigger>
+
+            <!-- Section = H1 level inside the control list. -->
+            <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableSectionBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableSectionForegroundBrush}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="MinHeight" Value="30"/>
+            </DataTrigger>
+
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableHoverBrush}"/>
+            </Trigger>
+
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource ControlsTableSelectedBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ControlsTableCellStyle" TargetType="DataGridCell">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlsTableGridLineBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="TextElement.FontWeight" Value="Normal"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsEditable}" Value="False">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsRemark}" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlsTableSubsectionForegroundBrush}"/>
+                <Setter Property="TextElement.FontWeight" Value="SemiBold"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlsTableSectionForegroundBrush}"/>
+                <Setter Property="TextElement.FontWeight" Value="Bold"/>
+            </DataTrigger>
+
+            <!-- Keep the selected row color controlled by the row instead of WPF's default blue cell fill. -->
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlsTableGridLineBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ControlsTableTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="Margin" Value="6,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsEditable}" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsRemark}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableSubsectionForegroundBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource ControlsTableSectionForegroundBrush}"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
+                <Setter Property="Margin" Value="8,0"/>
+                <Setter Property="FontSize" Value="13.5"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
+                <Setter Property="Margin" Value="8,0"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsRemark}" Value="True">
+                <Setter Property="FontStyle" Value="Italic"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsEditable}" Value="False">
+                <Setter Property="FontStyle" Value="Italic"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
+                <Setter Property="FontStyle" Value="Normal"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
+                <Setter Property="FontStyle" Value="Normal"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
+                <Setter Property="FontStyle" Value="Normal"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ControlsTableAxisBadgeStyle" TargetType="Border">
+        <Setter Property="Visibility" Value="Collapsed"/>
+        <Setter Property="Background" Value="{DynamicResource ControlsTableAxisBadgeBackgroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlsTableAxisBadgeBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="7,1"/>
+        <Setter Property="Margin" Value="8,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ControlsTableAxisBadgeTextStyle" TargetType="TextBlock">
+        <Setter Property="Text" Value="Axis"/>
+        <Setter Property="Foreground" Value="{DynamicResource ControlsTableAxisBadgeForegroundBrush}"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ControlsTableStyle" TargetType="DataGrid">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource ControlsTableGridLineBrush}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="RowHeaderWidth" Value="0"/>
+        <Setter Property="CanUserAddRows" Value="False"/>
+        <Setter Property="CanUserDeleteRows" Value="False"/>
+        <Setter Property="IsReadOnly" Value="True"/>
+        <Setter Property="AutoGenerateColumns" Value="False"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource ControlsTableColumnHeaderStyle}"/>
+        <Setter Property="RowStyle" Value="{StaticResource ControlsTableRowStyle}"/>
+        <Setter Property="CellStyle" Value="{StaticResource ControlsTableCellStyle}"/>
+    </Style>
+
     <Style TargetType="{x:Type Border}">
         <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
     </Style>

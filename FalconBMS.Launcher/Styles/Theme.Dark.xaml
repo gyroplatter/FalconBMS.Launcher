@@ -11,9 +11,26 @@
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
 
+    <!-- Controls table -->
+    <SolidColorBrush x:Key="ControlsTableHeaderBrush" Color="#262D3A"/>
+    <SolidColorBrush x:Key="ControlsTableGridLineBrush" Color="#334455"/>
+    <SolidColorBrush x:Key="ControlsTableHoverBrush" Color="#293544"/>
+    <SolidColorBrush x:Key="ControlsTableSelectedBrush" Color="#314763"/>
+    <SolidColorBrush x:Key="ControlsTableSectionBackgroundBrush" Color="#17364D"/>
+    <SolidColorBrush x:Key="ControlsTableSectionForegroundBrush" Color="#F3F8FF"/>
+    <SolidColorBrush x:Key="ControlsTableSubsectionBackgroundBrush" Color="#243447"/>
+    <SolidColorBrush x:Key="ControlsTableSubsectionForegroundBrush" Color="#DDEBFA"/>
+    <SolidColorBrush x:Key="ControlsTableAxisBackgroundBrush" Color="#1B2B38"/>
+    <SolidColorBrush x:Key="ControlsTableCommentBackgroundBrush" Color="#1A2029"/>
+    <SolidColorBrush x:Key="ControlsTableCommentForegroundBrush" Color="#A5ADBA"/>
+
     <SolidColorBrush x:Key="AppHeadingForegroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="AppSubHeadingForegroundBrush" Color="#D1D5DB"/>
     <SolidColorBrush x:Key="AppBodyForegroundBrush" Color="#D1D5DB"/>
+
+    <SolidColorBrush x:Key="ControlsTableAxisBadgeBackgroundBrush" Color="#244760"/>
+    <SolidColorBrush x:Key="ControlsTableAxisBadgeForegroundBrush" Color="#EAF5FF"/>
+    <SolidColorBrush x:Key="ControlsTableAxisBadgeBorderBrush" Color="#3D6684"/>
 
     <!-- Primary CTA -->
     <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FBB040"/>
