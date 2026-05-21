@@ -63,11 +63,4 @@
 		</Content>
 	</ItemGroup>
 
-	<ItemGroup>
-		<None Update="Tools\bms-logcat.exe">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<TargetPath>Tools\bms-logcat.exe</TargetPath>
-		</None>
-	</ItemGroup>
-
 </Project>

@@ -1,4 +1,4 @@
-﻿# Falcon BMS Alternative Launcher (Rebuild)
+﻿# Falcon BMS Launcher (Rebuild)
 
 ## Summary
 This is a full rebuild of the Falcon BMS Launcher using .NET 4.8 (WPF) x64.
@@ -9,7 +9,7 @@ The goal of this project is to modernize the Launcher code and reimagine the UI/
 
 The project direction is to reduce the number of moving parts in Falcon BMS control configuration. Keyboard, HOTAS, button, POV, axis, and aircraft-specific bindings should move toward a cleaner JSON-based model.
 
-Legacy Falcon BMS files are still generated so Falcon BMS and existing third-party tools continue to work, but those files are compatibility outputs rather than the primary editing model. Since this new Launcher reads from JSON files on startup, it is not currently possible to import files from the current v2 Alternative Launcher into this new v3 Launcher. 
+Legacy Falcon BMS files are still generated so Falcon BMS and existing third-party tools continue to work, but those files are compatibility outputs rather than the primary editing model. Since this new Launcher reads from JSON files on startup, it is not currently possible to import files from the current Alternative Launcher v2 into this new v3 Launcher. 
 
 ---
 
@@ -149,19 +149,19 @@ ViewModels (MVVM)
 In-memory binding model
    to
 Services
+   ├── Theater discovery
+   ├── RSS handling
+   ├── Theme handling
    ├── Device discovery
    ├── DirectInput polling
+   ├── Stock XML matching
    ├── Key catalog loading
    ├── Keyboard JSON reading/writing
    ├── Device JSON reading/writing
    ├── Axis definition handling
-   ├── Stock XML matching
    ├── Launch preparation
    ├── User.cfg override handling
    ├── POP/LBK handling
-   ├── Theater discovery
-   ├── RSS handling
-   ├── Theme handling
    ├── Debug diagnostics / logging
    └── Legacy compatibility writers
    to
@@ -170,7 +170,7 @@ File Output (User\Config\JSON & User\Config)
 
 ---
 
-### Logging
+## Logging
 
 The Launcher writes diagnostic log output to:
 

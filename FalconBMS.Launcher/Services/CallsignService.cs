@@ -65,10 +65,12 @@ public sealed class CallsignService
             return;
         }
 
-        string logcatExePath = Path.Combine(AppContext.BaseDirectory, "Tools", "bms-logcat.exe");
+        // bms-logcat.exe is part of the Falcon BMS install.
+        // [Install]\Launcher\bms-logcat.exe
+        string logcatExePath = Path.Combine(baseDir, "Launcher", "bms-logcat.exe");
         if (!File.Exists(logcatExePath))
         {
-            DebugDiagnosticsService.Warn("Could not find bms-logcat.exe");
+            DebugDiagnosticsService.Warn($"Could not find bms-logcat.exe at: {logcatExePath}");
             return;
         }
 
