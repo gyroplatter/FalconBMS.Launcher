@@ -13,19 +13,6 @@ Legacy Falcon BMS files are still generated so Falcon BMS and existing third-par
 
 ---
 
-## Branches
-
-### master
-
-Goals:
-- Improve usability by treating axes and keybindings as a unified "control" system
-- Reduce user confusion
-- Prepare for potential future support of different axis mappings per aircraft (F16 vs F15)
-- Implement an in-memory binding model
-- Continue support for "legacy" .KEY and .XML files
-
----
-
 ## Dependencies (NuGet)
 
 This project uses the following NuGet packages:
@@ -70,9 +57,7 @@ This project uses the following NuGet packages:
 
 ### Current JSON Binding Files
 
-Launcher-managed JSON files are written under:
-
-- User\Config\JSON
+The Launcher generates Falcon BMS JSON files within the selected install's `User\Config\JSON` folder.
 
 Current keyboard JSON files:
 
@@ -93,7 +78,7 @@ Examples:
 
 ### Compatibility Outputs
 
-The Launcher generates Falcon BMS "legacy" compatibility files under the selected install's User\Config folder.
+The Launcher generates Falcon BMS "legacy" files within the selected install's `User\Config` folder.
 
 These files are generated outputs:
 
@@ -177,7 +162,20 @@ Services
    ├── Theater discovery
    ├── RSS handling
    ├── Theme handling
+   ├── Debug diagnostics / logging
    └── Legacy compatibility writers
    to
-File Output (User\Config)
+File Output (User\Config\JSON & User\Config)
 ```
+
+---
+
+### Logging
+
+The Launcher writes diagnostic log output to:
+
+- User\Config\Launcher_Log.txt
+
+The log records application startup, selected install changes, device discovery, JSON loading/writing, generated compatibility file writes, launch preparation, Falcon launch events, close-time save behavior, warnings, and exceptions.
+
+Generated file writes include before/after file signatures so it is possible to see whether a file actually changed.
