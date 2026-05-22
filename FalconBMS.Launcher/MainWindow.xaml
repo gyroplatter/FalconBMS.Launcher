@@ -34,33 +34,39 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Row 0: header -->
-            <RowDefinition Height="Auto"/>
-            <!-- Row 1: nav -->
+            <!-- Row 0: header with logo and nav -->
             <RowDefinition Height="*"/>
-            <!-- Row 2: content -->
+            <!-- Row 1: content -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 3: footer -->
+            <!-- Row 2: footer -->
         </Grid.RowDefinitions>
 
-        <!-- Row 1: header logo row -->
-        <Border Grid.Row="0" Padding="12" Background="{DynamicResource AppHeaderBackgroundBrush}">
-            <Image Source="Assets/bms-logo.png"
-                   Height="40"
-                   Stretch="Uniform"
-                   HorizontalAlignment="Left"/>
+        <!-- Row 0: header logo and nav row -->
+        <Border Grid.Row="0"
+                Style="{StaticResource MainWindowHeaderBorderStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Image Grid.Column="0"
+                       Source="Assets/bms-logo.png"
+                       Style="{StaticResource MainWindowHeaderLogoStyle}"/>
+
+                <views:LauncherNavBar Grid.Column="2"
+                                      Style="{StaticResource MainWindowHeaderNavHostStyle}"/>
+            </Grid>
         </Border>
 
-        <!-- Row 2: nav -->
-        <views:LauncherNavBar Grid.Row="1"/>
-
-        <!-- Row 3: active tab content -->
-        <ContentControl Grid.Row="2"
+        <!-- Row 1: active tab content -->
+        <ContentControl Grid.Row="1"
                 Content="{Binding CurrentViewModel}"
                 Style="{StaticResource MainContentControlStyle}"/>
 
-        <!-- Row 4: footer -->
-        <Border Grid.Row="3"
+        <!-- Row 2: footer -->
+        <Border Grid.Row="2"
                 Padding="10"
                 BorderThickness="0,1,0,0"
                 BorderBrush="{DynamicResource AppBorderBrush}"

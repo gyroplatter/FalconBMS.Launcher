@@ -5,29 +5,22 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Border Padding="12,8"
-            BorderThickness="0,0,0,1"
-            BorderBrush="{DynamicResource {x:Static SystemColors.ControlLightBrushKey}}">
-        <StackPanel Orientation="Horizontal">
-            <Button Content="Main"
-                    Padding="14,6"
-                    Margin="0,0,8,0"
-                    Click="Main_Click"/>
+    <StackPanel Style="{StaticResource HeaderNavStackPanelStyle}">
+        <Button Content="Main"
+                Style="{StaticResource HeaderNavButtonMainStyle}"
+                Click="Main_Click"/>
 
-            <Button Content="Views"
-        Padding="14,6"
-        Margin="0,0,8,0"
-        Click="Views_Click"/>
+        <Button Content="Views"
+                Style="{StaticResource HeaderNavButtonViewsStyle}"
+                Click="Views_Click"/>
 
-            <Button Content="Controls"
-        Padding="14,6"
-        Margin="0,0,8,0"
-        Click="Controls_Click"/>
+        <Button Content="Controls"
+                Style="{StaticResource HeaderNavButtonControlsStyle}"
+                Click="Controls_Click"/>
 
-            <Button x:Name="StylesButton"
-        Content="Styles"
-        Padding="14,6"
-        Click="Styles_Click"/>
-        </StackPanel>
-    </Border>
+        <Button x:Name="StylesButton"
+                Content="Styles"
+                Style="{StaticResource HeaderNavButtonStylesStyle}"
+                Click="Styles_Click"/>
+    </StackPanel>
 </UserControl>
