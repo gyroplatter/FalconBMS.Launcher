@@ -24,7 +24,28 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Assets\AVC.png" />
 	  <None Remove="Assets\bms-logo.png" />
+	  <None Remove="Assets\BmsMultiMon.png" />
+	  <None Remove="Assets\CFG.png" />
+	  <None Remove="Assets\DISX.png" />
+	  <None Remove="Assets\EDIT.png" />
+	  <None Remove="Assets\F4RADAR.png" />
+	  <None Remove="Assets\F4WX.png" />
+	  <None Remove="Assets\favicon.ico" />
+	  <None Remove="Assets\icon-folder.png" />
+	  <None Remove="Assets\icon-gear.png" />
+	  <None Remove="Assets\icon-launch.png" />
+	  <None Remove="Assets\icon-newspaper.png" />
+	  <None Remove="Assets\icon-tools.png" />
+	  <None Remove="Assets\IVCC.png" />
+	  <None Remove="Assets\IVCS.png" />
+	  <None Remove="Assets\MC.png" />
+	  <None Remove="Assets\RTTClient64.png" />
+	  <None Remove="Assets\RTTServer64.png" />
+	  <None Remove="Assets\UPD.png" />
+	  <None Remove="Assets\WC.png" />
+	  <None Remove="Assets\WDP.png" />
 	</ItemGroup>
 
   <ItemGroup>
@@ -61,6 +82,10 @@
 		<Content Include="Stock\**\*.*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="Assets\favicon.ico" />
 	</ItemGroup>
 
 </Project>

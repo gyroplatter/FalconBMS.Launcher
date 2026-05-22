@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="1248"
-             d:DesignHeight="536">
+             d:DesignHeight="680">
 
     <UserControl.Resources>
         <Style x:Key="ControlsNavHeadingTextBlockStyle"
@@ -32,7 +32,8 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+          Style="{StaticResource ViewContentRootStyle}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>

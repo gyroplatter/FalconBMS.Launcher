@@ -347,6 +347,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand UpdateCommand { get; }
     public RelayCommand OpenDocsCommand { get; }
     public RelayCommand OpenUserCommand { get; }
+    public RelayCommand OpenForumCommand { get; }
     public RelayCommandParam LaunchFirstPartyCommand { get; }
     public RelayCommandParam LaunchThirdPartyCommand { get; }
 
@@ -358,6 +359,7 @@ public sealed class MainViewModel : ViewModelBase
         UpdateCommand = new RelayCommand(RunUpdaterSelected, () => SelectedInstall is not null);
         OpenDocsCommand = new RelayCommand(OpenDocs, () => SelectedInstall is not null);
         OpenUserCommand = new RelayCommand(OpenUser, () => SelectedInstall is not null);
+        OpenForumCommand = new RelayCommand(OpenForum);
         LaunchFirstPartyCommand = new RelayCommandParam(LaunchFirstParty, CanLaunchFirstParty);
         LaunchThirdPartyCommand = new RelayCommandParam(LaunchThirdParty);
 
@@ -721,6 +723,20 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
+    private void OpenForum()
+    {
+        try
+        {
+            DebugDiagnosticsService.Info("Open Falcon BMS forum requested.");
+            _proc.OpenUrl("https://forum.falcon-bms.com/recent");
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(ex, "OpenForum failed");
+            MessageBox.Show(ex.Message, "Open Forum Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void LaunchFirstParty(object? parameter)
     {
         if (SelectedInstall is null) return;
@@ -832,7 +848,8 @@ public sealed class MainViewModel : ViewModelBase
             DebugDiagnosticsService.Info("RSS fetch starting.");
             NewsStatusText = "Loading news…";
 
-            var items = await _rss.FetchAsync(maxItems: 8, CancellationToken.None);
+            // Main dashboard only shows the latest three RSS posts.
+            var items = await _rss.FetchAsync(maxItems: 3, CancellationToken.None);
 
             NewsItems.Clear();
             foreach (var i in items)

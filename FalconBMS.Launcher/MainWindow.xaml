@@ -4,7 +4,10 @@
         xmlns:views="clr-namespace:FalconBMS.Launcher.Views"
         xmlns:vm="clr-namespace:FalconBMS.Launcher.ViewModels"
         Title="Falcon BMS Launcher"
-        Width="1280" Height="720"
+        Width="1280"
+        Height="850"
+        MinWidth="1280"
+        MinHeight="720"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 

@@ -8,8 +8,9 @@
              d:DesignHeight="536">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  Background="{DynamicResource AppWindowBackgroundBrush}">
-        <StackPanel Background="{DynamicResource AppWindowBackgroundBrush}">
+              Background="{DynamicResource AppWindowBackgroundBrush}">
+        <StackPanel Background="{DynamicResource AppWindowBackgroundBrush}"
+                Style="{StaticResource ViewContentRootStyle}">
 
             <TextBlock Text="Styles"
            Style="{StaticResource HeadingTextBlockStyle}"

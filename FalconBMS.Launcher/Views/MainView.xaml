@@ -5,298 +5,670 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="1248"
-             d:DesignHeight="536">
+             d:DesignHeight="680">
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <UserControl.Resources>
+        <!-- Dashboard cards are kept local while the Main tab layout is still being refined. -->
+        <Style x:Key="DashboardCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
 
-        <StackPanel Grid.Column="0" Margin="0,0,24,0" VerticalAlignment="Top">
+        <Style x:Key="DashboardTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SubheadingTextBlockStyle}">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
 
-            <!-- Falcon BMS Install and Theater side-by-side -->
-            <Grid Margin="0,0,0,16">
+        <Style x:Key="DashboardSectionLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+        </Style>
+
+        <Style x:Key="DashboardFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <Style x:Key="DashboardIconBadgeStyle" TargetType="Border">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="CornerRadius" Value="17"/>
+            <Setter Property="Background" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+
+        <Style x:Key="DashboardIconBadgeTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
+            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DashboardTileButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="MinHeight" Value="52"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppAccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="Opacity" Value="0.82"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="LaunchDashboardButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="18,12"/>
+            <Setter Property="Height" Value="62"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+      Style="{StaticResource ViewContentRootStyle}"
+      ClipToBounds="True">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="220"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="285"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="105"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top row: launch controls and Falcon BMS launch settings. -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource DashboardCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="20"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                            <ContentControl Style="{StaticResource DashboardBadgeLaunchIconStyle}"/>
+                        </Border>
+                        <TextBlock Text="Launch Falcon BMS" Style="{StaticResource DashboardTitleStyle}"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="0"
+                                   Text="Install"
+                                   Style="{StaticResource DashboardFieldLabelStyle}"/>
+
+                        <ComboBox Grid.Row="1"
+                                  Grid.Column="0"
+                                  Height="34"
+                                  ItemsSource="{Binding Installs}"
+                                  SelectedItem="{Binding SelectedInstall, Mode=TwoWay}"
+                                  DisplayMemberPath="DisplayName"/>
+
+                        <TextBlock Grid.Row="0"
+                                   Grid.Column="2"
+                                   Text="Theater"
+                                   Style="{StaticResource DashboardFieldLabelStyle}"/>
+
+                        <ComboBox Grid.Row="1"
+                                  Grid.Column="2"
+                                  Height="34"
+                                  ItemsSource="{Binding Theaters}"
+                                  SelectedItem="{Binding SelectedTheater, Mode=TwoWay}"
+                                  IsEditable="False"/>
+                    </Grid>
+
+                    <Button Grid.Row="4"
+                            Style="{StaticResource LaunchDashboardButtonStyle}"
+                            Command="{Binding LaunchCommand}">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="Launch Falcon BMS"
+                                       FontSize="21"
+                                       FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                            <ContentControl Style="{StaticResource DashboardBadgeGearIconStyle}"/>
+                        </Border>
+                        <TextBlock Text="Settings" Style="{StaticResource DashboardTitleStyle}"/>
+                    </StackPanel>
+
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.45*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Display &amp; Output" Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <CheckBox Grid.Row="0"
+                                          Grid.Column="0"
+                                          Content="Windowed Mode"
+                                          IsChecked="{Binding LaunchWindow, Mode=TwoWay}"
+                                          Margin="0,0,18,10"/>
+
+                                <CheckBox Grid.Row="0"
+                                          Grid.Column="1"
+                                          Content="ACMI Recording"
+                                          IsChecked="{Binding LaunchAcmi, Mode=TwoWay}"
+                                          Margin="0,0,0,10"/>
+
+                                <CheckBox Grid.Row="1"
+                                          Grid.Column="0"
+                                          Content="RTT Export"
+                                          IsChecked="{Binding ExportRttTextures, Mode=TwoWay}"
+                                          Margin="0,0,18,0"/>
+
+                                <CheckBox Grid.Row="1"
+                                          Grid.Column="1"
+                                          Content="EyeFly"
+                                          IsChecked="{Binding LaunchEyeFly, Mode=TwoWay}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <Border Grid.Column="2"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1,0,0,0"/>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Startup" Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                            <CheckBox Content="Skip Intro Videos"
+                                      IsChecked="{Binding LaunchNoMovie, Mode=TwoWay}"
+                                      Margin="0,0,0,10"/>
+
+                            <CheckBox Content="Debug Mode"
+                                      IsChecked="{Binding LaunchDebug, Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Grid.Row="4"
+                            BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="0,1,0,0"/>
+
+                    <Grid Grid.Row="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.45*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="VR Mode"
+                                       Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                            <!-- Keep VR choices close together so this row can also hold launcher theme settings. -->
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="No VR"
+                                             GroupName="VrMode"
+                                             IsChecked="{Binding VrNoVr, Mode=TwoWay}"
+                                             Margin="0,0,28,0"/>
+
+                                <RadioButton Content="SteamVR"
+                                             GroupName="VrMode"
+                                             IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
+                                             Margin="0,0,28,0"/>
+
+                                <RadioButton Content="OpenXR"
+                                             GroupName="VrMode"
+                                             IsChecked="{Binding VrOpenXr, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Grid.Column="2"
+                                BorderBrush="{DynamicResource AppBorderBrush}"
+                                BorderThickness="1,0,0,0"/>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Launcher Theme"
+                                       Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="Auto"
+                                             GroupName="LauncherThemeMode"
+                                             IsChecked="{Binding LauncherThemeAuto, Mode=TwoWay}"
+                                             Margin="0,0,24,0"/>
+
+                                <RadioButton Content="Light"
+                                             GroupName="LauncherThemeMode"
+                                             IsChecked="{Binding LauncherThemeLight, Mode=TwoWay}"
+                                             Margin="0,0,24,0"/>
+
+                                <RadioButton Content="Dark"
+                                             GroupName="LauncherThemeMode"
+                                             IsChecked="{Binding LauncherThemeDark, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Middle row: tools and quick access. -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource DashboardCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="58"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="58"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                            <ContentControl Style="{StaticResource DashboardBadgeToolsIconStyle}"/>
+                        </Border>
+                        <TextBlock Text="Tools" Style="{StaticResource DashboardTitleStyle}"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2"
+                               Text="Falcon BMS Tools"
+                               Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                    <ItemsControl Grid.Row="4" ItemsSource="{Binding FirstPartyItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource DashboardTileButtonStyle}"
+                                        Width="86"
+                                        Height="52"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding DataContext.LaunchFirstPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding Id}">
+                                    <StackPanel>
+                                        <TextBlock Text="ICON"
+                                                   Foreground="{DynamicResource AppAccentBrush}"
+                                                   FontSize="8"
+                                                   FontWeight="Bold"
+                                                   TextAlignment="Center"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="{Binding Label}"
+                                                   Foreground="{DynamicResource AppForegroundBrush}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   TextAlignment="Center"
+                                                   TextWrapping="Wrap"
+                                                   LineHeight="13"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Grid.Row="6"
+                               Text="Community Tools"
+                               Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                    <ItemsControl Grid.Row="8" ItemsSource="{Binding ThirdPartyItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource DashboardTileButtonStyle}"
+                                        Width="158"
+                                        Height="52"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding DataContext.LaunchThirdPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding Id}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="ICON"
+                                                   Foreground="{DynamicResource AppAccentBrush}"
+                                                   FontSize="9"
+                                                   FontWeight="Bold"
+                                                   VerticalAlignment="Center"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Label}"
+                                                   Foreground="{DynamicResource AppForegroundBrush}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   VerticalAlignment="Center"
+                                                   LineHeight="14"/>
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                            <ContentControl Style="{StaticResource DashboardBadgeFolderIconStyle}"/>
+                        </Border>
+                        <TextBlock Text="Quick Access" Style="{StaticResource DashboardTitleStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="2">
+                        <TextBlock Text="Shortcuts" Style="{StaticResource DashboardSectionLabelStyle}"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="58"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="58"/>
+                            </Grid.RowDefinitions>
+
+                            <Button Grid.Row="0"
+                                    Grid.Column="0"
+                                    Style="{StaticResource DashboardTileButtonStyle}"
+                                    Height="58"
+                                    Command="{Binding OpenDocsCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="ICON"
+                                               Foreground="{DynamicResource AppAccentBrush}"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               TextAlignment="Center"
+                                               Margin="0,0,0,3"/>
+                                    <TextBlock Text="Manuals &amp; Docs"
+                                               Foreground="{DynamicResource AppForegroundBrush}"
+                                               FontWeight="SemiBold"
+                                               TextAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="0"
+                                    Grid.Column="2"
+                                    Style="{StaticResource DashboardTileButtonStyle}"
+                                    Height="58"
+                                    Command="{Binding OpenUserCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="ICON"
+                                               Foreground="{DynamicResource AppAccentBrush}"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               TextAlignment="Center"
+                                               Margin="0,0,0,3"/>
+                                    <TextBlock Text="User Folder"
+                                               Foreground="{DynamicResource AppForegroundBrush}"
+                                               FontWeight="SemiBold"
+                                               TextAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Grid.Row="2"
+                                    Grid.Column="0"
+                                    Style="{StaticResource DashboardTileButtonStyle}"
+                                    Height="58"
+                                    Command="{Binding OpenForumCommand}">
+                                <StackPanel>
+                                    <TextBlock Text="ICON"
+                                               Foreground="{DynamicResource AppAccentBrush}"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               TextAlignment="Center"
+                                               Margin="0,0,0,3"/>
+                                    <TextBlock Text="BMS Forum"
+                                               Foreground="{DynamicResource AppForegroundBrush}"
+                                               FontWeight="SemiBold"
+                                               TextAlignment="Center"
+                                               TextWrapping="Wrap"
+                                               LineHeight="13"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Bottom row: compact text-only RSS feed. Extra feed items are intentionally clipped here. -->
+        <Border Grid.Row="4" Style="{StaticResource DashboardCardStyle}">
+            <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="125"/>
+                    <ColumnDefinition Width="18"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0"
-                           Grid.Column="0"
-                           Text="Falcon BMS Install"
-                           Style="{StaticResource SubheadingTextBlockStyle}"
-                           Margin="0,0,0,4"/>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                        <ContentControl Style="{StaticResource DashboardBadgeNewsIconStyle}"/>
+                    </Border>
+                    <TextBlock Text="News" Style="{StaticResource DashboardTitleStyle}"/>
+                </StackPanel>
 
-                <TextBlock Grid.Row="0"
-                           Grid.Column="2"
-                           Text="Theater"
-                           Style="{StaticResource SubheadingTextBlockStyle}"
-                           Margin="0,0,0,4"/>
-
-                <ComboBox Grid.Row="1"
-                          Grid.Column="0"
-                          ItemsSource="{Binding Installs}"
-                          SelectedItem="{Binding SelectedInstall, Mode=TwoWay}"
-                          DisplayMemberPath="DisplayName"/>
-
-                <ComboBox Grid.Row="1"
-                          Grid.Column="2"
-                          ItemsSource="{Binding Theaters}"
-                          SelectedItem="{Binding SelectedTheater, Mode=TwoWay}"
-                          IsEditable="False"/>
-            </Grid>
-
-            <!-- Launch BMS -->
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Button Style="{StaticResource PrimaryButtonStyle}"
-            Content="Launch"
-            Width="90"
-            Command="{Binding LaunchCommand}"/>
-            </StackPanel>
-
-            <!-- Shortcuts for Docs and User folders -->
-            <TextBlock Text="Shortcuts"
-           Style="{StaticResource SubheadingTextBlockStyle}"
-                       Margin="0,0,0,6"/>
-
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Button Style="{StaticResource SecondaryButtonStyle}"
-            Content="Docs Folder"
-            Width="80"
-            Margin="0,0,8,0"
-            Command="{Binding OpenDocsCommand}"/>
-
-                <Button Style="{StaticResource SecondaryButtonStyle}"
-            Content="User Folder"
-            Width="80"
-            Command="{Binding OpenUserCommand}"/>
-            </StackPanel>
-
-            <TextBlock Text="1st Party Apps"
-           Style="{StaticResource SubheadingTextBlockStyle}"
-                       Margin="0,0,0,6"/>
-
-            <ItemsControl ItemsSource="{Binding FirstPartyItems}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Content="{Binding Label}"
-                                Command="{Binding DataContext.LaunchFirstPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding Id}"
-                                Margin="0,0,10,8"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                HorizontalAlignment="Left"
-                                Foreground="{DynamicResource AppAccentBrush}">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <ContentPresenter />
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <TextBlock Text="3rd Party Apps"
-           Style="{StaticResource SubheadingTextBlockStyle}"
-                       Margin="0,8,0,6"/>
-
-            <ItemsControl ItemsSource="{Binding ThirdPartyItems}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Content="{Binding Label}"
-                                Command="{Binding DataContext.LaunchThirdPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                CommandParameter="{Binding Id}"
-                                Margin="0,0,10,8"
-                                Padding="0"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Cursor="Hand"
-                                HorizontalAlignment="Left"
-                                Foreground="{DynamicResource AppAccentBrush}">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <ContentPresenter />
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-
-            <TextBlock Text="BMS Launch Options"
-           Style="{StaticResource SubheadingTextBlockStyle}"
-                       Margin="0,12,0,6"/>
-
-            <WrapPanel Margin="0,0,0,8">
-                <TextBlock Text="Config:"
-               Style="{StaticResource BodyTextBlockStyle}"
-               Margin="0,0,12,8"/>
-
-                <CheckBox Content="ACMI"
-              IsChecked="{Binding LaunchAcmi, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="WINDOW"
-              IsChecked="{Binding LaunchWindow, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="NOMOVIE"
-              IsChecked="{Binding LaunchNoMovie, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="EYEFLY"
-              IsChecked="{Binding LaunchEyeFly, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="DEBUG"
-              IsChecked="{Binding LaunchDebug, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-                <CheckBox Content="RTT Export"
-              IsChecked="{Binding ExportRttTextures, Mode=TwoWay}"
-              Margin="0,0,16,8"/>
-            </WrapPanel>
-
-            <WrapPanel Margin="0,0,0,8">
-                <TextBlock Text="VR:"
-                           Style="{StaticResource BodyTextBlockStyle}"
-                           Margin="0,0,12,8"/>
-
-                <RadioButton Content="No VR"
-                             GroupName="VrMode"
-                             IsChecked="{Binding VrNoVr, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
-
-                <RadioButton Content="SteamVR"
-                             GroupName="VrMode"
-                             IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
-
-                <RadioButton Content="OpenXR"
-                             GroupName="VrMode"
-                             IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
-            </WrapPanel>
-
-            <TextBlock Text="Alternative Launcher Options"
-           Style="{StaticResource SubheadingTextBlockStyle}"
-                       Margin="0,4,0,6"/>
-
-            <WrapPanel Margin="0,0,0,8">
-                <TextBlock Text="Theme:"
-               Style="{StaticResource BodyTextBlockStyle}"
-               Margin="0,0,12,8"/>
-
-                <RadioButton Content="Auto"
-                 GroupName="LauncherThemeMode"
-                 IsChecked="{Binding LauncherThemeAuto, Mode=TwoWay}"
-                 Margin="0,0,16,8"/>
-                <RadioButton Content="Light"
-                 GroupName="LauncherThemeMode"
-                 IsChecked="{Binding LauncherThemeLight, Mode=TwoWay}"
-                 Margin="0,0,16,8"/>
-                <RadioButton Content="Dark"
-                 GroupName="LauncherThemeMode"
-                 IsChecked="{Binding LauncherThemeDark, Mode=TwoWay}"
-                 Margin="0,0,16,8"/>
-            </WrapPanel>
-
-            <TextBlock Text="{Binding StatusText}"
-                       Foreground="{DynamicResource AppMutedForegroundBrush}"
-                       TextWrapping="Wrap"
-                       Margin="0,8,0,0"/>
-
-        </StackPanel>
-
-        <Border Grid.Column="1"
-                BorderThickness="1"
-                BorderBrush="{DynamicResource AppBorderBrush}"
-                Background="{DynamicResource AppSurfaceBrush}"
-                Padding="12">
-
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Text="News"
-                           Style="{StaticResource SubheadingTextBlockStyle}"
-                           Margin="0,0,0,8"/>
-
-                <ScrollViewer Grid.Row="1"
-                              VerticalScrollBarVisibility="Auto">
-
+                <Grid Grid.Column="2" ClipToBounds="True">
                     <StackPanel>
-
                         <TextBlock Text="{Binding NewsStatusText}"
                                    Visibility="{Binding IsNewsStatusVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                                    Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                   Margin="0,0,0,8"/>
+                                   Margin="0,0,0,6"/>
 
-                        <ItemsControl ItemsSource="{Binding NewsItems}">
+                        <ItemsControl ItemsSource="{Binding NewsItems}"
+                                      AlternationCount="3"
+                                      ClipToBounds="True">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <!-- Three equal-width columns for the three latest RSS items. -->
+                                    <UniformGrid Columns="3" Rows="1"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="0,0,0,12"
-                                            BorderThickness="0,0,0,1"
-                                            BorderBrush="{DynamicResource AppBorderBrush}"
-                                            Padding="0,0,0,8">
-                                        <StackPanel>
+                                    <Border ClipToBounds="True">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <!-- Keep all three columns visually equal. -->
+                                                <Setter Property="Margin" Value="0"/>
+                                                <Setter Property="Padding" Value="18,0,18,0"/>
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
 
+                                                <!-- First item should align closer to the News heading. -->
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                                 Value="0">
+                                                        <Setter Property="Padding" Value="0,0,18,0"/>
+                                                    </DataTrigger>
+
+                                                    <!-- Items 2 and 3 get only a left divider. No right divider is ever drawn. -->
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                                 Value="1">
+                                                        <Setter Property="BorderThickness" Value="1,0,0,0"/>
+                                                    </DataTrigger>
+
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                                 Value="2">
+                                                        <Setter Property="BorderThickness" Value="1,0,0,0"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <StackPanel>
                                             <TextBlock Text="{Binding PublishedDisplay}"
                                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                                       FontSize="12"/>
+                                                       FontSize="11"
+                                                       Margin="0,0,0,2"/>
 
-                                            <TextBlock FontWeight="SemiBold"
-                                                       TextWrapping="Wrap"
-                                                       Margin="0,2,0,2">
+                                            <TextBlock Style="{StaticResource DashboardSectionLabelStyle}"
+                                                       TextWrapping="NoWrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       TextDecorations="Underline"
+                                                       Margin="0,0,0,2">
                                                 <Hyperlink NavigateUri="{Binding Link}"
-                                                           RequestNavigate="Hyperlink_RequestNavigate">
+                                                           RequestNavigate="Hyperlink_RequestNavigate"
+                                                           Foreground="{DynamicResource AppAccentBrush}"
+                                                           TextDecorations="Underline">
                                                     <Run Text="{Binding Title}"/>
                                                 </Hyperlink>
                                             </TextBlock>
 
                                             <TextBlock Text="{Binding Description}"
-                                                       TextWrapping="Wrap"/>
+                                                       TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxHeight="30"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-
                     </StackPanel>
-                </ScrollViewer>
+                </Grid>
             </Grid>
-
         </Border>
-
     </Grid>
 </UserControl>
