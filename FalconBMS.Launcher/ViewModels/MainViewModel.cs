@@ -890,7 +890,7 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     public string LauncherVersion =>
-        $"Alternative Launcher v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}";
+        $"Falcon BMS Launcher v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}";
 
     private void RaiseCommandStates()
     {
