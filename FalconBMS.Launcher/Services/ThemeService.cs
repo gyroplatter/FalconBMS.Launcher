@@ -14,6 +14,8 @@ public static class ThemeService
     private const string LightDictionaryPath = "Styles/Theme.Light.xaml";
     private const string DarkDictionaryPath = "Styles/Theme.Dark.xaml";
 
+    public static event Action<bool>? EffectiveDarkThemeChanged;
+
     public static void ApplySavedThemeOnStartup()
     {
         var savedMode = NormalizeThemeMode(Properties.Settings.Default.LauncherThemeMode);
@@ -35,7 +37,18 @@ public static class ThemeService
             Properties.Settings.Default.Save();
         }
 
+        var isDarkTheme = string.Equals(effectiveMode, LauncherThemeModes.Dark, StringComparison.Ordinal);
+        EffectiveDarkThemeChanged?.Invoke(isDarkTheme);
+
         DebugDiagnosticsService.Info($"Launcher theme applied. SavedMode={normalizedMode}, EffectiveMode={effectiveMode}");
+    }
+
+    public static bool IsCurrentEffectiveThemeDark()
+    {
+        var savedMode = NormalizeThemeMode(Properties.Settings.Default.LauncherThemeMode);
+        var effectiveMode = ResolveEffectiveThemeMode(savedMode);
+
+        return string.Equals(effectiveMode, LauncherThemeModes.Dark, StringComparison.Ordinal);
     }
 
     public static string NormalizeThemeMode(string? themeMode)
