@@ -1,15 +1,27 @@
 ﻿# Falcon BMS Launcher (Rebuild)
 
 ## Summary
-This is a full rebuild of the Falcon BMS Launcher using .NET 4.8 (WPF) x64.
 
-This launcher is currently only compatible with Falcon BMS 4.38.
+This is a full rebuild of the Falcon BMS Launcher using **.NET 4.8 (WPF) x64**.
 
-The goal of this project is to modernize the Launcher code and reimagine the UI/UX to make it easier to new users to understand. This Launcher also serves as a bridge between BMS's current file handling and possible future enhancements.
 
-The project direction is to reduce the number of moving parts in Falcon BMS control configuration. Keyboard, HOTAS, button, POV, axis, and aircraft-specific bindings should move toward a cleaner JSON-based model.
+The goal of this project is to modernize the Launcher codebase and redesign the UI/UX so Falcon BMS control configuration is easier for new users to understand. This Launcher also moves toward a unified controls model built around a cleaner in-memory binding system and JSON-based storage.
 
-Legacy Falcon BMS files are still generated so Falcon BMS and existing third-party tools continue to work, but those files are compatibility outputs rather than the primary editing model. Since this new Launcher reads from JSON files on startup, it is not currently possible to import files from the current Alternative Launcher v2 into this new v3 Launcher. 
+This new Launcher serves as a bridge between the current Falcon BMS file system and possible future enhancements. Falcon BMS 4.38 still depends on several existing file formats, and some third-party tools still read those files directly. To avoid breaking those workflows, this Launcher continues to generate the required legacy files, but those files are treated as compatibility outputs rather than the primary editing model.
+
+On startup, the Launcher builds its working model from current BMS input files and saved Launcher JSON files:
+
+- The `BMS - Full*.key` files are used to build the current keyboard/control catalog. This means the Launcher starts from the current list of controls provided by the installed BMS version, rather than only loading an older saved copy of the user's bindings.
+
+- Saved JSON files are then applied on top of that current catalog to restore user-managed keyboard and device bindings. This allows new controls added by BMS to appear in the Launcher without requiring the user to delete their existing bindings or rebuild their control setup from scratch.
+
+- For devices, the Launcher discovers DirectInput hardware, checks for matching JSON binding files, and falls back to stock XML templates or empty device profiles when no JSON exists. This keeps existing user bindings intact while still allowing the Launcher to pick up new or changed control definitions from BMS over time.
+
+On BMS launch or Launcher close, the in-memory model writes updated JSON files first, then generates the legacy compatibility outputs that Falcon BMS and older tools still expect.
+
+Because this new Launcher reasons from its JSON-based binding model, it is not currently possible to import user-edited files directly from the current Alternative Launcher v2 into this new v3 Launcher.
+
+This Launcher is currently only compatible with **Falcon BMS 4.38**.
 
 ---
 
@@ -57,7 +69,7 @@ This project uses the following NuGet packages:
 
 ### Current JSON Binding Files
 
-The Launcher generates Falcon BMS JSON files within the selected install's `User\Config\JSON` folder.
+The Launcher generates JSON files within the selected install's `User\Config\JSON` folder.
 
 Current keyboard JSON files:
 
@@ -118,9 +130,9 @@ Prepare for launch
    ↓
 Check dirty state
    ↓
-Write keyboard JSON
+Write keyboard JSON, if bindings changed
    ↓
-Write device JSON
+Write device JSON, if bindings changed
    ↓
 Generate compatibility KEY files
    ↓
