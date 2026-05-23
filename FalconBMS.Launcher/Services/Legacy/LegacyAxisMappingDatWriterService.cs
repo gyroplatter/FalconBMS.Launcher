@@ -24,7 +24,17 @@ public sealed class LegacyAxisMappingDatWriterService
         string path = Path.Combine(configDir, "axismapping.dat");
         string beforeSignature = DebugDiagnosticsService.GetFileSignature(path);
 
-        byte[] bytes = BuildAxisMappingBytes(deviceProfiles);
+        IReadOnlyList<DeviceBindingProfile> connectedProfiles = deviceProfiles
+            .Where(profile => profile.IsConnected)
+            .ToList();
+
+        if (connectedProfiles.Count != deviceProfiles.Count)
+        {
+            DebugDiagnosticsService.Warn(
+                $"axismapping.dat write is excluding offline devices. Connected={connectedProfiles.Count} Total={deviceProfiles.Count} | ActionId={actionId}");
+        }
+
+        byte[] bytes = BuildAxisMappingBytes(connectedProfiles);
 
         if (File.Exists(path))
             File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);

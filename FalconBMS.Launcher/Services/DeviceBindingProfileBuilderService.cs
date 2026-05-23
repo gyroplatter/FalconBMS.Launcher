@@ -56,6 +56,8 @@ public sealed class DeviceBindingProfileBuilderService
         {
             DiscoveryIndex = device.DiscoveryIndex,
             InstanceGuid = device.InstanceGuid,
+            LastSeenInstanceGuid = device.InstanceGuid,
+            IsConnected = true,
             ProductGuid = device.ProductGuid,
             InstanceName = device.InstanceName,
             ProductName = device.ProductName,

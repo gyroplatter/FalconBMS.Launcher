@@ -23,7 +23,17 @@ public sealed class LegacyDeviceSortingWriterService
         string path = Path.Combine(configDir, "DeviceSorting.txt");
         string beforeSignature = DebugDiagnosticsService.GetFileSignature(path);
 
-        string content = BuildContent(deviceProfiles);
+        IReadOnlyList<DeviceBindingProfile> connectedProfiles = deviceProfiles
+            .Where(profile => profile.IsConnected)
+            .ToList();
+
+        if (connectedProfiles.Count != deviceProfiles.Count)
+        {
+            DebugDiagnosticsService.Warn(
+                $"DeviceSorting write is excluding offline devices. Connected={connectedProfiles.Count} Total={deviceProfiles.Count} | ActionId={actionId}");
+        }
+
+        string content = BuildContent(connectedProfiles);
 
         if (File.Exists(path))
             File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);

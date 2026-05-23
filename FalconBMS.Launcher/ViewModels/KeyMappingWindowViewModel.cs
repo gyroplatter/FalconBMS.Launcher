@@ -164,7 +164,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _keyboard = null;
         }
 
-        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device => device.ButtonCount > 0))
+        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device => device.IsConnected && device.ButtonCount > 0))
         {
             try
             {

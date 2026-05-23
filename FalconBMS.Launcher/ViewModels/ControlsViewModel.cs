@@ -696,13 +696,18 @@ public sealed class ControlsViewModel : ViewModelBase
 
         private static string GetDisplayName(DeviceBindingProfile deviceProfile)
         {
+            string displayName;
+
             if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
-                return deviceProfile.ProductName;
+                displayName = deviceProfile.ProductName;
+            else if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+                displayName = deviceProfile.InstanceName;
+            else
+                displayName = deviceProfile.DurableDeviceKey;
 
-            if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
-                return deviceProfile.InstanceName;
-
-            return deviceProfile.DurableDeviceKey;
+            return deviceProfile.IsConnected
+                ? displayName
+                : displayName + " — Offline";
         }
     }
 

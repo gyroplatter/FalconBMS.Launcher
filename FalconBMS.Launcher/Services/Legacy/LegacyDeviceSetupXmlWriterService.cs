@@ -26,7 +26,16 @@ public sealed class LegacyDeviceSetupXmlWriterService
         Directory.CreateDirectory(configDir);
 
         foreach (DeviceBindingProfile profile in deviceProfiles)
+        {
+            if (!profile.IsConnected)
+            {
+                DebugDiagnosticsService.Warn(
+                    $"Setup XML write skipped for offline device | Device=\"{profile.ProductName}\" | DurableKey={profile.DurableDeviceKey} | Json=\"{Path.GetFileName(profile.JsonPath ?? "")}\" | ActionId={actionId}");
+                continue;
+            }
+
             WriteProfile(configDir, profile, actionId);
+        }
     }
 
     private static void WriteProfile(string configDir, DeviceBindingProfile profile, string actionId)

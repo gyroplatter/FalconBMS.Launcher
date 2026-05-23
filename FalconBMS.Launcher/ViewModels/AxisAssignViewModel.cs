@@ -289,7 +289,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     {
         var candidates = new List<AxisCaptureCandidate>();
 
-        foreach (DeviceBindingProfile device in _deviceProfiles.Where(device => device.AxisCount > 0))
+        foreach (DeviceBindingProfile device in _deviceProfiles.Where(device => device.IsConnected && device.AxisCount > 0))
         {
             if (!TryReadAxisValues(device, out int[] axisValues))
                 continue;
@@ -414,6 +414,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     private bool TryReadAxisValues(DeviceBindingProfile device, out int[] axisValues)
     {
         axisValues = Array.Empty<int>();
+
+        if (!device.IsConnected)
+            return false;
 
         if (!_sessionsByDeviceKey.TryGetValue(device.DurableDeviceKey, out JoystickSession session))
         {

@@ -1,4 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -40,16 +42,34 @@ public sealed class LaunchPrepService
 
         _legacyAutoKeyWriter.Write(baseDir, bindingModel);
 
-        _legacyDeviceSortingWriter.Write(baseDir, bindingModel.DeviceProfiles);
-        _legacyDeviceSetupXmlWriter.Write(baseDir, bindingModel.DeviceProfiles);
-        _legacyAxisMappingDatWriter.Write(baseDir, bindingModel.DeviceProfiles);
+        IReadOnlyList<DeviceBindingProfile> connectedDeviceProfiles = bindingModel.DeviceProfiles
+            .Where(profile => profile.IsConnected)
+            .ToList();
+
+        IReadOnlyList<DeviceBindingProfile> offlineConfiguredDeviceProfiles = bindingModel.DeviceProfiles
+            .Where(profile => !profile.IsConnected && HasAnyAssignedBinding(profile))
+            .ToList();
+
+        if (offlineConfiguredDeviceProfiles.Count > 0)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Configured saved devices are offline. Their JSON profiles and bindings are preserved, but they are excluded from current BMS legacy output for this launch session. OfflineConfiguredDevices={offlineConfiguredDeviceProfiles.Count} | Devices={string.Join(", ", offlineConfiguredDeviceProfiles.Select(profile => profile.ProductName))} | ConnectedDevices={connectedDeviceProfiles.Count} | ActionId={actionId}");
+        }
+
+        _legacyDeviceSortingWriter.Write(baseDir, connectedDeviceProfiles);
+        _legacyDeviceSetupXmlWriter.Write(baseDir, connectedDeviceProfiles);
+        _legacyAxisMappingDatWriter.Write(baseDir, connectedDeviceProfiles);
 
         // joystick.cal carries assigned/invert flags and throttle detents used by BMS.
         // Without this generated compatibility file, detents can appear correct in the
         // launcher but not take effect in game.
-        _joystickCal.Write(baseDir, bindingModel.DeviceProfiles);
+        //
+        // Important: this must be generated from the currently connected device list.
+        // If DeviceSorting.txt / axismapping.dat / joystick.cal keep a stale device layout
+        // while Windows/BMS sees fewer devices, BMS can lose all axis mappings for the session.
+        _joystickCal.Write(baseDir, connectedDeviceProfiles);
 
-        _userCfg.SaveOverrides(baseDir, bindingModel.DeviceProfiles, exportRttTextures, vrEnabled);
+        _userCfg.SaveOverrides(baseDir, connectedDeviceProfiles, exportRttTextures, vrEnabled);
 
         // BMS reads the active key profile from the pilot .pop file.
         // This must set byte offset 336 to "BMS - Auto"; otherwise BMS keeps loading
@@ -57,5 +77,22 @@ public sealed class LaunchPrepService
         _pop.SavePop(baseDir, installKeyName);
 
         DebugDiagnosticsService.Info($"PREPARE FOR LAUNCH END | ActionId={actionId}");
+    }
+
+    private static bool HasAnyAssignedBinding(DeviceBindingProfile profile)
+    {
+        if (profile.AxisBindings.Any(axis => axis.PhysicalAxisIndex.HasValue))
+            return true;
+
+        foreach (DeviceAircraftBindingProfile aircraftProfile in profile.AircraftProfiles)
+        {
+            if (aircraftProfile.ButtonBindings.Any(binding => !string.IsNullOrWhiteSpace(binding.CallbackName)) ||
+                aircraftProfile.PovBindings.Any(binding => !string.IsNullOrWhiteSpace(binding.CallbackName)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

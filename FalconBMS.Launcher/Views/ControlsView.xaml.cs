@@ -97,15 +97,37 @@ public partial class ControlsView : UserControl
         }
     }
 
-    private static string GetDeviceColumnHeader(DeviceBindingProfile deviceProfile)
+    private static object GetDeviceColumnHeader(DeviceBindingProfile deviceProfile)
     {
+        string displayName;
+
         if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
-            return deviceProfile.ProductName;
+            displayName = deviceProfile.ProductName;
+        else if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+            displayName = deviceProfile.InstanceName;
+        else
+            displayName = deviceProfile.DurableDeviceKey;
 
-        if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
-            return deviceProfile.InstanceName;
+        if (deviceProfile.IsConnected)
+            return displayName;
 
-        return deviceProfile.DurableDeviceKey;
+        var panel = new StackPanel
+        {
+            Orientation = Orientation.Vertical
+        };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = displayName
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Offline",
+            FontStyle = FontStyles.Italic,
+        });
+
+        return panel;
     }
 
     private static DataTemplate CreateDeviceCellTemplate(string durableDeviceKey)
@@ -398,7 +420,7 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.ButtonCount > 0))
+        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.IsConnected && device.ButtonCount > 0))
         {
             JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
             if (session is null)
@@ -461,7 +483,7 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.AxisCount > 0))
+        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.IsConnected && device.AxisCount > 0))
         {
             JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
             if (session is null)
@@ -499,6 +521,9 @@ public partial class ControlsView : UserControl
 
     private JoystickSession? EnsureJoystickOpened(DeviceBindingProfile deviceProfile, IntPtr hwnd)
     {
+        if (!deviceProfile.IsConnected)
+            return null;
+
         if (_joystickSessionsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out JoystickSession session))
             return session;
 

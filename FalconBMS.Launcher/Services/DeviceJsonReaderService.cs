@@ -17,16 +17,18 @@ public sealed class DeviceJsonReaderService
         IReadOnlyList<StockDeviceSetupMatch> matches)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTASREAD");
-        DebugDiagnosticsService.Info($"Device JSON read begin. DeviceCount={matches.Count} | ActionId={actionId}");
+        DebugDiagnosticsService.Info($"Device JSON read begin. DetectedDeviceCount={matches.Count} | ActionId={actionId}");
 
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
         var profiles = new List<DeviceBindingProfile>();
+        Dictionary<string, SavedDeviceJson> savedProfilesByDurableKey = LoadSavedDeviceJson(jsonDir, actionId);
+        var matchedSavedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (StockDeviceSetupMatch match in matches)
         {
-            string? jsonPath = FindDeviceJsonPath(jsonDir, match.Device.DurableDeviceKey);
+            string durableDeviceKey = match.Device.DurableDeviceKey;
 
-            if (jsonPath is null)
+            if (!savedProfilesByDurableKey.TryGetValue(durableDeviceKey, out SavedDeviceJson? savedProfile))
             {
                 profiles.Add(BuildFallbackProfile(match, actionId));
                 continue;
@@ -34,58 +36,96 @@ public sealed class DeviceJsonReaderService
 
             try
             {
-                JsonDeviceBindingDocument? document = ReadDocument(jsonPath);
-
-                if (document is null)
-                {
-                    DebugDiagnosticsService.Warn($"Device JSON read skipped. Empty document: {jsonPath} | ActionId={actionId}");
-                    profiles.Add(BuildFallbackProfile(match, actionId));
-                    continue;
-                }
-
-                DeviceBindingProfile profile = CreateProfileFromJson(match.Device, jsonPath, document);
-
+                DeviceBindingProfile profile = CreateConnectedProfileFromJson(match.Device, savedProfile.Path, savedProfile.Document, actionId);
                 profiles.Add(profile);
+                matchedSavedKeys.Add(durableDeviceKey);
 
-                int assignedAxes = profile.AxisBindings.Count(axis => axis.PhysicalAxisIndex.HasValue);
-                int buttonBindings = profile.AircraftProfiles.Sum(a => a.ButtonBindings.Count);
-                int povBindings = profile.AircraftProfiles.Sum(a => a.PovBindings.Count);
-
-                DebugDiagnosticsService.Info(
-                    $"Device JSON loaded | Device=\"{profile.ProductName}\" | PIDVID={profile.PidVid} | DurableKey={profile.DurableDeviceKey} | " +
-                    $"Json=\"{Path.GetFileName(jsonPath)}\" | AxisBindings={profile.AxisBindings.Count} | AssignedAxes={assignedAxes} | " +
-                    $"ButtonBindings={buttonBindings} | PovBindings={povBindings} | AircraftProfiles={profile.AircraftProfiles.Count} | ActionId={actionId}");
+                LogLoadedProfile(profile, Path.GetFileName(savedProfile.Path), actionId);
             }
             catch (Exception ex)
             {
-                DebugDiagnosticsService.Exception(ex, $"Device JSON read failed: {jsonPath}");
+                DebugDiagnosticsService.Exception(ex, $"Device JSON read failed: {savedProfile.Path}");
                 profiles.Add(BuildFallbackProfile(match, actionId));
+                matchedSavedKeys.Add(durableDeviceKey);
             }
         }
 
-        DebugDiagnosticsService.Info($"Device JSON read end. LoadedOrBuilt={profiles.Count} | ActionId={actionId}");
+        foreach (SavedDeviceJson savedProfile in savedProfilesByDurableKey.Values.OrderBy(profile => Path.GetFileName(profile.Path), StringComparer.OrdinalIgnoreCase))
+        {
+            string durableDeviceKey = GetDocumentDurableDeviceKey(savedProfile.Document);
+
+            if (string.IsNullOrWhiteSpace(durableDeviceKey) || matchedSavedKeys.Contains(durableDeviceKey))
+                continue;
+
+            try
+            {
+                DeviceBindingProfile offlineProfile = CreateOfflineProfileFromJson(savedProfile.Path, savedProfile.Document);
+                profiles.Add(offlineProfile);
+
+                DebugDiagnosticsService.Warn(
+                    $"Saved device profile is offline and was retained | Device=\"{offlineProfile.ProductName}\" | PIDVID={offlineProfile.PidVid} | DurableKey={offlineProfile.DurableDeviceKey} | Json=\"{Path.GetFileName(savedProfile.Path)}\" | LastSeenInstanceGuid={FormatGuid(offlineProfile.LastSeenInstanceGuid)} | ActionId={actionId}");
+            }
+            catch (Exception ex)
+            {
+                DebugDiagnosticsService.Exception(ex, $"Offline device JSON read failed: {savedProfile.Path}");
+            }
+        }
+
+        DebugDiagnosticsService.Info($"Device JSON read end. LoadedOrBuilt={profiles.Count} | Connected={profiles.Count(profile => profile.IsConnected)} | Offline={profiles.Count(profile => !profile.IsConnected)} | ActionId={actionId}");
         return profiles;
+    }
+
+    private Dictionary<string, SavedDeviceJson> LoadSavedDeviceJson(string jsonDir, string actionId)
+    {
+        var savedProfilesByDurableKey = new Dictionary<string, SavedDeviceJson>(StringComparer.OrdinalIgnoreCase);
+
+        if (!Directory.Exists(jsonDir))
+            return savedProfilesByDurableKey;
+
+        foreach (string path in Directory.GetFiles(jsonDir, "DeviceBindings_*.json").OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase))
+        {
+            try
+            {
+                JsonDeviceBindingDocument? document = ReadDocument(path);
+
+                if (document is null)
+                {
+                    DebugDiagnosticsService.Warn($"Device JSON read skipped. Empty document: {path} | ActionId={actionId}");
+                    continue;
+                }
+
+                string durableDeviceKey = GetDocumentDurableDeviceKey(document);
+
+                if (string.IsNullOrWhiteSpace(durableDeviceKey))
+                {
+                    DebugDiagnosticsService.Warn($"Device JSON read skipped. Missing durable_device_key/pidvid: {path} | ActionId={actionId}");
+                    continue;
+                }
+
+                if (savedProfilesByDurableKey.ContainsKey(durableDeviceKey))
+                {
+                    DebugDiagnosticsService.Warn(
+                        $"Duplicate DeviceBindings JSON durable key. Keeping first file. DurableKey={durableDeviceKey} | Skipped=\"{Path.GetFileName(path)}\" | ActionId={actionId}");
+                    continue;
+                }
+
+                savedProfilesByDurableKey[durableDeviceKey] = new SavedDeviceJson(path, document);
+            }
+            catch (Exception ex)
+            {
+                DebugDiagnosticsService.Exception(ex, $"Device JSON read failed: {path}");
+            }
+        }
+
+        return savedProfilesByDurableKey;
     }
 
     private DeviceBindingProfile BuildFallbackProfile(StockDeviceSetupMatch match, string actionId)
     {
         DebugDiagnosticsService.Info(
-            $"Device JSON missing. Falling back to stock XML/empty model | Device=\"{match.Device.ProductName}\" | DurableKey={match.Device.DurableDeviceKey} | ActionId={actionId}");
+            $"Device JSON missing. Falling back to stock XML/empty model | Device=\"{match.Device.ProductName}\" | DurableKey={match.Device.DurableDeviceKey} | InstanceGuid={match.Device.InstanceGuid:B} | ActionId={actionId}");
 
         return _fallbackBuilder.Build(new[] { match }).First();
-    }
-
-    private static string? FindDeviceJsonPath(string configDir, string durableDeviceKey)
-    {
-        if (!Directory.Exists(configDir))
-            return null;
-
-        string prefix = $"DeviceBindings_{durableDeviceKey}_";
-
-        return Directory
-            .GetFiles(configDir, prefix + "*.json")
-            .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
-            .FirstOrDefault();
     }
 
     private static JsonDeviceBindingDocument? ReadDocument(string path)
@@ -98,15 +138,26 @@ public sealed class DeviceJsonReaderService
         return serializer.ReadObject(stream) as JsonDeviceBindingDocument;
     }
 
-    private DeviceBindingProfile CreateProfileFromJson(
+    private DeviceBindingProfile CreateConnectedProfileFromJson(
         InputDeviceInfo device,
         string jsonPath,
-        JsonDeviceBindingDocument document)
+        JsonDeviceBindingDocument document,
+        string actionId)
     {
+        Guid? previousInstanceGuid = ParseGuid(document.LastSeenInstanceGuid);
+
+        if (previousInstanceGuid.HasValue && previousInstanceGuid.Value != device.InstanceGuid)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Device InstanceGuid changed. Reconciled by DurableDeviceKey | Device=\"{device.ProductName}\" | DurableKey={device.DurableDeviceKey} | Previous={previousInstanceGuid.Value:B} | Current={device.InstanceGuid:B} | Json=\"{Path.GetFileName(jsonPath)}\" | ActionId={actionId}");
+        }
+
         var profile = new DeviceBindingProfile
         {
             DiscoveryIndex = device.DiscoveryIndex,
             InstanceGuid = device.InstanceGuid,
+            LastSeenInstanceGuid = device.InstanceGuid,
+            IsConnected = true,
             ProductGuid = device.ProductGuid,
             InstanceName = device.InstanceName,
             ProductName = device.ProductName,
@@ -117,6 +168,52 @@ public sealed class DeviceJsonReaderService
             ButtonCount = device.Capabilities.ButtonCount,
             PovCount = device.Capabilities.PovCount,
             CapabilitiesReadSuccessfully = device.Capabilities.WasReadSuccessfully,
+            Source = DeviceBindingSource.Json,
+            StockXmlPath = null,
+            JsonPath = jsonPath
+        };
+
+        ApplyAxisBindings(profile, document.AxisBindings);
+        ApplyAircraftProfiles(profile, document.AircraftProfiles);
+
+        return profile;
+    }
+
+    private DeviceBindingProfile CreateOfflineProfileFromJson(
+        string jsonPath,
+        JsonDeviceBindingDocument document)
+    {
+        string pidVid = NormalizeHex(document.PidVid);
+        string vendorIdHex = NormalizeHex(document.VendorIdHex);
+        string productIdHex = NormalizeHex(document.ProductIdHex);
+
+        if (string.IsNullOrWhiteSpace(pidVid))
+            pidVid = ParseDurableKeyPrefix(GetDocumentDurableDeviceKey(document));
+
+        if ((string.IsNullOrWhiteSpace(productIdHex) || string.IsNullOrWhiteSpace(vendorIdHex)) && pidVid.Length >= 8)
+        {
+            productIdHex = pidVid.Substring(0, 4);
+            vendorIdHex = pidVid.Substring(4, 4);
+        }
+
+        Guid? lastSeenInstanceGuid = ParseGuid(document.LastSeenInstanceGuid);
+
+        var profile = new DeviceBindingProfile
+        {
+            DiscoveryIndex = int.MaxValue,
+            InstanceGuid = lastSeenInstanceGuid ?? Guid.Empty,
+            LastSeenInstanceGuid = lastSeenInstanceGuid,
+            IsConnected = false,
+            ProductGuid = Guid.Empty,
+            InstanceName = document.InstanceName ?? "",
+            ProductName = document.ProductName ?? Path.GetFileNameWithoutExtension(jsonPath),
+            VendorIdHex = vendorIdHex,
+            ProductIdHex = productIdHex,
+            DuplicatePidVidSequenceNumber = document.DuplicatePidVidSequenceNumber,
+            AxisCount = document.AxisCount,
+            ButtonCount = document.ButtonCount,
+            PovCount = document.PovCount,
+            CapabilitiesReadSuccessfully = false,
             Source = DeviceBindingSource.Json,
             StockXmlPath = null,
             JsonPath = jsonPath
@@ -193,7 +290,9 @@ public sealed class DeviceJsonReaderService
         {
             var aircraft = new DeviceAircraftBindingProfile
             {
-                AircraftProfile = jsonAircraft.AircraftProfile ?? ""
+                AircraftProfile = string.IsNullOrWhiteSpace(jsonAircraft.AircraftProfile)
+                    ? "F-16"
+                    : jsonAircraft.AircraftProfile!
             };
 
             if (jsonAircraft.ButtonBindings is not null)
@@ -230,6 +329,87 @@ public sealed class DeviceJsonReaderService
         }
     }
 
+    private static void LogLoadedProfile(DeviceBindingProfile profile, string jsonFileName, string actionId)
+    {
+        int assignedAxes = profile.AxisBindings.Count(axis => axis.PhysicalAxisIndex.HasValue);
+        int buttonBindings = profile.AircraftProfiles.Sum(a => a.ButtonBindings.Count);
+        int povBindings = profile.AircraftProfiles.Sum(a => a.PovBindings.Count);
+
+        DebugDiagnosticsService.Info(
+            $"Device JSON loaded | Device=\"{profile.ProductName}\" | PIDVID={profile.PidVid} | DurableKey={profile.DurableDeviceKey} | Connected={profile.IsConnected} | " +
+            $"InstanceGuid={profile.InstanceGuid:B} | Json=\"{jsonFileName}\" | AxisBindings={profile.AxisBindings.Count} | AssignedAxes={assignedAxes} | " +
+            $"ButtonBindings={buttonBindings} | PovBindings={povBindings} | AircraftProfiles={profile.AircraftProfiles.Count} | ActionId={actionId}");
+    }
+
+    private static string GetDocumentDurableDeviceKey(JsonDeviceBindingDocument document)
+    {
+        string durableDeviceKey = document.DurableDeviceKey ?? "";
+
+        if (!string.IsNullOrWhiteSpace(durableDeviceKey))
+            return durableDeviceKey;
+
+        string pidVidValue = document.PidVid ?? "";
+
+        if (string.IsNullOrWhiteSpace(pidVidValue))
+            return "";
+
+        string pidVid = NormalizeHex(pidVidValue);
+
+        return document.DuplicatePidVidSequenceNumber.HasValue
+            ? $"{pidVid}_{document.DuplicatePidVidSequenceNumber.Value}"
+            : pidVid;
+    }
+
+    private static string ParseDurableKeyPrefix(string durableDeviceKey)
+    {
+        if (string.IsNullOrWhiteSpace(durableDeviceKey))
+            return "";
+
+        int underscoreIndex = durableDeviceKey.IndexOf('_');
+        string prefix = underscoreIndex >= 0
+            ? durableDeviceKey.Substring(0, underscoreIndex)
+            : durableDeviceKey;
+
+        return NormalizeHex(prefix);
+    }
+
+    private static string NormalizeHex(string? value)
+    {
+        string safeValue = value ?? "";
+
+        if (string.IsNullOrWhiteSpace(safeValue))
+            return "";
+
+        return safeValue.Trim().ToUpperInvariant();
+    }
+
+    private static Guid? ParseGuid(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return Guid.TryParse(value, out Guid guid)
+            ? guid
+            : null;
+    }
+
+    private static string FormatGuid(Guid? guid)
+    {
+        return guid.HasValue ? guid.Value.ToString("B") : "";
+    }
+
+    private sealed class SavedDeviceJson
+    {
+        public SavedDeviceJson(string path, JsonDeviceBindingDocument document)
+        {
+            Path = path;
+            Document = document;
+        }
+
+        public string Path { get; }
+        public JsonDeviceBindingDocument Document { get; }
+    }
+
     [DataContract]
     private sealed class JsonDeviceBindingDocument
     {
@@ -259,6 +439,21 @@ public sealed class DeviceJsonReaderService
 
         [DataMember(Name = "duplicate_pidvid_sequence_number")]
         public int? DuplicatePidVidSequenceNumber { get; set; }
+
+        [DataMember(Name = "axis_count")]
+        public int AxisCount { get; set; }
+
+        [DataMember(Name = "button_count")]
+        public int ButtonCount { get; set; }
+
+        [DataMember(Name = "pov_count")]
+        public int PovCount { get; set; }
+
+        [DataMember(Name = "capabilities_read_successfully")]
+        public bool CapabilitiesReadSuccessfully { get; set; }
+
+        [DataMember(Name = "last_seen_instance_guid")]
+        public string? LastSeenInstanceGuid { get; set; }
 
         [DataMember(Name = "axis_bindings")]
         public List<JsonDeviceAxisBinding>? AxisBindings { get; set; }

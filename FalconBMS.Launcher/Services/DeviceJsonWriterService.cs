@@ -82,6 +82,7 @@ public sealed class DeviceJsonWriterService
         WriteProperty(sb, 1, "button_count", profile.ButtonCount, comma: true);
         WriteProperty(sb, 1, "pov_count", profile.PovCount, comma: true);
         WriteProperty(sb, 1, "capabilities_read_successfully", profile.CapabilitiesReadSuccessfully, comma: true);
+        WritePropertyNullableString(sb, 1, "last_seen_instance_guid", FormatGuid(profile.LastSeenInstanceGuid), comma: true);
 
         WriteAxisBindings(sb, profile.AxisBindings, comma: true);
         WriteAircraftProfiles(sb, profile.AircraftProfiles, comma: false);
@@ -295,6 +296,11 @@ public sealed class DeviceJsonWriterService
             sb.Append(',');
 
         sb.AppendLine();
+    }
+
+    private static string? FormatGuid(Guid? value)
+    {
+        return value.HasValue ? value.Value.ToString("B") : null;
     }
 
     private static string SanitizeFileNameSegment(string value)
