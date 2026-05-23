@@ -64,6 +64,15 @@
     <Style x:Key="ViewContentRootStyle" TargetType="{x:Type FrameworkElement}">
         <Setter Property="Margin" Value="14"/>
     </Style>
+    
+    <!-- Shared card container used by dashboard-style panels and settings cards. -->
+    <Style x:Key="DashboardCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="16"/>
+    </Style>
 
     <!--
         Main window header:
