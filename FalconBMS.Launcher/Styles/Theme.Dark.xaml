@@ -14,14 +14,23 @@
     <!-- Controls table -->
     <SolidColorBrush x:Key="ControlsTableHeaderBrush" Color="#262D3A"/>
     <SolidColorBrush x:Key="ControlsTableGridLineBrush" Color="#334455"/>
-    <SolidColorBrush x:Key="ControlsTableHoverBrush" Color="#293544"/>
-    <SolidColorBrush x:Key="ControlsTableSelectedBrush" Color="#314763"/>
-    <SolidColorBrush x:Key="ControlsTableSectionBackgroundBrush" Color="#17364D"/>
+
+    <!-- Editable-row hover -->
+    <SolidColorBrush x:Key="ControlsTableHoverBrush" Color="#2B3038"/>
+
+    <!-- Active/selected row -->
+    <SolidColorBrush x:Key="ControlsTableSelectedBrush" Color="#4A3820"/>
+
+    <!-- Section heading -->
+    <SolidColorBrush x:Key="ControlsTableSectionBackgroundBrush" Color="#173A55"/>
     <SolidColorBrush x:Key="ControlsTableSectionForegroundBrush" Color="#F3F8FF"/>
-    <SolidColorBrush x:Key="ControlsTableSubsectionBackgroundBrush" Color="#243447"/>
+
+    <!-- Subheading -->
+    <SolidColorBrush x:Key="ControlsTableSubsectionBackgroundBrush" Color="#263442"/>
     <SolidColorBrush x:Key="ControlsTableSubsectionForegroundBrush" Color="#DDEBFA"/>
-    <SolidColorBrush x:Key="ControlsTableAxisBackgroundBrush" Color="#1B2B38"/>
-    <SolidColorBrush x:Key="ControlsTableCommentBackgroundBrush" Color="#1A2029"/>
+
+    <SolidColorBrush x:Key="ControlsTableAxisBackgroundBrush" Color="#1E232E"/>
+    <SolidColorBrush x:Key="ControlsTableCommentBackgroundBrush" Color="#1E232E"/>
     <SolidColorBrush x:Key="ControlsTableCommentForegroundBrush" Color="#A5ADBA"/>
 
     <SolidColorBrush x:Key="AppHeadingForegroundBrush" Color="#FFFFFF"/>

@@ -305,12 +305,13 @@
         <Setter Property="SnapsToDevicePixels" Value="True"/>
 
         <Style.Triggers>
-            <!-- Non-editable and REM rows read like visible comments, not disabled content. -->
+            <!-- Non-editable rows stay informational. They do not hover-highlight or selected-highlight. -->
             <DataTrigger Binding="{Binding IsEditable}" Value="False">
                 <Setter Property="Background" Value="{DynamicResource ControlsTableCommentBackgroundBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
             </DataTrigger>
 
+            <!-- REM rows use the same non-editable visual treatment. -->
             <DataTrigger Binding="{Binding IsRemark}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource ControlsTableCommentBackgroundBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
@@ -322,7 +323,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
             </DataTrigger>
 
-            <!-- Subsection = H2 level inside the control list. -->
+            <!-- Subheading rows keep their fixed background and do not hover-highlight or selected-highlight. -->
             <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource ControlsTableSubsectionBackgroundBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableSubsectionForegroundBrush}"/>
@@ -330,7 +331,7 @@
                 <Setter Property="MinHeight" Value="26"/>
             </DataTrigger>
 
-            <!-- Section = H1 level inside the control list. -->
+            <!-- Section heading rows keep their fixed background and do not hover-highlight or selected-highlight. -->
             <DataTrigger Binding="{Binding IsCategoryHeader}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource ControlsTableSectionBackgroundBrush}"/>
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableSectionForegroundBrush}"/>
@@ -338,13 +339,23 @@
                 <Setter Property="MinHeight" Value="30"/>
             </DataTrigger>
 
-            <Trigger Property="IsMouseOver" Value="True">
+            <!-- Only editable rows get hover feedback. -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsEditable}" Value="True"/>
+                    <Condition Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True"/>
+                </MultiDataTrigger.Conditions>
                 <Setter Property="Background" Value="{DynamicResource ControlsTableHoverBrush}"/>
-            </Trigger>
+            </MultiDataTrigger>
 
-            <Trigger Property="IsSelected" Value="True">
+            <!-- Only editable rows get active/selected feedback. -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsEditable}" Value="True"/>
+                    <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
+                </MultiDataTrigger.Conditions>
                 <Setter Property="Background" Value="{DynamicResource ControlsTableSelectedBrush}"/>
-            </Trigger>
+            </MultiDataTrigger>
         </Style.Triggers>
     </Style>
 

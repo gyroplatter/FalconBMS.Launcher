@@ -16,7 +16,7 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Views"
+            <TextBlock Text=""
            Style="{StaticResource HeadingTextBlockStyle}"
                        Margin="0,0,0,10"/>
 
