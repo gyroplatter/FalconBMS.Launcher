@@ -139,6 +139,8 @@ public partial class ControlsView : UserControl
             FrameworkElement.DataContextProperty,
             new Binding($"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
 
+        gridFactory.SetResourceReference(FrameworkElement.StyleProperty, "ControlsTableDeviceCellGridStyle");
+
         var axisBarStyle = new Style(typeof(AxisBar));
         axisBarStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
 

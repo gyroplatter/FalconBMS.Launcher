@@ -400,6 +400,24 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="ControlsTableDeviceCellGridStyle" TargetType="Grid">
+        <Setter Property="Background" Value="Transparent"/>
+
+        <Style.Triggers>
+            <!-- Shade offline device columns only on regular control rows -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsDeviceConnected}" Value="False"/>
+                    <Condition Binding="{Binding DataContext.IsCategoryHeader, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="False"/>
+                    <Condition Binding="{Binding DataContext.IsSectionHeader, RelativeSource={RelativeSource AncestorType=DataGridRow}}" Value="False"/>
+                </MultiDataTrigger.Conditions>
+
+                <Setter Property="Background" Value="{DynamicResource ControlsTableOfflineDeviceBackgroundBrush}"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+
     <Style x:Key="ControlsTableTextBlockStyle" TargetType="TextBlock">
         <Setter Property="Margin" Value="6,0"/>
         <Setter Property="VerticalAlignment" Value="Center"/>

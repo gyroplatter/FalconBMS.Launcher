@@ -69,6 +69,7 @@ public sealed class AxisControlsGridBuilderService
 
             deviceCellsByDeviceKey[deviceProfile.DurableDeviceKey] = new ControlGridDeviceCellViewModel
             {
+                IsDeviceConnected = deviceProfile.IsConnected,
                 DisplayText = binding?.PhysicalAxisIndex is int physicalAxisIndex
                     ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex)
                     : "",

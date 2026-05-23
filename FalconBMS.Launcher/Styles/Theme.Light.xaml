@@ -29,9 +29,10 @@
     <SolidColorBrush x:Key="ControlsTableSubsectionBackgroundBrush" Color="#E5EDF5"/>
     <SolidColorBrush x:Key="ControlsTableSubsectionForegroundBrush" Color="#263F55"/>
 
-    <SolidColorBrush x:Key="ControlsTableAxisBackgroundBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="ControlsTableCommentBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="ControlsTableAxisBackgroundBrush" Color="#F5FAFF"/>
+    <SolidColorBrush x:Key="ControlsTableCommentBackgroundBrush" Color="#FAFBFC"/>
     <SolidColorBrush x:Key="ControlsTableCommentForegroundBrush" Color="#6B7280"/>
+    <SolidColorBrush x:Key="ControlsTableOfflineDeviceBackgroundBrush" Color="#F3F4F6"/>
 
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBackgroundBrush" Color="#D7E8FA"/>
     <SolidColorBrush x:Key="ControlsTableAxisBadgeForegroundBrush" Color="#143A56"/>

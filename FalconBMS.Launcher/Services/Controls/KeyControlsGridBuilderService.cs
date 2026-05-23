@@ -92,6 +92,7 @@ public sealed class KeyControlsGridBuilderService
 
             cells[deviceProfile.DurableDeviceKey] = new ControlGridDeviceCellViewModel
             {
+                IsDeviceConnected = deviceProfile.IsConnected,
                 DisplayText = displayText,
                 HasAxisBinding = false,
                 PhysicalAxisIndex = -1

@@ -7,6 +7,13 @@ public sealed class ControlGridDeviceCellViewModel : ViewModelBase
 {
     private const double AxisBarUpdateThreshold = 0.003;
 
+    private bool _isDeviceConnected = true;
+    public bool IsDeviceConnected
+    {
+        get => _isDeviceConnected;
+        set => Set(ref _isDeviceConnected, value);
+    }
+
     private string _displayText = "";
     public string DisplayText
     {
