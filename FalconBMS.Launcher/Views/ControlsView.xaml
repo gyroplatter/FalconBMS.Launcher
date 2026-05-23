@@ -11,7 +11,7 @@
         <Style x:Key="ControlsNavHeadingTextBlockStyle"
                TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
-            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>

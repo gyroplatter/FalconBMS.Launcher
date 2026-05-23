@@ -27,7 +27,7 @@
 
         <TextBlock Grid.Row="0"
                    Text="{Binding TitleText}"
-                   FontSize="18"
+                   FontSize="{StaticResource FontSizeLarge}"
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource AppForegroundBrush}"
                    Margin="6,0,0,8"/>

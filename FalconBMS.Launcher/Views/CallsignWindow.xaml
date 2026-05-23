@@ -21,7 +21,7 @@
 
         <TextBlock Grid.Row="0"
                    Text="Register Pilot"
-                   FontSize="18"
+                   FontSize="{StaticResource FontSizeLarge}"
                    FontWeight="SemiBold"
                    Margin="0,0,0,14"/>
 

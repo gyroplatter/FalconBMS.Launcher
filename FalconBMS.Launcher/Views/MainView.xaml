@@ -18,7 +18,6 @@
         </Style>
 
         <Style x:Key="DashboardTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SubheadingTextBlockStyle}">
-            <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -27,7 +26,7 @@
         <Style x:Key="DashboardSectionLabelStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
             <Setter Property="Margin" Value="0,0,0,7"/>
         </Style>
 
@@ -46,7 +45,7 @@
 
         <Style x:Key="DashboardIconBadgeTextStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
-            <Setter Property="FontSize" Value="9"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -98,7 +97,7 @@
             <Setter Property="Padding" Value="18,12"/>
             <Setter Property="Height" Value="62"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeXLarge}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -210,7 +209,7 @@
                             Command="{Binding LaunchCommand}">
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <TextBlock Text="Launch Falcon BMS"
-                                       FontSize="21"
+                                       FontSize="{StaticResource FontSizeXLarge}"
                                        FontWeight="Bold"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
@@ -414,14 +413,14 @@
                                     <StackPanel>
                                         <TextBlock Text="ICON"
                                                    Foreground="{DynamicResource AppAccentBrush}"
-                                                   FontSize="8"
+                                                   FontSize="{StaticResource FontSizeSmall}"
                                                    FontWeight="Bold"
                                                    TextAlignment="Center"
                                                    Margin="0,0,0,2"/>
                                         <TextBlock Text="{Binding Label}"
                                                    Foreground="{DynamicResource AppForegroundBrush}"
                                                    FontWeight="SemiBold"
-                                                   FontSize="12"
+                                                   FontSize="{StaticResource FontSizeMedium}"
                                                    TextAlignment="Center"
                                                    TextWrapping="Wrap"
                                                    LineHeight="13"/>
@@ -458,7 +457,7 @@
                                         <TextBlock Grid.Column="0"
                                                    Text="ICON"
                                                    Foreground="{DynamicResource AppAccentBrush}"
-                                                   FontSize="9"
+                                                   FontSize="{StaticResource FontSizeSmall}"
                                                    FontWeight="Bold"
                                                    VerticalAlignment="Center"/>
 
@@ -466,7 +465,7 @@
                                                    Text="{Binding Label}"
                                                    Foreground="{DynamicResource AppForegroundBrush}"
                                                    FontWeight="SemiBold"
-                                                   FontSize="12"
+                                                   FontSize="{StaticResource FontSizeMedium}"
                                                    TextWrapping="Wrap"
                                                    VerticalAlignment="Center"
                                                    LineHeight="14"/>
@@ -517,7 +516,7 @@
                                 <StackPanel>
                                     <TextBlock Text="ICON"
                                                Foreground="{DynamicResource AppAccentBrush}"
-                                               FontSize="9"
+                                               FontSize="{StaticResource FontSizeSmall}"
                                                FontWeight="Bold"
                                                TextAlignment="Center"
                                                Margin="0,0,0,3"/>
@@ -555,16 +554,14 @@
                                 <StackPanel>
                                     <TextBlock Text="ICON"
                                                Foreground="{DynamicResource AppAccentBrush}"
-                                               FontSize="9"
+                                               FontSize="{StaticResource FontSizeSmall}"
                                                FontWeight="Bold"
                                                TextAlignment="Center"
                                                Margin="0,0,0,3"/>
                                     <TextBlock Text="BMS Forum"
                                                Foreground="{DynamicResource AppForegroundBrush}"
                                                FontWeight="SemiBold"
-                                               TextAlignment="Center"
-                                               TextWrapping="Wrap"
-                                               LineHeight="13"/>
+                                               TextAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -641,7 +638,7 @@
                                         <StackPanel>
                                             <TextBlock Text="{Binding PublishedDisplay}"
                                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                                       FontSize="11"
+                                                       FontSize="{StaticResource FontSizeSmall}"
                                                        Margin="0,0,0,2"/>
 
                                             <TextBlock Style="{StaticResource DashboardSectionLabelStyle}"
