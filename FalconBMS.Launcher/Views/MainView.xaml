@@ -82,9 +82,13 @@
 
     </UserControl.Resources>
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
-      Style="{StaticResource ViewContentRootStyle}"
-      ClipToBounds="True">
+    <ScrollViewer Background="{DynamicResource AppWindowBackgroundBrush}"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  CanContentScroll="False">
+        <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+              Style="{StaticResource ViewContentRootStyle}"
+              ClipToBounds="True">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="220"/>
@@ -838,6 +842,7 @@
                     </StackPanel>
                 </Grid>
             </Grid>
-        </Border>
-    </Grid>
+            </Border>
+        </Grid>
+    </ScrollViewer>
 </UserControl>
