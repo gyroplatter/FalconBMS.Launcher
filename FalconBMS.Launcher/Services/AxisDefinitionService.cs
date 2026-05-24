@@ -207,8 +207,6 @@ public static class AxisDefinitionService
     {
         ["Pitch"] = "5.11 FLIGHT STICK",
         ["Roll"] = "5.11 FLIGHT STICK",
-        ["Trim_Pitch"] = "5.11 FLIGHT STICK",
-        ["Trim_Roll"] = "5.11 FLIGHT STICK",
 
         ["Yaw"] = "6.03 KEYBOARD FLIGHT CONTROLS",
         ["Toe_Brake"] = "6.03 KEYBOARD FLIGHT CONTROLS",
@@ -232,6 +230,8 @@ public static class AxisDefinitionService
 
         ["AI_vs_IVC"] = "2.16 UHF PANEL",
 
+        ["Trim_Pitch"] = "6.03 KEYBOARD FLIGHT CONTROLS",
+        ["Trim_Roll"] = "6.03 KEYBOARD FLIGHT CONTROLS",
         ["Trim_Yaw"] = "6.03 KEYBOARD FLIGHT CONTROLS",
 
         ["HMS_Brightness"] = "3.03 HMCS PANEL",

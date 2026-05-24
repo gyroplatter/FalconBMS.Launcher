@@ -33,7 +33,8 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
     public bool IsRemark => RowKind == BindingRowKind.Remark;
 
-    public bool IsEditable => SourceRow?.IsEditable == true;
+    // Axis rows are editable even though they do not come from a .key BindingRow.
+    public bool IsEditable => IsAxisRow || SourceRow?.IsEditable == true;
 
     public void RefreshFromSource()
     {
