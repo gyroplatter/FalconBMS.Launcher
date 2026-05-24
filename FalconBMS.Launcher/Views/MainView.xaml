@@ -173,7 +173,7 @@
                         <TextBlock Grid.Row="0"
                                    Grid.Column="0"
                                    Text="Install"
-                                   Style="{StaticResource DashboardFieldLabelStyle}"/>
+                                   Style="{StaticResource DashboardSectionLabelStyle}"/>
 
                         <ComboBox Grid.Row="1"
                                   Grid.Column="0"
@@ -185,7 +185,7 @@
                         <TextBlock Grid.Row="0"
                                    Grid.Column="2"
                                    Text="Theater"
-                                   Style="{StaticResource DashboardFieldLabelStyle}"/>
+                                   Style="{StaticResource DashboardSectionLabelStyle}"/>
 
                         <ComboBox Grid.Row="1"
                                   Grid.Column="2"
@@ -368,11 +368,11 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="12"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="0"/>
                         <RowDefinition Height="68"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="0"/>
                         <RowDefinition Height="58"/>
                     </Grid.RowDefinitions>
 
@@ -464,7 +464,9 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="0"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -475,68 +477,71 @@
                         <TextBlock Text="Quick Access" Style="{StaticResource DashboardTitleStyle}"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Row="2">
-                        <TextBlock Text="Shortcuts" Style="{StaticResource DashboardSectionLabelStyle}"/>
+                    <TextBlock Grid.Row="2"
+                               Text="Shortcuts"
+                               Style="{StaticResource DashboardSectionLabelStyle}"/>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="12"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="68"/>
-                                <RowDefinition Height="10"/>
-                                <RowDefinition Height="68"/>
-                            </Grid.RowDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="68"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="68"/>
+                        </Grid.RowDefinitions>
 
-                            <Button Grid.Row="0"
+                        <Button Grid.Row="0"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
                                     Height="62"
+                                    VerticalAlignment="Top"
                                     Command="{Binding OpenDocsCommand}">
-                                <StackPanel>
-                                    <ContentControl Style="{StaticResource LinkManualIconStyle}"
-                                                    Margin="0,0,0,3"/>
-                                    <TextBlock Text="Manuals &amp; Docs"
-                                               Foreground="{DynamicResource AppForegroundBrush}"
-                                               FontWeight="SemiBold"
-                                               TextAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
+                            <StackPanel>
+                                <ContentControl Style="{StaticResource LinkManualIconStyle}"
+                                                Margin="0,0,0,3"/>
+                                <TextBlock Text="Manuals &amp; Docs"
+                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                           FontWeight="SemiBold"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
-                            <Button Grid.Row="0"
+                        <Button Grid.Row="0"
                                     Grid.Column="2"
                                     Style="{StaticResource DashboardTileButtonStyle}"
                                     Height="62"
+                                    VerticalAlignment="Top"
                                     Command="{Binding OpenUserCommand}">
-                                <StackPanel>
-                                    <ContentControl Style="{StaticResource LinkPlaceholderIconStyle}"
-                                                    Margin="0,0,0,3"/>
-                                    <TextBlock Text="User Folder"
-                                               Foreground="{DynamicResource AppForegroundBrush}"
-                                               FontWeight="SemiBold"
-                                               TextAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
+                            <StackPanel>
+                                <ContentControl Style="{StaticResource LinkPlaceholderIconStyle}"
+                                                Margin="0,0,0,3"/>
+                                <TextBlock Text="User Folder"
+                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                           FontWeight="SemiBold"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
                             <Button Grid.Row="2"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
                                     Height="62"
+                                    VerticalAlignment="Top"
                                     Command="{Binding OpenForumCommand}">
-                                <StackPanel>
-                                    <ContentControl Style="{StaticResource LinkForumIconStyle}"
-                                                    Margin="0,0,0,3"/>
-                                    <TextBlock Text="BMS Forum"
-                                               Foreground="{DynamicResource AppForegroundBrush}"
-                                               FontWeight="SemiBold"
-                                               TextAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-                    </StackPanel>
+                            <StackPanel>
+                                <ContentControl Style="{StaticResource LinkForumIconStyle}"
+                                                Margin="0,0,0,3"/>
+                                <TextBlock Text="BMS Forum"
+                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                           FontWeight="SemiBold"
+                                           TextAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
