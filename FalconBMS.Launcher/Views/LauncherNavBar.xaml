@@ -10,13 +10,13 @@
                 Style="{StaticResource HeaderNavButtonMainStyle}"
                 Click="Main_Click"/>
 
-        <Button Content="Views"
-                Style="{StaticResource HeaderNavButtonViewsStyle}"
-                Click="Views_Click"/>
-
         <Button Content="Controls"
                 Style="{StaticResource HeaderNavButtonControlsStyle}"
                 Click="Controls_Click"/>
+
+        <Button Content="Views"
+                Style="{StaticResource HeaderNavButtonViewsStyle}"
+                Click="Views_Click"/>
 
         <Button x:Name="StylesButton"
                 Content="Styles"
