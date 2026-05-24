@@ -80,46 +80,6 @@
             </Setter>
         </Style>
 
-        <Style x:Key="LaunchDashboardButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
-            <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="18,12"/>
-            <Setter Property="Height" Value="62"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="{StaticResource FontSizeXLarge}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Border"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="5">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              Margin="{TemplateBinding Padding}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppPrimaryHoverBrush}"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppPrimaryHoverBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Border" Property="Opacity" Value="0.85"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
@@ -197,14 +157,8 @@
 
                     <Button Grid.Row="4"
                             Style="{StaticResource LaunchDashboardButtonStyle}"
-                            Command="{Binding LaunchCommand}">
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="Launch Falcon BMS"
-                                       FontSize="{StaticResource FontSizeXLarge}"
-                                       FontWeight="Bold"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                            Content="Launch Falcon BMS"
+                            Command="{Binding LaunchCommand}"/>
                 </Grid>
             </Border>
 

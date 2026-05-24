@@ -712,6 +712,71 @@
         <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
     </Style>
 
+    <Style x:Key="LaunchDashboardButtonStyle" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AppPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppPrimaryBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="18,0"/>
+        <Setter Property="Height" Value="58"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeXLarge}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <!--
+            Render the launch button text through this template so the CTA color
+            stays AppPrimaryForegroundBrush in both light and dark modes.
+        -->
+        <Setter Property="ContentTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               Foreground="{DynamicResource AppPrimaryForegroundBrush}"
+                               FontFamily="{StaticResource AppFontFamily}"
+                               FontSize="{StaticResource FontSizeXLarge}"
+                               FontWeight="Bold"
+                               TextAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="5">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppPrimaryHoverBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
     <Style x:Key="PrimaryButtonStyle" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
