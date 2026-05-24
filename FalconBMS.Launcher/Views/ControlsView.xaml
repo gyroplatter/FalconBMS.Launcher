@@ -36,48 +36,57 @@
           Style="{StaticResource ViewContentRootStyle}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text=""
-                   Style="{StaticResource HeadingTextBlockStyle}"
-                   Margin="0,0,0,10"/>
-
-        <Border Grid.Row="1"
+        <Border Grid.Row="0"
                 Padding="12"
                 Margin="0,0,0,12"
                 BorderThickness="1"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 Background="{DynamicResource AppSurfaceBrush}">
-            <DockPanel LastChildFill="False">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <TextBlock Text="Profile"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0"/>
+                <DockPanel Grid.Row="0"
+                           LastChildFill="False">
 
-                <ComboBox Width="180"
-                          ItemsSource="{Binding Profiles}"
-                          SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                          DisplayMemberPath="AircraftProfile"
-                          Margin="0,0,16,0"/>
+                    <TextBlock Text="Profile"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
 
-                <TextBlock Text="Filter"
-                           VerticalAlignment="Center"
-                           Margin="0,0,8,0"/>
+                    <ComboBox Width="180"
+                              ItemsSource="{Binding Profiles}"
+                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                              DisplayMemberPath="AircraftProfile"
+                              Margin="0,0,16,0"/>
 
-                <TextBox Width="260"
-                         Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="0,0,12,0"/>
+                    <TextBlock Text="Filter"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
 
-                <Button Content="Clear"
-                        Width="70"
-                        Command="{Binding ClearFilterCommand}"/>
-            </DockPanel>
+                    <TextBox Width="260"
+                             Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,12,0"/>
+
+                    <Button Content="Clear"
+                            Width="70"
+                            Command="{Binding ClearFilterCommand}"/>
+                </DockPanel>
+
+                <TextBlock Grid.Row="2"
+                           Text="Double-click a row to map that control to a key, button, axis, or POV hat. Press a key, button, or hat direction to jump to its current assignment. Italicized rows are not editable"
+                           Style="{StaticResource MutedTextBlockStyle}"
+                           FontSize="{StaticResource FontSizeSmall}"
+                           TextWrapping="Wrap"/>
+            </Grid>
         </Border>
 
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="240"/>
                 <ColumnDefinition Width="12"/>
