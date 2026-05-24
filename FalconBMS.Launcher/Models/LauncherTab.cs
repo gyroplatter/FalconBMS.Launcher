@@ -3,13 +3,10 @@
 /// <summary>
 /// Enum for the Launcher's main navigation tabs.
 /// </summary>
-
 public enum LauncherTab
 {
     Main = 0,
-    Views = 1,
-    Controls = 2,
-#if DEBUG
+    Controls = 1,
+    Views = 2,
     Styles = 3,
-#endif
 }

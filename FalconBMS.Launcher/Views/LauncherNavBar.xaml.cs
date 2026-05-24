@@ -10,6 +10,12 @@ public partial class LauncherNavBar : UserControl
     public LauncherNavBar()
     {
         InitializeComponent();
+
+#if !DEBUG
+    // Keep LauncherTab.Styles available so Release builds compile,
+    // but hide the developer-only Styles tab from tester/public builds.
+    StylesButton.Visibility = Visibility.Collapsed;
+#endif
     }
 
     private MainWindowViewModel? Vm => DataContext as MainWindowViewModel;
