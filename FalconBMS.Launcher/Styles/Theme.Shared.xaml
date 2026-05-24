@@ -862,11 +862,154 @@
     -->
     <SolidColorBrush x:Key="DashboardBadgeIconBrush" Color="White"/>
 
+    <!-- Icons used next to main tab section titles -->
     <Style x:Key="DashboardBadgeIconBaseStyle" TargetType="ContentControl">
         <Setter Property="Width" Value="20"/>
         <Setter Property="Height" Value="20"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Icons used for Tools and Quick Links sections -->
+    <Style x:Key="LinkIconBaseStyle" TargetType="ContentControl">
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Placeholder icon -->
+    <Style x:Key="LinkPlaceholderIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="50.625" Height="50.625">
+                            <Path Fill="{DynamicResource AppAccentBrush}"
+                                  Data="m8.714 19.01 1.932 1.932a0.601 0.601 0 0 0 0.851 0l2.595 -2.595 2.595 2.595a0.601 0.601 0 0 0 0.851 0l1.932 -1.932a0.601 0.601 0 0 0 0 -0.851l-2.595 -2.595 2.595 -2.595a0.601 0.601 0 0 0 0 -0.851l-1.932 -1.932a0.601 0.601 0 0 0 -0.851 0l-2.595 2.595 -2.595 -2.595a0.601 0.601 0 0 0 -0.851 0l-1.932 1.932a0.601 0.601 0 0 0 0 0.851l2.595 2.595 -2.595 2.595a0.601 0.601 0 0 0 0 0.851m25.722 6.829 -1.932 1.932a0.601 0.601 0 0 0 0 0.851l2.595 2.595 -2.595 2.595a0.601 0.601 0 0 0 0 0.851l1.932 1.932a0.601 0.601 0 0 0 0.851 0l2.595 -2.595 2.595 2.595a0.601 0.601 0 0 0 0.851 0l1.932 -1.932a0.601 0.601 0 0 0 0 -0.851l-2.591 -2.595 2.595 -2.595a0.601 0.601 0 0 0 0 -0.851l-1.932 -1.932a0.601 0.601 0 0 0 -0.851 0l-2.595 2.595 -2.595 -2.595a0.608 0.608 0 0 0 -0.856 0m-7.614 18.422A6.364 6.364 0 0 1 20.457 50.625a6.364 6.364 0 0 1 -6.363 -6.364 6.364 6.364 0 0 1 12.727 0M49.37 8.638a6.364 6.364 0 0 1 -6.364 6.364 6.364 6.364 0 0 1 -6.364 -6.364 6.364 6.364 0 0 1 12.728 0M25.954 21.665a34.875 34.875 0 0 0 -3.612 6.584c-1.6 3.896 -1.815 6.605 -1.825 6.717a0.803 0.803 0 0 0 0.739 0.862h0.058a0.799 0.799 0 0 0 0.798 -0.744c0 -0.027 0.204 -2.564 1.708 -6.225a32.625 32.625 0 0 1 3.441 -6.277c1.617 -2.317 3.56 -4.485 5.775 -6.46l0.996 1.242 1.547 -3.977c0.107 -0.273 -0.043 -0.46 -0.337 -0.417l-4.202 0.652 1.001 1.247a38.587 38.587 0 0 0 -6.085 6.797"/>
+                            <Path Fill="{DynamicResource AppAccentBrush}"
+                                  Data="M1.313 17.64c0.257 3.95 1.37 7.803 3.302 11.448 3.292 6.192 7.772 9.612 7.958 9.752a0.81 0.81 0 0 0 0.481 0.161c0.241 0 0.481 -0.113 0.642 -0.321a0.802 0.802 0 0 0 -0.155 -1.124c-0.043 -0.033 -4.421 -3.383 -7.535 -9.28 -1.82 -3.441 -2.857 -7.071 -3.094 -10.784 -0.278 -4.426 0.594 -9.012 2.595 -13.626l1.424 0.712L6.676 0.317C6.66 0.022 6.445 -0.084 6.2 0.077L2.636 2.427l1.434 0.717C1.935 8.04 1.009 12.911 1.314 17.642"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Third-party tools icon -->
+    <Style x:Key="LinkThirdPartyIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="135" Height="135">
+                            <Path Fill="{DynamicResource AppAccentBrush}" 
+                                  Data="F0 M61.9,17.2 L61.9,28.5 A39.4,39.4 0 0 0 67.5,106.9 A39.4,39.4 0 0 0 95.3,39.7 L87.3,47.7 A28.1,28.1 0 1 1 61.9,39.9 L61.9,51.5 A16.9,16.9 0 1 0 79.5,55.5 L73.1,61.9 L73.1,5.6 L61.8,5.6 L61.8,5.9 A61.8,61.8 0 1 0 111.3,23.7 L103.3,31.7 A50.6,50.6 0 1 1 61.9,17.2"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Manual icon -->
+    <Style x:Key="LinkManualIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="64" Height="64">
+                            <Border Canvas.Left="8"
+                                    Canvas.Top="8"
+                                    Width="17"
+                                    Height="48"
+                                    CornerRadius="5,0,0,5"
+                                    Background="{DynamicResource AppAccentBrush}"/>
+
+                            <Path Stroke="{DynamicResource AppAccentBrush}"
+                                  StrokeThickness="5"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Fill="Transparent"
+                                  Data="M23,8 L51,8 Q56,8 56,13 L56,51 Q56,56 51,56 L23,56 Z"/>
+
+                            <Path Stroke="{DynamicResource AppAccentBrush}"
+                                  StrokeThickness="5"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Fill="Transparent"
+                                  Data="M15,8 L50,8 L50,17 L56,17"/>
+
+                            <Rectangle Canvas.Left="12"
+                                       Canvas.Top="20"
+                                       Width="9"
+                                       Height="4"
+                                       RadiusX="2"
+                                       RadiusY="2"
+                                       Fill="{DynamicResource AppSurfaceBrush}"/>
+
+                            <Rectangle Canvas.Left="12"
+                                       Canvas.Top="40"
+                                       Width="9"
+                                       Height="4"
+                                       RadiusX="2"
+                                       RadiusY="2"
+                                       Fill="{DynamicResource AppSurfaceBrush}"/>
+
+                            <Ellipse Canvas.Left="12"
+                                     Canvas.Top="47"
+                                     Width="9"
+                                     Height="9"
+                                     Fill="{DynamicResource AppSurfaceBrush}"/>
+
+                            <Rectangle Canvas.Left="33"
+                                       Canvas.Top="24"
+                                       Width="15"
+                                       Height="10"
+                                       RadiusX="2"
+                                       RadiusY="2"
+                                       Stroke="{DynamicResource AppAccentBrush}"
+                                       StrokeThickness="3"
+                                       Fill="Transparent"/>
+
+                            <Rectangle Canvas.Left="36"
+                                       Canvas.Top="27"
+                                       Width="9"
+                                       Height="2.5"
+                                       RadiusX="1"
+                                       RadiusY="1"
+                                       Fill="{DynamicResource AppAccentBrush}"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Forum icon -->
+    <Style x:Key="LinkForumIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="84" Height="84">
+                            <Path Fill="{DynamicResource AppAccentBrush}"
+                                Data="M73.5,74.5 C73.5,71.3 84,65 84,58.2 C84,50.3 76.7,44 67.7,41.4 A20,20 0 0 0 73.5,26.7 C73.5,12.1 58.3,0 38.9,0 C20.5,0 0,11 0,26.8 C0,37.8 8.4,45.7 12.1,48.9 C11.6,55.2 8.9,57.8 8.9,57.8 L2.6,63 L10.5,63 A32,32 0 0 0 29.9,57.2 L29.9,58.3 C29.9,68.8 41.5,77.2 56.2,77.2 L59.4,77.2 A25,25 0 0 0 77.2,84.5 C77.7,84 73.5,81.9 73.5,74.5 M38.9,5.2 C55.1,5.2 68.2,15.2 68.2,26.8 C68.2,38.4 54.5,48.3 37.8,48.3 L32,48.3 L31.5,49.4 A30,30 0 0 1 15.2,57.3 Q15.8,54.2 15.7,47.8 L15.7,46.2 C10.5,42 4.7,34.6 4.7,27.3 C4.7,15.8 21.5,5.2 38.9,5.2"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="DashboardBadgeLaunchIconStyle"

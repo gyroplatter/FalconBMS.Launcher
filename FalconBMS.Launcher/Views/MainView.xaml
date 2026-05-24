@@ -369,7 +369,7 @@
                         <RowDefinition Height="12"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
-                        <RowDefinition Height="58"/>
+                        <RowDefinition Height="68"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
@@ -397,17 +397,13 @@
                             <DataTemplate>
                                 <Button Style="{StaticResource DashboardTileButtonStyle}"
                                         Width="86"
-                                        Height="52"
+                                        Height="62"
                                         Margin="0,0,8,0"
                                         Command="{Binding DataContext.LaunchFirstPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding Id}">
                                     <StackPanel>
-                                        <TextBlock Text="ICON"
-                                                   Foreground="{DynamicResource AppAccentBrush}"
-                                                   FontSize="{StaticResource FontSizeSmall}"
-                                                   FontWeight="Bold"
-                                                   TextAlignment="Center"
-                                                   Margin="0,0,0,2"/>
+                                        <ContentControl Style="{StaticResource LinkPlaceholderIconStyle}"
+                                                        Margin="0,0,0,2"/>
                                         <TextBlock Text="{Binding Label}"
                                                    Foreground="{DynamicResource AppForegroundBrush}"
                                                    FontWeight="SemiBold"
@@ -445,12 +441,8 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Column="0"
-                                                   Text="ICON"
-                                                   Foreground="{DynamicResource AppAccentBrush}"
-                                                   FontSize="{StaticResource FontSizeSmall}"
-                                                   FontWeight="Bold"
-                                                   VerticalAlignment="Center"/>
+                                        <ContentControl Grid.Column="0"
+                                                        Style="{StaticResource LinkThirdPartyIconStyle}"/>
 
                                         <TextBlock Grid.Column="1"
                                                    Text="{Binding Label}"
@@ -494,23 +486,19 @@
                             </Grid.ColumnDefinitions>
 
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="58"/>
+                                <RowDefinition Height="68"/>
                                 <RowDefinition Height="10"/>
-                                <RowDefinition Height="58"/>
+                                <RowDefinition Height="68"/>
                             </Grid.RowDefinitions>
 
                             <Button Grid.Row="0"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="58"
+                                    Height="62"
                                     Command="{Binding OpenDocsCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="ICON"
-                                               Foreground="{DynamicResource AppAccentBrush}"
-                                               FontSize="{StaticResource FontSizeSmall}"
-                                               FontWeight="Bold"
-                                               TextAlignment="Center"
-                                               Margin="0,0,0,3"/>
+                                    <ContentControl Style="{StaticResource LinkManualIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="Manuals &amp; Docs"
                                                Foreground="{DynamicResource AppForegroundBrush}"
                                                FontWeight="SemiBold"
@@ -521,15 +509,11 @@
                             <Button Grid.Row="0"
                                     Grid.Column="2"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="58"
+                                    Height="62"
                                     Command="{Binding OpenUserCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="ICON"
-                                               Foreground="{DynamicResource AppAccentBrush}"
-                                               FontSize="9"
-                                               FontWeight="Bold"
-                                               TextAlignment="Center"
-                                               Margin="0,0,0,3"/>
+                                    <ContentControl Style="{StaticResource LinkPlaceholderIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="User Folder"
                                                Foreground="{DynamicResource AppForegroundBrush}"
                                                FontWeight="SemiBold"
@@ -540,15 +524,11 @@
                             <Button Grid.Row="2"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="58"
+                                    Height="62"
                                     Command="{Binding OpenForumCommand}">
                                 <StackPanel>
-                                    <TextBlock Text="ICON"
-                                               Foreground="{DynamicResource AppAccentBrush}"
-                                               FontSize="{StaticResource FontSizeSmall}"
-                                               FontWeight="Bold"
-                                               TextAlignment="Center"
-                                               Margin="0,0,0,3"/>
+                                    <ContentControl Style="{StaticResource LinkForumIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="BMS Forum"
                                                Foreground="{DynamicResource AppForegroundBrush}"
                                                FontWeight="SemiBold"
