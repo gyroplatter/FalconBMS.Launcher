@@ -34,8 +34,8 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DeviceJsonReaderService _deviceJsonReader = new();
 
     // Tracks catalog-vs-JSON differences discovered during startup.
-    // This is separate from ControlsViewModel.IsDirty because BMS adding a new
-    // callback should backfill JSON without being treated as a user binding edit.
+    // This is separate from ControlsViewModel.IsDirty because BMS adding or removing
+    // callbacks should sync JSON without being treated as a user binding edit.
     private bool _needsKeyboardJsonCatalogSync;
 
     public ObservableCollection<BmsInstall> Installs { get; } = new();
@@ -427,14 +427,14 @@ public sealed class MainViewModel : ViewModelBase
 
         // FULL key files define the current structure/defaults.
         // JSON overlays saved keyboard state onto that current structure.
-        // If FULL contains rows missing from JSON, remember that JSON needs a
-        // catalog backfill even if the user does not edit any binding this session.
+        // If FULL and JSON no longer match, remember that JSON needs a catalog sync
+        // even if the user does not edit any binding this session.
         _needsKeyboardJsonCatalogSync = _jsonKeyboardBindingReader.Apply(install.BaseDir, CurrentBindingModel);
 
         if (_needsKeyboardJsonCatalogSync)
         {
             DebugDiagnosticsService.Info(
-                "Keyboard JSON catalog sync required. Newly discovered FULL key rows will be backfilled on close or launch.");
+                "Keyboard JSON catalog sync required. FULL key catalog differences will be synced on close or launch.");
         }
 
         // Step 3+4: device bindings
@@ -514,7 +514,7 @@ public sealed class MainViewModel : ViewModelBase
         bool needsKeyboardJsonCatalogSync = _needsKeyboardJsonCatalogSync;
 
         // Skip the full write pipeline only when there are no user binding edits
-        // and no startup-discovered FULL-key rows that need to be backfilled to JSON.
+        // and no startup-discovered FULL-key catalog differences that need to be synced to JSON.
         // The individual writers also SHA1-diff before touching disk, but skipping the
         // entire pass avoids opening every file unnecessarily on close.
         if (!hasUserBindingChanges && !needsKeyboardJsonCatalogSync)

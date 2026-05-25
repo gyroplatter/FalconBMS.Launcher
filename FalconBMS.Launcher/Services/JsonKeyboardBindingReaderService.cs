@@ -141,18 +141,20 @@ public sealed class JsonKeyboardBindingReaderService
                 changedFromFull++;
         }
 
-        // If the FULL key catalog has rows that were not present in JSON, the in-memory
-        // model is correct, but the JSON snapshot needs to be backfilled on close/launch.
-        // This is not treated as a user binding edit.
+        // If the FULL key catalog has rows that were not present in JSON, the JSON
+        // snapshot needs to be backfilled. If JSON has rows that no longer exist in
+        // the FULL key catalog, the JSON snapshot needs to be pruned.
+        // Neither case is treated as a user binding edit.
         int newCatalogRows = profile.Rows.Count - matchedRows.Count;
-        bool needsCatalogSync = newCatalogRows > 0;
+        int staleJsonRows = missing;
+        bool needsCatalogSync = newCatalogRows > 0 || staleJsonRows > 0;
 
         DebugDiagnosticsService.Info(
             $"Keyboard JSON applied | Aircraft={aircraftProfile} | " +
             $"Rows={document.Rows.Count} | Applied={applied} | " +
             $"MatchedByLine={matchedByLine} | MatchedByCallback={matchedByCallback} | " +
             $"Missing={missing} | ModifiedFromFull={changedFromFull} | " +
-            $"NewCatalogRows={newCatalogRows} | NeedsCatalogSync={needsCatalogSync} | " +
+            $"NewCatalogRows={newCatalogRows} | StaleJsonRows={staleJsonRows} | NeedsCatalogSync={needsCatalogSync} | " +
             $"Path={path} | ActionId={actionId}");
 
         return needsCatalogSync;
