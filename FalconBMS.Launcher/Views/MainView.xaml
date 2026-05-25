@@ -717,7 +717,7 @@
                                     VerticalAlignment="Top"
                                     Command="{Binding OpenUserCommand}">
                             <StackPanel>
-                                <ContentControl Style="{StaticResource LinkPlaceholderIconStyle}"
+                                <ContentControl Style="{StaticResource LinkUserFolderIconStyle}"
                                                 Margin="0,0,0,3"/>
                                 <TextBlock Text="User Folder"
                                            Foreground="{DynamicResource AppForegroundBrush}"
