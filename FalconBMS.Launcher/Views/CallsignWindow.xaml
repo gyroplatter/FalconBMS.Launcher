@@ -3,12 +3,33 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Register Pilot"
         Width="460"
-        Height="260"
+        Height="270"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
+        Background="{DynamicResource AppWindowBackgroundBrush}"
+        Foreground="{DynamicResource AppForegroundBrush}"
         Loaded="Window_Loaded">
 
-    <Grid Margin="16">
+    <Window.Resources>
+        <Style x:Key="DashboardTitleStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource SubheadingTextBlockStyle}">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="DashboardSectionLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16"
+          Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -21,13 +42,12 @@
 
         <TextBlock Grid.Row="0"
                    Text="Register Pilot"
-                   FontSize="{StaticResource FontSizeLarge}"
-                   FontWeight="SemiBold"
+                   Style="{StaticResource DashboardTitleStyle}"
                    Margin="0,0,0,14"/>
 
         <TextBlock Grid.Row="1"
                    Text="Callsign"
-                   Margin="0,0,0,4"/>
+                   Style="{StaticResource DashboardSectionLabelStyle}"/>
 
         <TextBox Grid.Row="2"
                  x:Name="TextBox_Callsign"
@@ -45,7 +65,7 @@
 
         <TextBlock Grid.Row="4"
                    Text="Pilot Name"
-                   Margin="0,0,0,4"/>
+                   Style="{StaticResource DashboardSectionLabelStyle}"/>
 
         <StackPanel Grid.Row="5">
             <TextBox x:Name="TextBox_PilotName"
@@ -67,11 +87,13 @@
             <Button Content="Cancel"
                     Width="90"
                     Margin="0,0,10,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
                     IsCancel="True"
                     Click="Cancel_Click"/>
 
             <Button Content="Register"
                     Width="90"
+                    Style="{StaticResource PrimaryButtonStyle}"
                     IsDefault="True"
                     Click="Button_Register_Click"/>
         </StackPanel>

@@ -1,15 +1,26 @@
 ﻿using FalconBMS.Launcher.Services;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace FalconBMS.Launcher.Views;
 
 public partial class CallsignWindow : Window
 {
+    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
     private static readonly Regex AllowedCallsignRegex = new("[^A-Z|a-z|0-9|~|`|\\[|\\]|\\{|\\}|\\-|_|\\=|\\'|\\s]", RegexOptions.Compiled);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(
+        IntPtr hwnd,
+        int dwAttribute,
+        ref int pvAttribute,
+        int cbAttribute);
 
     private readonly string _installKeyName;
     private readonly string _baseDir;
@@ -21,6 +32,48 @@ public partial class CallsignWindow : Window
         _baseDir = baseDir;
 
         InitializeComponent();
+
+        ThemeService.EffectiveDarkThemeChanged += ThemeService_EffectiveDarkThemeChanged;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        // The native Windows title bar can only be themed after WPF creates the window handle.
+        ApplyNativeTitleBarTheme(ThemeService.IsCurrentEffectiveThemeDark());
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        ThemeService.EffectiveDarkThemeChanged -= ThemeService_EffectiveDarkThemeChanged;
+
+        base.OnClosed(e);
+    }
+
+    private void ThemeService_EffectiveDarkThemeChanged(bool isDarkTheme)
+    {
+        ApplyNativeTitleBarTheme(isDarkTheme);
+    }
+
+    private void ApplyNativeTitleBarTheme(bool useDarkTitleBar)
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero)
+            return;
+
+        var value = useDarkTitleBar ? 1 : 0;
+
+        var result = DwmSetWindowAttribute(
+            hwnd,
+            DWMWA_USE_IMMERSIVE_DARK_MODE,
+            ref value,
+            sizeof(int));
+
+        if (result != 0)
+        {
+            DebugDiagnosticsService.Warn($"Unable to apply native title bar theme for CallsignWindow. DwmSetWindowAttribute result={result}");
+        }
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
