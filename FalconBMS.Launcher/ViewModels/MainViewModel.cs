@@ -33,6 +33,11 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DeviceBindingProfileBuilderService _deviceBindingProfileBuilder = new();
     private readonly DeviceJsonReaderService _deviceJsonReader = new();
 
+    // Tracks catalog-vs-JSON differences discovered during startup.
+    // This is separate from ControlsViewModel.IsDirty because BMS adding a new
+    // callback should backfill JSON without being treated as a user binding edit.
+    private bool _needsKeyboardJsonCatalogSync;
+
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
     public ObservableCollection<string> Theaters { get; } = new();
@@ -422,7 +427,15 @@ public sealed class MainViewModel : ViewModelBase
 
         // FULL key files define the current structure/defaults.
         // JSON overlays saved keyboard state onto that current structure.
-        _jsonKeyboardBindingReader.Apply(install.BaseDir, CurrentBindingModel);
+        // If FULL contains rows missing from JSON, remember that JSON needs a
+        // catalog backfill even if the user does not edit any binding this session.
+        _needsKeyboardJsonCatalogSync = _jsonKeyboardBindingReader.Apply(install.BaseDir, CurrentBindingModel);
+
+        if (_needsKeyboardJsonCatalogSync)
+        {
+            DebugDiagnosticsService.Info(
+                "Keyboard JSON catalog sync required. Newly discovered FULL key rows will be backfilled on close or launch.");
+        }
 
         // Step 3+4: device bindings
         IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches =
@@ -497,13 +510,16 @@ public sealed class MainViewModel : ViewModelBase
         if (SelectedInstall is null)
             return;
 
-        // Skip the full write pipeline if the user made no binding changes this session.
-        // PrepareForLaunch already ran before BMS launched, so all files are current.
+        bool hasUserBindingChanges = ControlsViewModel?.IsDirty == true;
+        bool needsKeyboardJsonCatalogSync = _needsKeyboardJsonCatalogSync;
+
+        // Skip the full write pipeline only when there are no user binding edits
+        // and no startup-discovered FULL-key rows that need to be backfilled to JSON.
         // The individual writers also SHA1-diff before touching disk, but skipping the
         // entire pass avoids opening every file unnecessarily on close.
-        if (ControlsViewModel is not null && !ControlsViewModel.IsDirty)
+        if (!hasUserBindingChanges && !needsKeyboardJsonCatalogSync)
         {
-            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes since last PrepareForLaunch.");
+            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes and no keyboard JSON catalog sync required.");
             return;
         }
 
@@ -511,7 +527,8 @@ public sealed class MainViewModel : ViewModelBase
         {
             DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
             DebugDiagnosticsService.Info($"Launcher close requested output save for install: {SelectedInstall.RegistryKeyName}");
-            DebugDiagnosticsService.Info("PrepareForLaunch on close start.");
+            DebugDiagnosticsService.Info(
+                $"PrepareForLaunch on close start. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={needsKeyboardJsonCatalogSync}");
 
             bool vrEnabled = VrSteamVr || VrOpenXr;
 
@@ -521,6 +538,9 @@ public sealed class MainViewModel : ViewModelBase
                 ExportRttTextures,
                 vrEnabled,
                 CurrentBindingModel);
+
+            _needsKeyboardJsonCatalogSync = false;
+            ControlsViewModel?.ResetDirty();
 
             DebugDiagnosticsService.Info("PrepareForLaunch on close complete.");
         }
@@ -572,8 +592,10 @@ public sealed class MainViewModel : ViewModelBase
 
             DebugDiagnosticsService.Info("PrepareForLaunch complete.");
 
-            // All outputs are now current. Reset dirty so SaveOutputsForClose
-            // can skip the redundant write if nothing changes while BMS is running.
+            // All outputs are now current. Reset dirty/catalog-sync state so
+            // SaveOutputsForClose can skip the redundant write if nothing changes
+            // while BMS is running.
+            _needsKeyboardJsonCatalogSync = false;
             ControlsViewModel?.ResetDirty();
 
             var arguments = BuildFalconArguments();

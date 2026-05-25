@@ -17,20 +17,25 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class JsonKeyboardBindingReaderService
 {
-    public void Apply(string baseDir, BindingModel bindingModel)
+    public bool Apply(string baseDir, BindingModel bindingModel)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("JSONREAD");
         DebugDiagnosticsService.Info($"Keyboard JSON read begin. | ActionId={actionId}");
 
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
 
-        ApplyProfile(jsonDir, bindingModel, "F-16", "KeyboardBindings.json", actionId);
-        ApplyProfile(jsonDir, bindingModel, "F-15ABCD", "KeyboardBindings_F-15ABCD.json", actionId);
+        bool f16NeedsCatalogSync = ApplyProfile(jsonDir, bindingModel, "F-16", "KeyboardBindings.json", actionId);
+        bool f15NeedsCatalogSync = ApplyProfile(jsonDir, bindingModel, "F-15ABCD", "KeyboardBindings_F-15ABCD.json", actionId);
 
-        DebugDiagnosticsService.Info($"Keyboard JSON read end. | ActionId={actionId}");
+        bool needsCatalogSync = f16NeedsCatalogSync || f15NeedsCatalogSync;
+
+        DebugDiagnosticsService.Info(
+            $"Keyboard JSON read end. NeedsCatalogSync={needsCatalogSync} | ActionId={actionId}");
+
+        return needsCatalogSync;
     }
 
-    private static void ApplyProfile(
+    private static bool ApplyProfile(
         string configDir,
         BindingModel bindingModel,
         string aircraftProfile,
@@ -43,14 +48,19 @@ public sealed class JsonKeyboardBindingReaderService
         if (profile is null)
         {
             DebugDiagnosticsService.Warn($"Keyboard JSON read skipped. Missing profile: {aircraftProfile} | ActionId={actionId}");
-            return;
+            return false;
         }
 
         string path = Path.Combine(configDir, fileName);
         if (!File.Exists(path))
         {
-            DebugDiagnosticsService.Info($"Keyboard JSON read skipped. File not found: {path} | ActionId={actionId}");
-            return;
+            bool missingJsonNeedsCatalogSync = profile.Rows.Count > 0;
+
+            DebugDiagnosticsService.Info(
+                $"Keyboard JSON read skipped. File not found: {path} | " +
+                $"NeedsCatalogSync={missingJsonNeedsCatalogSync} | ActionId={actionId}");
+
+            return missingJsonNeedsCatalogSync;
         }
 
         JsonKeyboardBindingDocument? document;
@@ -62,13 +72,15 @@ public sealed class JsonKeyboardBindingReaderService
         catch (Exception ex)
         {
             DebugDiagnosticsService.Exception(ex, $"Keyboard JSON read failed: {path}");
-            return;
+
+            // Do not auto-overwrite unreadable JSON. Leave the file for manual inspection.
+            return false;
         }
 
         if (document?.Rows is null)
         {
             DebugDiagnosticsService.Warn($"Keyboard JSON read skipped. No rows found: {path} | ActionId={actionId}");
-            return;
+            return false;
         }
 
         var rowsByLineAndCallback = profile.Rows.ToDictionary(
@@ -80,6 +92,8 @@ public sealed class JsonKeyboardBindingReaderService
             .GroupBy(x => x.CallbackName, StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() == 1)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        var matchedRows = new HashSet<BindingRow>();
 
         int applied = 0;
         int matchedByLine = 0;
@@ -118,6 +132,8 @@ public sealed class JsonKeyboardBindingReaderService
                 continue;
             }
 
+            matchedRows.Add(bindingRow);
+
             bool modified = ApplyJsonRow(bindingRow, jsonRow);
             applied++;
 
@@ -125,12 +141,21 @@ public sealed class JsonKeyboardBindingReaderService
                 changedFromFull++;
         }
 
+        // If the FULL key catalog has rows that were not present in JSON, the in-memory
+        // model is correct, but the JSON snapshot needs to be backfilled on close/launch.
+        // This is not treated as a user binding edit.
+        int newCatalogRows = profile.Rows.Count - matchedRows.Count;
+        bool needsCatalogSync = newCatalogRows > 0;
+
         DebugDiagnosticsService.Info(
             $"Keyboard JSON applied | Aircraft={aircraftProfile} | " +
             $"Rows={document.Rows.Count} | Applied={applied} | " +
             $"MatchedByLine={matchedByLine} | MatchedByCallback={matchedByCallback} | " +
             $"Missing={missing} | ModifiedFromFull={changedFromFull} | " +
+            $"NewCatalogRows={newCatalogRows} | NeedsCatalogSync={needsCatalogSync} | " +
             $"Path={path} | ActionId={actionId}");
+
+        return needsCatalogSync;
     }
 
     private static JsonKeyboardBindingDocument? ReadDocument(string path)

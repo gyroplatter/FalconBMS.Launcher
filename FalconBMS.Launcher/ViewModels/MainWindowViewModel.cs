@@ -45,15 +45,16 @@ public sealed class MainWindowViewModel : ViewModelBase
         Main.ControlsViewModel = Controls;
 
         // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
-        // and notifies here. ControlsViewModel reloads from the new complete model and its
-        // dirty flag is implicitly reset because LoadBindingModel replaces all state.
+        // and notifies here. ControlsViewModel reloads from the new complete model.
+        // User-edit dirty state is reset here, but MainViewModel separately tracks whether
+        // newly discovered FULL-key rows need to be backfilled into KeyboardBindings.json.
         Main.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(Main.CurrentBindingModel))
             {
                 Controls.LoadBindingModel(Main.CurrentBindingModel);
 
-                // The model was just reloaded from disk — no unsaved changes exist yet.
+                // The model was just reloaded from disk. No user binding edit has happened yet.
                 Controls.ResetDirty();
             }
         };
