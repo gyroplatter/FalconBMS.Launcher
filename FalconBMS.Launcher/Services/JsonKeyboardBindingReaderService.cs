@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
-using System.Text;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -13,7 +12,12 @@ namespace FalconBMS.Launcher.Services;
 /// Reads keyboard binding JSON snapshots and overlays saved keyboard values onto the current BindingModel.
 /// 
 /// FULL key files still define structure, ordering, headers, and available callbacks.
-/// JSON only restores saved binding values onto matching rows.
+/// JSON only restores saved user-modified binding values onto matching rows.
+/// 
+/// Catalog changes are tracked separately from user edits:
+/// - FULL adds a row missing from JSON.
+/// - FULL removes a row still present in JSON.
+/// - FULL changes defaults/metadata for a row that the user has not modified.
 /// </summary>
 public sealed class JsonKeyboardBindingReaderService
 {
@@ -99,7 +103,9 @@ public sealed class JsonKeyboardBindingReaderService
         int matchedByLine = 0;
         int matchedByCallback = 0;
         int missing = 0;
-        int changedFromFull = 0;
+        int userModifiedRows = 0;
+        int defaultChangedRows = 0;
+        int metadataChangedRows = 0;
 
         foreach (var jsonRow in document.Rows)
         {
@@ -134,26 +140,59 @@ public sealed class JsonKeyboardBindingReaderService
 
             matchedRows.Add(bindingRow);
 
-            bool modified = ApplyJsonRow(bindingRow, jsonRow);
-            applied++;
+            bool jsonRowIsUserModified = IsJsonRowUserModified(jsonRow, bindingRow);
+            bool jsonBindingValuesDifferFromFull = JsonBindingValuesDifferFromFull(bindingRow, jsonRow);
+            bool jsonCatalogMetadataDiffersFromFull = JsonCatalogMetadataDiffersFromFull(bindingRow, jsonRow);
 
-            if (modified)
-                changedFromFull++;
+            if (jsonRowIsUserModified)
+            {
+                ApplyUserModifiedJsonRow(bindingRow, jsonRow);
+                userModifiedRows++;
+
+                // User-modified bindings should keep their JSON assignment, but JSON
+                // should still be rewritten if FULL changed metadata such as line number,
+                // description, category, section, visibility, or row kind.
+                if (jsonCatalogMetadataDiffersFromFull)
+                    metadataChangedRows++;
+            }
+            else
+            {
+                // This row was not modified by the user, so the current FULL file should win.
+                // Do not overlay old JSON defaults onto the current FULL row.
+                bindingRow.IsModified = false;
+
+                // If old JSON defaults differ from current FULL defaults, the launcher should
+                // mark a catalog sync so JSON is rewritten with the new FULL defaults.
+                if (jsonBindingValuesDifferFromFull)
+                    defaultChangedRows++;
+
+                if (jsonCatalogMetadataDiffersFromFull)
+                    metadataChangedRows++;
+            }
+
+            applied++;
         }
 
         // If the FULL key catalog has rows that were not present in JSON, the JSON
         // snapshot needs to be backfilled. If JSON has rows that no longer exist in
-        // the FULL key catalog, the JSON snapshot needs to be pruned.
-        // Neither case is treated as a user binding edit.
+        // the FULL key catalog, the JSON snapshot needs to be pruned. If FULL changed
+        // default values for unmodified rows, JSON needs to be refreshed to those new
+        // defaults. None of these cases are treated as user binding edits.
         int newCatalogRows = profile.Rows.Count - matchedRows.Count;
         int staleJsonRows = missing;
-        bool needsCatalogSync = newCatalogRows > 0 || staleJsonRows > 0;
+
+        bool needsCatalogSync =
+            newCatalogRows > 0 ||
+            staleJsonRows > 0 ||
+            defaultChangedRows > 0 ||
+            metadataChangedRows > 0;
 
         DebugDiagnosticsService.Info(
             $"Keyboard JSON applied | Aircraft={aircraftProfile} | " +
             $"Rows={document.Rows.Count} | Applied={applied} | " +
             $"MatchedByLine={matchedByLine} | MatchedByCallback={matchedByCallback} | " +
-            $"Missing={missing} | ModifiedFromFull={changedFromFull} | " +
+            $"Missing={missing} | UserModifiedRows={userModifiedRows} | " +
+            $"DefaultChangedRows={defaultChangedRows} | MetadataChangedRows={metadataChangedRows} | " +
             $"NewCatalogRows={newCatalogRows} | StaleJsonRows={staleJsonRows} | NeedsCatalogSync={needsCatalogSync} | " +
             $"Path={path} | ActionId={actionId}");
 
@@ -170,15 +209,18 @@ public sealed class JsonKeyboardBindingReaderService
         return serializer.ReadObject(stream) as JsonKeyboardBindingDocument;
     }
 
-    private static bool ApplyJsonRow(BindingRow bindingRow, JsonKeyboardBindingRow jsonRow)
+    private static bool IsJsonRowUserModified(JsonKeyboardBindingRow jsonRow, BindingRow fullRow)
     {
-        int fullSoundId = bindingRow.SoundId;
-        int fullUnused = bindingRow.Unused;
-        string fullKeyScancode = bindingRow.KeyScancode;
-        int fullKeyModifierFlags = bindingRow.KeyModifierFlags;
-        string fullChordScancode = bindingRow.ChordScancode;
-        int fullChordModifierFlags = bindingRow.ChordModifierFlags;
+        if (jsonRow.IsModified.HasValue)
+            return jsonRow.IsModified.Value;
 
+        // Older JSON snapshots may not have is_modified. Preserve those values rather
+        // than risking accidental loss of user bindings.
+        return JsonBindingValuesDifferFromFull(fullRow, jsonRow);
+    }
+
+    private static void ApplyUserModifiedJsonRow(BindingRow bindingRow, JsonKeyboardBindingRow jsonRow)
+    {
         if (jsonRow.SoundId.HasValue)
             bindingRow.SoundId = jsonRow.SoundId.Value;
 
@@ -197,16 +239,62 @@ public sealed class JsonKeyboardBindingReaderService
         if (jsonRow.ChordModifierFlags.HasValue)
             bindingRow.ChordModifierFlags = jsonRow.ChordModifierFlags.Value;
 
-        bool modified =
-            bindingRow.SoundId != fullSoundId ||
-            bindingRow.Unused != fullUnused ||
-            !string.Equals(bindingRow.KeyScancode, fullKeyScancode, StringComparison.Ordinal) ||
-            bindingRow.KeyModifierFlags != fullKeyModifierFlags ||
-            !string.Equals(bindingRow.ChordScancode, fullChordScancode, StringComparison.Ordinal) ||
-            bindingRow.ChordModifierFlags != fullChordModifierFlags;
+        bindingRow.IsModified = true;
+    }
 
-        bindingRow.IsModified = modified;
-        return modified;
+    private static bool JsonBindingValuesDifferFromFull(BindingRow fullRow, JsonKeyboardBindingRow jsonRow)
+    {
+        if (jsonRow.SoundId.HasValue && jsonRow.SoundId.Value != fullRow.SoundId)
+            return true;
+
+        if (jsonRow.Unused.HasValue && jsonRow.Unused.Value != fullRow.Unused)
+            return true;
+
+        if (jsonRow.KeyScancode is not null &&
+            !string.Equals(jsonRow.KeyScancode, fullRow.KeyScancode, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (jsonRow.KeyModifierFlags.HasValue && jsonRow.KeyModifierFlags.Value != fullRow.KeyModifierFlags)
+            return true;
+
+        if (jsonRow.ChordScancode is not null &&
+            !string.Equals(jsonRow.ChordScancode, fullRow.ChordScancode, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (jsonRow.ChordModifierFlags.HasValue && jsonRow.ChordModifierFlags.Value != fullRow.ChordModifierFlags)
+            return true;
+
+        return false;
+    }
+
+    private static bool JsonCatalogMetadataDiffersFromFull(BindingRow fullRow, JsonKeyboardBindingRow jsonRow)
+    {
+        if (jsonRow.SourceLineNumber != fullRow.SourceLineNumber)
+            return true;
+
+        if (!string.Equals(jsonRow.CallbackName ?? "", fullRow.CallbackName, StringComparison.Ordinal))
+            return true;
+
+        if (!string.Equals(jsonRow.Description ?? "", fullRow.Description, StringComparison.Ordinal))
+            return true;
+
+        if (!string.Equals(jsonRow.CategoryName ?? "", fullRow.CategoryName, StringComparison.Ordinal))
+            return true;
+
+        if (!string.Equals(jsonRow.SectionName ?? "", fullRow.SectionName, StringComparison.Ordinal))
+            return true;
+
+        if (jsonRow.Visibility.HasValue && jsonRow.Visibility.Value != fullRow.Visibility)
+            return true;
+
+        if (!string.Equals(jsonRow.RowKind ?? "", fullRow.RowKind.ToString(), StringComparison.Ordinal))
+            return true;
+
+        return false;
     }
 
     private static string CreateLineAndCallbackKey(BindingRow row)
