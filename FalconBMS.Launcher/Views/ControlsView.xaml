@@ -122,7 +122,8 @@
                       FrozenColumnCount="2"
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
-                      MouseDoubleClick="ControlsGrid_MouseDoubleClick">
+                      MouseDoubleClick="ControlsGrid_MouseDoubleClick"
+                      ColumnReordered="ControlsGrid_ColumnReordered">
 
                 <DataGrid.Columns>
                     <DataGridTemplateColumn Header="Mapping"

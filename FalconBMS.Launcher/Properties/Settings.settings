@@ -65,8 +65,11 @@
     <Setting Name="Misc_SmartScalingOverride" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>
-	<Setting Name="LauncherThemeMode" Type="System.String" Scope="User">
+    <Setting Name="LauncherThemeMode" Type="System.String" Scope="User">
       <Value Profile="(Default)">Auto</Value>
+    </Setting>
+    <Setting Name="ControlsDeviceColumnOrder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

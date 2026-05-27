@@ -23,6 +23,14 @@ public partial class ControlsView : UserControl
     private KeyboardSession? _keyboard;
     private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
     private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
+
+    // Tracks which dynamic device column belongs to which DurableDeviceKey.
+    // This keeps double-click mapping correct even after the user reorders columns.
+    private readonly Dictionary<DataGridColumn, string> _deviceKeyByColumn = new();
+
+    // Prevents saving while we are restoring the saved column order.
+    private bool _isRestoringDeviceColumnOrder;
+
     private HashSet<DiKey> _previousPressedKeys = new();
     private DispatcherTimer? _timer;
     private ControlsViewModel? _subscribedViewModel;
@@ -78,6 +86,8 @@ public partial class ControlsView : UserControl
     {
         const int fixedColumnCount = 2;
 
+        _deviceKeyByColumn.Clear();
+
         while (ControlsGrid.Columns.Count > fixedColumnCount)
             ControlsGrid.Columns.RemoveAt(fixedColumnCount);
 
@@ -86,15 +96,95 @@ public partial class ControlsView : UserControl
 
         foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns)
         {
-            ControlsGrid.Columns.Add(new DataGridTemplateColumn
+            var column = new DataGridTemplateColumn
             {
                 Header = GetDeviceColumnHeader(deviceProfile),
                 CellTemplate = CreateDeviceCellTemplate(deviceProfile.DurableDeviceKey),
                 Width = new DataGridLength(140),
                 MinWidth = 140,
                 IsReadOnly = true
-            });
+            };
+
+            ControlsGrid.Columns.Add(column);
+            _deviceKeyByColumn[column] = deviceProfile.DurableDeviceKey;
         }
+
+        RestoreSavedDeviceColumnOrder();
+
+        // Save the current visible order after rebuild.
+        // This keeps the setting current when new devices are discovered
+        // and appends them after the user's saved device order.
+        SaveDeviceColumnOrder();
+    }
+
+    private void RestoreSavedDeviceColumnOrder()
+    {
+        const int fixedColumnCount = 2;
+
+        string savedOrder = Properties.Settings.Default.ControlsDeviceColumnOrder;
+
+        if (string.IsNullOrWhiteSpace(savedOrder))
+            return;
+
+        string[] savedDeviceKeys = savedOrder
+            .Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (savedDeviceKeys.Length == 0)
+            return;
+
+        Dictionary<string, int> savedIndexByDeviceKey = savedDeviceKeys
+            .Select((deviceKey, index) => new { deviceKey, index })
+            .GroupBy(item => item.deviceKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().index,
+                StringComparer.OrdinalIgnoreCase);
+
+        List<DataGridColumn> deviceColumns = ControlsGrid.Columns
+            .Where(column => _deviceKeyByColumn.ContainsKey(column))
+            .OrderBy(column =>
+            {
+                string deviceKey = _deviceKeyByColumn[column];
+
+                return savedIndexByDeviceKey.TryGetValue(deviceKey, out int savedIndex)
+                    ? savedIndex
+                    : int.MaxValue;
+            })
+            .ThenBy(column => ControlsGrid.Columns.IndexOf(column))
+            .ToList();
+
+        _isRestoringDeviceColumnOrder = true;
+
+        try
+        {
+            for (int index = 0; index < deviceColumns.Count; index++)
+                deviceColumns[index].DisplayIndex = fixedColumnCount + index;
+        }
+        finally
+        {
+            _isRestoringDeviceColumnOrder = false;
+        }
+    }
+
+    private void ControlsGrid_ColumnReordered(object sender, DataGridColumnEventArgs e)
+    {
+        if (_isRestoringDeviceColumnOrder)
+            return;
+
+        SaveDeviceColumnOrder();
+    }
+
+    private void SaveDeviceColumnOrder()
+    {
+        string savedOrder = string.Join(
+            "|",
+            ControlsGrid.Columns
+                .Where(column => _deviceKeyByColumn.ContainsKey(column))
+                .OrderBy(column => column.DisplayIndex)
+                .Select(column => _deviceKeyByColumn[column]));
+
+        Properties.Settings.Default.ControlsDeviceColumnOrder = savedOrder;
+        Properties.Settings.Default.Save();
     }
 
     private static object GetDeviceColumnHeader(DeviceBindingProfile deviceProfile)
@@ -547,15 +637,10 @@ public partial class ControlsView : UserControl
         if (cell is null)
             return null;
 
-        int columnIndex = cell.Column.DisplayIndex;
-        const int deviceColumnStartIndex = 2;
-
-        if (columnIndex < deviceColumnStartIndex)
-            return null;
-
-        int deviceIndex = columnIndex - deviceColumnStartIndex;
-        return deviceIndex >= 0 && deviceIndex < viewModel.DeviceColumns.Count
-            ? viewModel.DeviceColumns[deviceIndex].DurableDeviceKey
+        // Do not calculate this from DisplayIndex.
+        // DisplayIndex changes when the user reorders columns, but the device collection order does not.
+        return _deviceKeyByColumn.TryGetValue(cell.Column, out string? durableDeviceKey)
+            ? durableDeviceKey
             : null;
     }
 

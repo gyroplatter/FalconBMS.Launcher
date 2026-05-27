@@ -286,5 +286,17 @@ namespace FalconBMS.Launcher.Properties {
                 this["LauncherThemeMode"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ControlsDeviceColumnOrder {
+            get {
+                return ((string)(this["ControlsDeviceColumnOrder"]));
+            }
+            set {
+                this["ControlsDeviceColumnOrder"] = value;
+            }
+        }
     }
 }
