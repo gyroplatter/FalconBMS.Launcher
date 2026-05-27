@@ -10,6 +10,12 @@
     <PlatformTarget>x64</PlatformTarget>
 	<ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
 	<Platforms>AnyCPU;x64</Platforms>
+
+    <!-- Controls the company/app identity used by .NET user-scoped settings. -->
+    <Company>Benchmark Sims</Company>
+    <Product>Falcon BMS Launcher</Product>
+    <AssemblyTitle>Falcon BMS Launcher</AssemblyTitle>
+    <Description>Falcon BMS Launcher</Description>
   </PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
