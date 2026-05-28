@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Input;
 using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -310,23 +311,32 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        if (viewModel.SelectedRow is null)
+        ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
+
+        if (selectedRow is null)
             return;
 
-        if (viewModel.SelectedRow.IsAxisRow)
+        if (selectedRow.IsAxisRow)
         {
             StopKeyboardSearchCapture();
 
+            Window? ownerWindow = Window.GetWindow(this);
+
             var axisWindow = new AxisAssignWindow
             {
-                Owner = Window.GetWindow(this)
+                Owner = ownerWindow
             };
 
             string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
-            IntPtr hwnd = new WindowInteropHelper(axisWindow.Owner).Handle;
+
+            // The owner should normally be the main launcher window, but use IntPtr.Zero as a safe fallback
+            // so nullable analysis and unusual design/runtime states do not break the axis popup flow.
+            IntPtr hwnd = ownerWindow is not null
+                ? new WindowInteropHelper(ownerWindow).Handle
+                : IntPtr.Zero;
 
             axisWindow.DataContext = new AxisAssignViewModel(
-                viewModel.SelectedRow,
+                selectedRow,
                 viewModel.DeviceColumns,
                 clickedDeviceKey,
                 hwnd,
@@ -339,10 +349,10 @@ public partial class ControlsView : UserControl
             return;
         }
 
-        if (viewModel.SelectedRow.SourceRow is null)
+        if (selectedRow.SourceRow is null)
             return;
 
-        if (!viewModel.SelectedRow.IsEditable)
+        if (!selectedRow.IsEditable)
             return;
 
         StopKeyboardSearchCapture();
@@ -356,7 +366,7 @@ public partial class ControlsView : UserControl
             return;
 
         window.DataContext = new KeyMappingWindowViewModel(
-            viewModel.SelectedRow.SourceRow,
+            selectedRow.SourceRow,
             viewModel.SelectedProfileRows,
             viewModel.DeviceColumns,
             viewModel.SelectedProfile.AircraftProfile,

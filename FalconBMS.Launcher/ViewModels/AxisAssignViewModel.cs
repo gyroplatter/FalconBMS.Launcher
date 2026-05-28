@@ -41,6 +41,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     private readonly Action _closeWindow;
     private readonly IntPtr _hwnd;
 
+    // Correlates every log line from one Assign Axis popup session.
+    private readonly string _actionId = DebugDiagnosticsService.CreateActionId("AXISUI");
+
     private readonly Dictionary<string, JoystickSession> _sessionsByDeviceKey = new();
     private readonly Dictionary<string, int[]> _baselineByDeviceKey = new();
     private readonly Dictionary<string, int> _stableHitsByCandidate = new();
@@ -200,9 +203,12 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
         LoadExistingMapping(initialDeviceKey);
 
+        DebugDiagnosticsService.Info(
+            $"Axis assign popup created. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | Mapping={_axisRow.Mapping} | InitialClickedDeviceKey={initialDeviceKey ?? "<null>"} | ExistingDeviceKey={_selectedDeviceKey ?? "<null>"} | ExistingPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | IsCleared={_isCleared}");
+
         ClearCommand = new RelayCommand(ClearMapping);
         SaveCommand = new RelayCommand(SaveAndClose);
-        CancelCommand = new RelayCommand(_closeWindow);
+        CancelCommand = new RelayCommand(CancelAndClose);
         SetIdleDetentCommand = new RelayCommand(() => SetDetentFromLiveAxis(isIdle: true));
         SetAfterburnerDetentCommand = new RelayCommand(() => SetDetentFromLiveAxis(isIdle: false));
     }
@@ -217,6 +223,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         // An existing assignment should only poll the assigned axis. Auto-capture is off until Clear is clicked,
         // which is the critical old-launcher behavior that stops random jitter from remapping Pitch/Roll/etc.
         _captureArmed = !_selectedPhysicalAxisIndex.HasValue;
+
+        DebugDiagnosticsService.Info(
+            $"Axis assign polling started. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | CaptureArmed={_captureArmed} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedDeviceName={GetSelectedDeviceName()} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConnectedAxisDevices={_deviceProfiles.Count(device => device.IsConnected && device.AxisCount > 0)}");
 
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -384,6 +393,10 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         {
             _stableHitsByCandidate.Clear();
             StatusText = "Move one axis clearly to assign";
+
+            DebugDiagnosticsService.Info(
+                $"Axis capture rejected; no dominant candidate. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | BestDevice={GetDeviceDisplayName(best.Device)} | BestDeviceKey={best.Device.DurableDeviceKey} | BestAxis={FormatPhysicalAxis(best.AxisIndex)} | BestDelta={best.Delta} | SecondDevice={GetDeviceDisplayName(secondBest.Device)} | SecondDeviceKey={secondBest.Device.DurableDeviceKey} | SecondAxis={FormatPhysicalAxis(secondBest.AxisIndex)} | SecondDelta={secondBest.Delta}");
+
             return;
         }
 
@@ -406,6 +419,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _selectedPhysicalAxisIndex = best.AxisIndex;
         _captureArmed = false;
         HasLiveAxis = true;
+
+        DebugDiagnosticsService.Info(
+            $"Axis captured. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | Device={GetDeviceDisplayName(best.Device)} | DeviceKey={best.Device.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(best.AxisIndex)} | Delta={best.Delta} | StableHits={stableHits} | Deadzone={DeadzoneCurve} | Saturation={SaturationCurve} | Invert={Invert}");
 
         StatusText = "Captured " + GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(best.AxisIndex);
         UpdateAxisConflict();
@@ -444,6 +460,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     private void ClearMapping()
     {
+        DebugDiagnosticsService.Info(
+            $"Axis clear clicked. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | PreviousDeviceKey={_selectedDeviceKey ?? "<null>"} | PreviousPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)}");
+
         _selectedDeviceKey = null;
         _selectedPhysicalAxisIndex = null;
         _isCleared = true;
@@ -460,7 +479,14 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     private void SaveAndClose()
     {
+        DebugDiagnosticsService.Info(
+            $"Axis save clicked. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | IsCleared={IsCleared} | SelectedDeviceKey={SelectedDeviceKey ?? "<null>"} | SelectedDeviceName={GetSelectedDeviceName()} | SelectedPhysicalAxis={FormatPhysicalAxis(SelectedPhysicalAxisIndex)} | Deadzone={DeadzoneCurve} | Saturation={SaturationCurve} | Invert={Invert} | IdleDetent={IdleDetent} | AfterburnerDetent={AfterburnerDetent} | HasAxisConflict={HasAxisConflict}");
+
         _saveAxisAssignment(this);
+
+        DebugDiagnosticsService.Info(
+            $"Axis save callback returned; closing popup. | ActionId={_actionId} | LogicalAxis={LogicalAxisName}");
+
         _closeWindow();
     }
 
@@ -472,6 +498,35 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
             IdleDetent = current;
         else
             AfterburnerDetent = current;
+
+        DebugDiagnosticsService.Info(
+            $"Axis detent set from live axis. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | IsIdle={isIdle} | Value={current} | AxisBarValue={AxisBarValue:0.000}");
+    }
+
+    private void CancelAndClose()
+    {
+        DebugDiagnosticsService.Info(
+            $"Axis assign canceled. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | SelectedDeviceKey={SelectedDeviceKey ?? "<null>"} | SelectedPhysicalAxis={FormatPhysicalAxis(SelectedPhysicalAxisIndex)} | IsCleared={IsCleared}");
+
+        _closeWindow();
+    }
+
+    private static string FormatPhysicalAxis(int? physicalAxisIndex)
+    {
+        return physicalAxisIndex.HasValue
+            ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex.Value) + $"({physicalAxisIndex.Value})"
+            : "<null>";
+    }
+
+    private static string GetDeviceDisplayName(DeviceBindingProfile device)
+    {
+        if (!string.IsNullOrWhiteSpace(device.ProductName))
+            return device.ProductName;
+
+        if (!string.IsNullOrWhiteSpace(device.InstanceName))
+            return device.InstanceName;
+
+        return device.DurableDeviceKey;
     }
 
     private string GetSelectedDeviceName()
@@ -488,10 +543,17 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         {
             ConflictText = "";
             HasAxisConflict = false;
+
+            DebugDiagnosticsService.Info(
+                $"Axis conflict check clear. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)}");
+
             return;
         }
 
         string conflictName = GetLogicalAxisDisplayName(conflict.LogicalAxisName);
+
+        DebugDiagnosticsService.Warn(
+            $"Axis conflict found. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConflictingLogicalAxis={conflict.LogicalAxisName} | ConflictingDisplayName={conflictName}");
 
         ConflictText = "Axis input currently bound to: " + conflictName + "\nClick \"Save\" to replace the existing assignment.";
         HasAxisConflict = true;

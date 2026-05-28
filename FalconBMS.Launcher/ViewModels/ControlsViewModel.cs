@@ -613,12 +613,16 @@ public sealed class ControlsViewModel : ViewModelBase
 
     public void ApplyAxisMappingFromPopup(AxisAssignViewModel popup)
     {
+        string actionId = DebugDiagnosticsService.CreateActionId("AXISAPPLY");
         string logicalAxisName = popup.LogicalAxisName;
 
+        DebugDiagnosticsService.Info(
+            $"Apply axis mapping begin. | ActionId={actionId} | LogicalAxis={logicalAxisName} | PopupIsCleared={popup.IsCleared} | PopupSelectedDeviceKey={popup.SelectedDeviceKey ?? "<null>"} | PopupSelectedPhysicalAxis={FormatPhysicalAxis(popup.SelectedPhysicalAxisIndex)} | Deadzone={popup.DeadzoneCurve} | Saturation={popup.SaturationCurve} | Invert={popup.Invert} | IdleDetent={popup.IdleDetent} | AfterburnerDetent={popup.AfterburnerDetent}");
+
         var changedLogicalAxisNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        logicalAxisName
-    };
+        {
+            logicalAxisName
+        };
 
         // A logical BMS axis should resolve to one physical device axis total.
         // Clear this logical axis from every device before applying the new assignment.
@@ -628,7 +632,12 @@ public sealed class ControlsViewModel : ViewModelBase
                          string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
             {
                 if (binding.PhysicalAxisIndex.HasValue)
+                {
+                    DebugDiagnosticsService.Info(
+                        $"Clearing previous logical axis assignment. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(deviceProfile)} | DeviceKey={deviceProfile.DurableDeviceKey} | PreviousPhysicalAxis={FormatPhysicalAxis(binding.PhysicalAxisIndex)}");
+
                     changedLogicalAxisNames.Add(binding.LogicalAxisName);
+                }
 
                 binding.PhysicalAxisIndex = null;
             }
@@ -641,12 +650,18 @@ public sealed class ControlsViewModel : ViewModelBase
 
             if (selectedDevice is not null)
             {
+                DebugDiagnosticsService.Info(
+                    $"Selected axis device found. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(popup.SelectedPhysicalAxisIndex)}");
+
                 foreach (DeviceAxisBinding conflict in selectedDevice.AxisBindings.Where(binding =>
                              binding.PhysicalAxisIndex == popup.SelectedPhysicalAxisIndex.Value &&
                              !string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
                 {
                     // Same device + same physical axis cannot be assigned to multiple logical BMS axes.
                     // Match keyboard behavior: assigning it here removes it from the previous row.
+                    DebugDiagnosticsService.Warn(
+                        $"Removing conflicting axis assignment. | ActionId={actionId} | NewLogicalAxis={logicalAxisName} | PreviousLogicalAxis={conflict.LogicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(conflict.PhysicalAxisIndex)}");
+
                     changedLogicalAxisNames.Add(conflict.LogicalAxisName);
                     conflict.PhysicalAxisIndex = null;
                 }
@@ -663,14 +678,41 @@ public sealed class ControlsViewModel : ViewModelBase
                 selectedBinding.AfterburnerDetent = popup.AfterburnerDetent;
 
                 changedLogicalAxisNames.Add(selectedBinding.LogicalAxisName);
+
+                DebugDiagnosticsService.Info(
+                    $"Applied axis assignment to in-memory profile. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(selectedBinding.PhysicalAxisIndex)} | Deadzone={selectedBinding.Deadzone} | Saturation={selectedBinding.Saturation} | Invert={selectedBinding.Invert} | IdleDetent={selectedBinding.IdleDetent} | AfterburnerDetent={selectedBinding.AfterburnerDetent}");
+
+                DeviceAxisBinding? readback = selectedDevice.AxisBindings.FirstOrDefault(binding =>
+                    string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase));
+
+                DebugDiagnosticsService.Info(
+                    $"Axis assignment readback. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Found={readback is not null} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(readback?.PhysicalAxisIndex)}");
             }
+            else
+            {
+                DebugDiagnosticsService.Warn(
+                    $"Apply axis mapping skipped; selected device key was not found in DeviceColumns. | ActionId={actionId} | LogicalAxis={logicalAxisName} | MissingDeviceKey={popup.SelectedDeviceKey}");
+            }
+        }
+        else
+        {
+            DebugDiagnosticsService.Info(
+                $"Apply axis mapping has no selected physical axis to apply. | ActionId={actionId} | LogicalAxis={logicalAxisName} | PopupIsCleared={popup.IsCleared} | PopupSelectedDeviceKey={popup.SelectedDeviceKey ?? "<null>"} | PopupSelectedPhysicalAxis={FormatPhysicalAxis(popup.SelectedPhysicalAxisIndex)}");
         }
 
         foreach (string changedLogicalAxisName in changedLogicalAxisNames)
+        {
+            DebugDiagnosticsService.Info(
+                $"Refreshing axis rows after assignment. | ActionId={actionId} | LogicalAxis={changedLogicalAxisName}");
+
             RefreshAxisRows(changedLogicalAxisName);
+        }
 
         _isDirty = true;
         OnPropertyChanged(nameof(SummaryText));
+
+        DebugDiagnosticsService.Info(
+            $"Apply axis mapping end. | ActionId={actionId} | LogicalAxis={logicalAxisName} | ChangedLogicalAxes={string.Join(",", changedLogicalAxisNames)} | IsDirty={_isDirty}");
     }
 
     private static DeviceAxisBinding CreateAxisBinding(DeviceBindingProfile deviceProfile, string logicalAxisName)
@@ -682,6 +724,24 @@ public sealed class ControlsViewModel : ViewModelBase
 
         deviceProfile.AxisBindings.Add(binding);
         return binding;
+    }
+
+    private static string FormatPhysicalAxis(int? physicalAxisIndex)
+    {
+        return physicalAxisIndex.HasValue
+            ? PhysicalAxisNameService.GetDisplayName(physicalAxisIndex.Value) + $"({physicalAxisIndex.Value})"
+            : "<null>";
+    }
+
+    private static string GetDeviceDisplayName(DeviceBindingProfile deviceProfile)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
+            return deviceProfile.ProductName;
+
+        if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+            return deviceProfile.InstanceName;
+
+        return deviceProfile.DurableDeviceKey;
     }
 
     private void RefreshAxisRows(string logicalAxisName)
@@ -717,6 +777,9 @@ public sealed class ControlsViewModel : ViewModelBase
 
                 // Reset to neutral until the next live polling tick updates the assigned physical axis.
                 cell.AxisBarValue = 0.5;
+
+                DebugDiagnosticsService.Info(
+                    $"Axis row refreshed. | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(deviceProfile)} | DeviceKey={deviceProfile.DurableDeviceKey} | HasAxisBinding={cell.HasAxisBinding} | PhysicalAxisIndex={cell.PhysicalAxisIndex} | DisplayText={cell.DisplayText}");
             }
         }
     }
