@@ -59,11 +59,18 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         private set => Set(ref _dxAssignmentText, value);
     }
 
-    private string _conflictText = "";
-    public string ConflictText
+    private string _keyboardConflictText = "";
+    public string KeyboardConflictText
     {
-        get => _conflictText;
-        private set => Set(ref _conflictText, value);
+        get => _keyboardConflictText;
+        private set => Set(ref _keyboardConflictText, value);
+    }
+
+    private string _dxConflictText = "";
+    public string DxConflictText
+    {
+        get => _dxConflictText;
+        private set => Set(ref _dxConflictText, value);
     }
 
     private bool _isUnshifted = true;
@@ -375,6 +382,10 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 keyboardConflict = "Keyboard input currently bound to: " + conflict.Description.Trim();
         }
 
+        KeyboardConflictText = string.IsNullOrWhiteSpace(keyboardConflict)
+            ? ""
+            : keyboardConflict + "\nClick \"Save\" to replace the existing assignment.";
+
         var dxConflicts = new List<string>();
 
         foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
@@ -405,16 +416,13 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
-        var parts = new List<string>();
+        List<string> distinctDxConflicts = dxConflicts
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
-        if (!string.IsNullOrWhiteSpace(keyboardConflict))
-            parts.Add(keyboardConflict);
-
-        parts.AddRange(dxConflicts.Distinct(StringComparer.OrdinalIgnoreCase));
-
-        ConflictText = parts.Count == 0
+        DxConflictText = distinctDxConflicts.Count == 0
             ? ""
-            : string.Join("\n", parts) + "\nClick \"Save\" to replace the existing assignment.";
+            : string.Join("\n", distinctDxConflicts) + "\nClick \"Save\" to replace the existing assignment.";
     }
 
     private static string GetAssignmentText(BindingRow row)

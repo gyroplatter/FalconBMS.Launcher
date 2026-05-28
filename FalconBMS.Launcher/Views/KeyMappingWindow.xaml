@@ -60,6 +60,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -86,6 +87,28 @@
                                 Content="Clear Key"
                                 Command="{Binding ClearKeyCommand}"/>
                     </Grid>
+
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding KeyboardConflictText}"
+                               Foreground="Red"
+                               TextWrapping="Wrap"
+                               Margin="0,14,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <Setter Property="Visibility" Value="Visible"/>
+
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </Trigger>
+
+                                    <Trigger Property="Text" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </Border>
 
@@ -180,7 +203,7 @@
                     </Grid>
 
                     <TextBlock Grid.Row="3"
-                               Text="{Binding ConflictText}"
+                               Text="{Binding DxConflictText}"
                                Foreground="Red"
                                TextWrapping="Wrap"
                                Margin="0,14,0,0">
