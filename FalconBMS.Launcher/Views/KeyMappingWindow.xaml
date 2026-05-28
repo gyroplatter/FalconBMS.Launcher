@@ -2,17 +2,43 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Key Mapping"
-        Width="520"
-        MinHeight="250"
+        Width="650"
+        MinHeight="330"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{DynamicResource AppSurfaceBrush}">
+        Background="{DynamicResource AppWindowBackgroundBrush}">
 
-    <Grid Background="{DynamicResource AppSurfaceBrush}">
+    <Window.Resources>
+        <Style x:Key="KeyMappingSectionLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+
+        <Style x:Key="KeyMappingFieldLabelStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="KeyMappingAssignmentValueStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid Margin="26">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -24,24 +50,140 @@
                        Text="{Binding TitleText}"
                        FontSize="{StaticResource FontSizeLarge}"
                        FontWeight="SemiBold"
-                       Margin="0,0,0,10"/>
+                       Margin="0,0,0,14"/>
 
             <Border Grid.Row="1"
-                    BorderBrush="{DynamicResource AppBorderBrush}"
-                    BorderThickness="1"
-                    Background="{DynamicResource AppWindowBackgroundBrush}"
-                    CornerRadius="4"
-                    Padding="10"
-                    Margin="0,0,0,0">
-                <StackPanel Orientation="Vertical">
-                    <TextBlock Text="{Binding AssignmentText, Mode=OneWay}"
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource AppForegroundBrush}"/>
+                    Style="{StaticResource DashboardCardStyle}"
+                    Padding="16"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <TextBlock Text="{Binding ConflictText}"
+                    <TextBlock Grid.Row="0"
+                               Text="Keyboard"
+                               Style="{StaticResource KeyMappingSectionLabelStyle}"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Assigned key:"
+                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding KeyboardAssignmentText}"
+                                   Style="{StaticResource KeyMappingAssignmentValueStyle}"/>
+
+                        <Button Grid.Column="2"
+                                Width="96"
+                                Content="Clear Key"
+                                Command="{Binding ClearKeyCommand}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2"
+                    Style="{StaticResource DashboardCardStyle}"
+                    Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="DX Button"
+                               Style="{StaticResource KeyMappingSectionLabelStyle}"/>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Assigned DX:"
+                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding DxAssignmentText}"
+                                   Style="{StaticResource KeyMappingAssignmentValueStyle}"/>
+
+                        <Button Grid.Column="2"
+                                Width="96"
+                                Content="Clear DX"
+                                Command="{Binding ClearDxCommand}"/>
+                    </Grid>
+
+                    <Grid Grid.Row="2"
+                          Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="28"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Shift State:"
+                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <RadioButton Content="Unshifted"
+                                         GroupName="ShiftState"
+                                         IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,18,0"/>
+
+                            <RadioButton Content="Shifted"
+                                         GroupName="ShiftState"
+                                         IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <TextBlock Grid.Column="3"
+                                   Text="Trigger:"
+                                   Style="{StaticResource KeyMappingFieldLabelStyle}"
+                                   Margin="0,0,14,0"/>
+
+                        <StackPanel Grid.Column="4"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+                            <RadioButton Content="Press"
+                                         GroupName="TriggerState"
+                                         IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,18,0"/>
+
+                            <RadioButton Content="Release"
+                                         GroupName="TriggerState"
+                                         IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Grid.Row="3"
+                               Text="{Binding ConflictText}"
                                Foreground="Red"
                                TextWrapping="Wrap"
-                               Margin="0,8,0,0">
+                               Margin="0,14,0,0">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="Visibility" Value="Visible"/>
@@ -58,66 +200,13 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                </StackPanel>
+                </Grid>
             </Border>
 
-            <StackPanel Grid.Row="2"
-                        Orientation="Vertical"
-                        Margin="0,8,0,0">
-                <StackPanel Orientation="Horizontal"
-                            Margin="0,0,0,6">
-                    <TextBlock Text="Shift State:"
-                               VerticalAlignment="Center"
-                               Margin="0,0,10,0"/>
-
-                    <RadioButton Content="Unshifted"
-                                 GroupName="ShiftState"
-                                 IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
-                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,18,0"/>
-
-                    <RadioButton Content="Shifted"
-                                 GroupName="ShiftState"
-                                 IsChecked="{Binding IsShifted, Mode=TwoWay}"
-                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                 VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Trigger:"
-                               VerticalAlignment="Center"
-                               Margin="0,0,10,0"/>
-
-                    <RadioButton Content="Press"
-                                 GroupName="TriggerState"
-                                 IsChecked="{Binding IsOnPress, Mode=TwoWay}"
-                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                 VerticalAlignment="Center"
-                                 Margin="0,0,18,0"/>
-
-                    <RadioButton Content="Release"
-                                 GroupName="TriggerState"
-                                 IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
-                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                 VerticalAlignment="Center"/>
-                </StackPanel>
-            </StackPanel>
-
-            <StackPanel Grid.Row="5"
+            <StackPanel Grid.Row="4"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
-                        Margin="0,12,0,0">
-
-                <Button Width="96"
-                        Margin="0,0,8,0"
-                        Content="Clear Key"
-                        Command="{Binding ClearKeyCommand}"/>
-                
-                <Button Width="96"
-                        Margin="0,0,8,0"
-                        Content="Clear DX"
-                        Command="{Binding ClearDxCommand}"/>
+                        Margin="0,16,0,0">
 
                 <Button Width="96"
                         Margin="0,0,8,0"
@@ -126,6 +215,7 @@
 
                 <Button Width="96"
                         Content="Save"
+                        Style="{StaticResource TertiaryButtonStyle}"
                         Command="{Binding SaveCommand}"/>
             </StackPanel>
         </Grid>

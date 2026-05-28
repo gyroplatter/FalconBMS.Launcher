@@ -52,4 +52,9 @@
     <SolidColorBrush x:Key="AppSecondaryHoverBrush" Color="#E64B5C62"/>
     <SolidColorBrush x:Key="AppSecondaryForegroundBrush" Color="#FFFFFF"/>
 
+    <!-- Tertiary CTA -->
+    <SolidColorBrush x:Key="AppTertiaryBrush" Color="#2F7DD3"/>
+    <SolidColorBrush x:Key="AppTertiaryHoverBrush" Color="#3B8BE6"/>
+    <SolidColorBrush x:Key="AppTertiaryForegroundBrush" Color="#FFFFFF"/>
+
 </ResourceDictionary>

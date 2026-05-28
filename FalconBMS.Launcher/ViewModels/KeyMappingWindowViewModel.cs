@@ -45,11 +45,18 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
     public string TitleText { get; }
 
-    private string _assignmentText;
-    public string AssignmentText
+    private string _keyboardAssignmentText;
+    public string KeyboardAssignmentText
     {
-        get => _assignmentText;
-        private set => Set(ref _assignmentText, value);
+        get => _keyboardAssignmentText;
+        private set => Set(ref _keyboardAssignmentText, value);
+    }
+
+    private string _dxAssignmentText;
+    public string DxAssignmentText
+    {
+        get => _dxAssignmentText;
+        private set => Set(ref _dxAssignmentText, value);
     }
 
     private string _conflictText = "";
@@ -131,15 +138,16 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         LoadExistingDxBindings(row.CallbackName);
         ForceBaseDxShiftStateIfNeeded();
 
-        _assignmentText = BuildAssignmentPreview();
+        _keyboardAssignmentText = BuildKeyboardAssignmentPreview();
+        _dxAssignmentText = BuildDxAssignmentPreview();
         UpdateConflict();
 
         ClearDxCommand = new RelayCommand(() =>
         {
             _pendingDxButtons.Clear();
 
+            UpdateAssignmentPreviewTexts();
             UpdateConflict();
-            AssignmentText = BuildAssignmentPreview();
         });
 
         ClearKeyCommand = new RelayCommand(() =>
@@ -149,8 +157,8 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _tempChordScancode = "0";
             _tempChordModifierFlags = 0;
 
+            UpdateAssignmentPreviewTexts();
             UpdateConflict();
-            AssignmentText = BuildAssignmentPreview();
         });
 
         SaveCommand = new RelayCommand(() =>
@@ -304,7 +312,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _tempChordScancode = "0";
         _tempChordModifierFlags = 0;
 
-        AssignmentText = BuildAssignmentPreview();
+        UpdateAssignmentPreviewTexts();
         UpdateConflict();
     }
 
@@ -340,7 +348,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
                 AddPendingDxButton(pair.Key, buttonIndex);
 
-                AssignmentText = BuildAssignmentPreview();
+                UpdateAssignmentPreviewTexts();
                 UpdateConflict();
 
                 break;
@@ -418,13 +426,24 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             row.ChordModifierFlags);
     }
 
-    private string BuildAssignmentPreview()
+    private void UpdateAssignmentPreviewTexts()
+    {
+        KeyboardAssignmentText = BuildKeyboardAssignmentPreview();
+        DxAssignmentText = BuildDxAssignmentPreview();
+    }
+
+    private string BuildKeyboardAssignmentPreview()
+    {
+        string keyText = BuildKeyboardAssignmentText();
+
+        return string.IsNullOrWhiteSpace(keyText)
+            ? "Awaiting input: Press any key"
+            : keyText;
+    }
+
+    private string BuildDxAssignmentPreview()
     {
         var parts = new List<string>();
-
-        string keyText = BuildKeyboardAssignmentText();
-        if (!string.IsNullOrWhiteSpace(keyText))
-            parts.Add(keyText);
 
         foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
         {
@@ -439,7 +458,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         }
 
         return parts.Count == 0
-            ? "Awaiting input: Press any key or DX button"
+            ? "Awaiting input: Press any DX button"
             : string.Join(" / ", parts);
     }
 
