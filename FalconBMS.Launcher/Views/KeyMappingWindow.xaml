@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Key Mapping"
         Width="650"
-        MinHeight="330"
+        MinHeight="300"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -42,7 +42,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="20"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
@@ -149,56 +149,62 @@
                     </Grid>
 
                     <Grid Grid.Row="2"
-                          Margin="0,16,0,0">
+      Margin="0,16,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="28"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="Shift State:"
-                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+                        <TextBlock Grid.Row="0"
+               Grid.Column="0"
+               Text="Shift State:"
+               Style="{StaticResource KeyMappingFieldLabelStyle}"/>
 
-                        <StackPanel Grid.Column="1"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
+                        <StackPanel Grid.Row="0"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                VerticalAlignment="Center">
                             <RadioButton Content="Unshifted"
-                                         GroupName="ShiftState"
-                                         IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,18,0"/>
+                     GroupName="ShiftState"
+                     IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                     VerticalAlignment="Center"
+                     Margin="0,0,18,0"/>
 
                             <RadioButton Content="Shifted"
-                                         GroupName="ShiftState"
-                                         IsChecked="{Binding IsShifted, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"/>
+                     GroupName="ShiftState"
+                     IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                     VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <TextBlock Grid.Column="3"
-                                   Text="Trigger:"
-                                   Style="{StaticResource KeyMappingFieldLabelStyle}"
-                                   Margin="0,0,14,0"/>
+                        <TextBlock Grid.Row="2"
+               Grid.Column="0"
+               Text="Trigger:"
+               Style="{StaticResource KeyMappingFieldLabelStyle}"/>
 
-                        <StackPanel Grid.Column="4"
-                                    Orientation="Horizontal"
-                                    VerticalAlignment="Center">
+                        <StackPanel Grid.Row="2"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                VerticalAlignment="Center">
                             <RadioButton Content="Press"
-                                         GroupName="TriggerState"
-                                         IsChecked="{Binding IsOnPress, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,18,0"/>
+                     GroupName="TriggerState"
+                     IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                     VerticalAlignment="Center"
+                     Margin="0,0,18,0"/>
 
                             <RadioButton Content="Release"
-                                         GroupName="TriggerState"
-                                         IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"/>
+                     GroupName="TriggerState"
+                     IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                     VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
 

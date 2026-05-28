@@ -87,13 +87,12 @@
             <Button Content="Cancel"
                     Width="90"
                     Margin="0,0,10,0"
-                    Style="{StaticResource SecondaryButtonStyle}"
                     IsCancel="True"
                     Click="Cancel_Click"/>
 
             <Button Content="Register"
                     Width="90"
-                    Style="{StaticResource PrimaryButtonStyle}"
+                    Style="{StaticResource TertiaryButtonStyle}" 
                     IsDefault="True"
                     Click="Button_Register_Click"/>
         </StackPanel>

@@ -170,6 +170,7 @@
             <Button Content="Save"
                     Width="90"
                     IsDefault="True"
+                    Style="{StaticResource TertiaryButtonStyle}" 
                     Command="{Binding SaveCommand}"/>
         </StackPanel>
     </Grid>
