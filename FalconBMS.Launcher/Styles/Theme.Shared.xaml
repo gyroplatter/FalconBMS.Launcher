@@ -834,7 +834,7 @@
         </Setter>
     </Style>
 
-
+    <!-- Primary Button Style -->
     <Style x:Key="PrimaryButtonStyle" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource AppPrimaryForegroundBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -901,6 +901,7 @@
         </Setter>
     </Style>
 
+    <!-- Secondary Button Style -->
     <Style x:Key="SecondaryButtonStyle" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource AppSecondaryForegroundBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -967,6 +968,7 @@
         </Setter>
     </Style>
 
+    <!-- Tertiary Button Style -->
     <Style x:Key="TertiaryButtonStyle" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource AppTertiaryForegroundBrush}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>

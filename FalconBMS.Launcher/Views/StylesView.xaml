@@ -106,7 +106,17 @@
                                 Margin="0,0,8,0"/>
 
                         <Button Style="{StaticResource SecondaryButtonStyle}"
-                                Content="Secondary"/>
+                                Content="Secondary"
+                                Margin="0,0,8,0"/>
+
+                        <Button Style="{StaticResource TertiaryButtonStyle}"
+                                Content="Tertiary"
+                                Margin="0,0,8,0"/>
+
+                        <Button 
+                                Content="Default"
+                                Margin="0,0,8,0"/>
+                        
                     </WrapPanel>
 
                     <TextBlock Text="Checkboxes"
