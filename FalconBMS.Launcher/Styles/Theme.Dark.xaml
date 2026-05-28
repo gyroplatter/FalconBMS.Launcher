@@ -41,6 +41,13 @@
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBackgroundBrush" Color="#244760"/>
     <SolidColorBrush x:Key="ControlsTableAxisBadgeForegroundBrush" Color="#EAF5FF"/>
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBorderBrush" Color="#3D6684"/>
+    
+    <!-- Default button -->
+    <SolidColorBrush x:Key="AppDefaultButtonBrush" Color="#2C303B"/>
+    <SolidColorBrush x:Key="AppDefaultButtonHoverBrush" Color="#363D4B"/>
+    <SolidColorBrush x:Key="AppDefaultButtonPressedBrush" Color="#404A5C"/>
+    <SolidColorBrush x:Key="AppDefaultButtonBorderBrush" Color="#26FFFFFF"/>
+    <SolidColorBrush x:Key="AppDefaultButtonHoverBorderBrush" Color="#4C6F93"/>
 
     <!-- Primary CTA -->
     <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FBB040"/>
@@ -49,12 +56,12 @@
 
     <!-- Secondary CTA -->
     <SolidColorBrush x:Key="AppSecondaryBrush" Color="#4B5C62"/>
-    <SolidColorBrush x:Key="AppSecondaryHoverBrush" Color="#E64B5C62"/>
+    <SolidColorBrush x:Key="AppSecondaryHoverBrush" Color="#405561"/>
     <SolidColorBrush x:Key="AppSecondaryForegroundBrush" Color="#FFFFFF"/>
 
     <!-- Tertiary CTA -->
-    <SolidColorBrush x:Key="AppTertiaryBrush" Color="#2F7DD3"/>
-    <SolidColorBrush x:Key="AppTertiaryHoverBrush" Color="#3B8BE6"/>
+    <SolidColorBrush x:Key="AppTertiaryBrush" Color="#0B6BCB"/>
+    <SolidColorBrush x:Key="AppTertiaryHoverBrush" Color="#143A56"/>
     <SolidColorBrush x:Key="AppTertiaryForegroundBrush" Color="#FFFFFF"/>
 
 </ResourceDictionary>

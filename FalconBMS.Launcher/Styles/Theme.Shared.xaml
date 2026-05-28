@@ -561,11 +561,61 @@
     <Style TargetType="{x:Type Button}">
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
-        <Setter Property="Background" Value="{DynamicResource AppSurfaceAltBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource AppDefaultButtonBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppDefaultButtonBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+
+        <!--
+            Shared default button chrome.
+            Hover changes the actual brush instead of only changing opacity,
+            so the hover state is visible in both light and dark mode.
+        -->
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="{TemplateBinding Padding}"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border"
+                                    Property="Background"
+                                    Value="{DynamicResource AppDefaultButtonHoverBrush}"/>
+                            <Setter TargetName="Border"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource AppDefaultButtonHoverBorderBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border"
+                                    Property="Background"
+                                    Value="{DynamicResource AppDefaultButtonPressedBrush}"/>
+                            <Setter TargetName="Border"
+                                    Property="BorderBrush"
+                                    Value="{DynamicResource AppDefaultButtonHoverBorderBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ComboBox}">
@@ -848,19 +898,19 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
 
         <!--
-            Force CTA text to render through a TextBlock that always uses the
-            primary foreground brush, instead of relying on WPF's default
-            string-content rendering path.
-        -->
+        Force CTA text to render through a TextBlock that always uses the
+        primary foreground brush, instead of relying on WPF's default
+        string-content rendering path.
+    -->
         <Setter Property="ContentTemplate">
             <Setter.Value>
                 <DataTemplate>
                     <TextBlock Text="{Binding}"
-                               Foreground="{DynamicResource AppPrimaryForegroundBrush}"
-                               FontWeight="SemiBold"
-                               FontFamily="{StaticResource AppFontFamily}"
-                               FontSize="{StaticResource FontSizeMedium}"
-                               TextAlignment="Center"/>
+                           Foreground="{DynamicResource AppPrimaryForegroundBrush}"
+                           FontWeight="SemiBold"
+                           FontFamily="{StaticResource AppFontFamily}"
+                           FontSize="{StaticResource FontSizeMedium}"
+                           TextAlignment="Center"/>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -869,14 +919,14 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Border"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4">
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          Margin="{TemplateBinding Padding}"
-                                          RecognizesAccessKey="True"/>
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      Margin="{TemplateBinding Padding}"
+                                      RecognizesAccessKey="True"/>
                     </Border>
 
                     <ControlTemplate.Triggers>
@@ -932,6 +982,10 @@
             </Setter.Value>
         </Setter>
 
+        <!--
+            Secondary uses its own template so the default button hover trigger
+            cannot override the secondary hover background.
+        -->
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -947,13 +1001,11 @@
                     </Border>
 
                     <ControlTemplate.Triggers>
-                        <!-- Hover = darker solid shade, not faded text -->
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppSecondaryHoverBrush}"/>
                             <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppSecondaryHoverBrush}"/>
                         </Trigger>
 
-                        <!-- Pressed = keep same darker shade for now -->
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Border" Property="Background" Value="{DynamicResource AppSecondaryHoverBrush}"/>
                             <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AppSecondaryHoverBrush}"/>
@@ -982,8 +1034,9 @@
         <Setter Property="VerticalContentAlignment" Value="Center"/>
 
         <!--
-            Tertiary is the blue action style used for save/apply actions in compact dialogs.
-            The explicit content template keeps the text color stable in light and dark themes.
+            Force CTA text to render through a TextBlock that always uses the
+            tertiary foreground brush, instead of relying on WPF's default
+            string-content rendering path.
         -->
         <Setter Property="ContentTemplate">
             <Setter.Value>
@@ -998,6 +1051,10 @@
             </Setter.Value>
         </Setter>
 
+        <!--
+            Tertiary uses its own template so the default button hover trigger
+            cannot override the tertiary hover background.
+        -->
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -1031,7 +1088,8 @@
             </Setter.Value>
         </Setter>
     </Style>
-
+    
+    
     <!--
     Layout: Main content container
     Keep the view host neutral. Each view owns its own perimeter spacing
