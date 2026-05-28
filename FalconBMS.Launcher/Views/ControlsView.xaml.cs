@@ -512,22 +512,37 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.IsConnected && device.ButtonCount > 0))
+        List<DeviceBindingProfile> connectedDevices = viewModel.DeviceColumns
+            .Where(device => device.IsConnected && device.ButtonCount > 0)
+            .ToList();
+
+        Dictionary<string, bool[]> currentButtonsByDeviceKey = new();
+
+        // Read every connected device first so DX shift state is based on the
+        // full current controller state, not just the device currently being scanned.
+        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
         {
             JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
             if (session is null)
                 continue;
 
-            bool[] buttons;
-
             try
             {
-                buttons = session.ReadState().Buttons ?? Array.Empty<bool>();
+                bool[] buttons = session.ReadState().Buttons ?? Array.Empty<bool>();
+                currentButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = buttons;
             }
             catch
             {
                 continue;
             }
+        }
+
+        bool isShifted = viewModel.IsDxShiftActive(currentButtonsByDeviceKey);
+
+        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
+        {
+            if (!currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons))
+                continue;
 
             if (!_previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons))
             {
@@ -539,10 +554,15 @@ public partial class ControlsView : UserControl
 
             for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
             {
-                if (!buttons[buttonIndex] || previousButtons[buttonIndex])
+                bool wasPressed = previousButtons[buttonIndex];
+                bool isPressed = buttons[buttonIndex];
+
+                if (wasPressed == isPressed)
                     continue;
 
-                if (!viewModel.SelectFirstVisibleDxMatch(deviceProfile.DurableDeviceKey, buttonIndex))
+                bool isRelease = wasPressed && !isPressed;
+
+                if (!viewModel.SelectFirstVisibleDxMatch(deviceProfile.DurableDeviceKey, buttonIndex, isRelease, isShifted))
                     break;
 
                 if (viewModel.SelectedRow is null)

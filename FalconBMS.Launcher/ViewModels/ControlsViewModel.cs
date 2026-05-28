@@ -312,7 +312,7 @@ public sealed class ControlsViewModel : ViewModelBase
         return true;
     }
 
-    public bool SelectFirstVisibleDxMatch(string durableDeviceKey, int buttonIndex)
+    public bool SelectFirstVisibleDxMatch(string durableDeviceKey, int buttonIndex, bool isRelease, bool isShifted)
     {
         if (SelectedProfile is null)
             return false;
@@ -326,11 +326,21 @@ public sealed class ControlsViewModel : ViewModelBase
         if (aircraftProfile is null)
             return false;
 
+        string shiftState = isShifted
+            ? DeviceButtonBinding.ShiftStateShifted
+            : DeviceButtonBinding.ShiftStateUnshifted;
+
+        string trigger = isRelease
+            ? DeviceButtonBinding.TriggerRelease
+            : DeviceButtonBinding.TriggerPress;
+
+        int assignmentIndex = DeviceButtonBinding.GetAssignmentIndex(shiftState, trigger);
+
         DeviceButtonBinding? binding = aircraftProfile.ButtonBindings
             .Where(binding =>
                 binding.ButtonIndex == buttonIndex &&
+                binding.AssignmentIndex == assignmentIndex &&
                 !string.IsNullOrWhiteSpace(binding.CallbackName))
-            .OrderBy(binding => binding.AssignmentIndex)
             .FirstOrDefault();
 
         if (binding is null)
@@ -345,6 +355,44 @@ public sealed class ControlsViewModel : ViewModelBase
 
         SelectedRow = match;
         return true;
+    }
+
+    public bool IsDxShiftActive(IReadOnlyDictionary<string, bool[]> currentButtonsByDeviceKey)
+    {
+        if (SelectedProfile is null)
+            return false;
+
+        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        {
+            if (!currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons))
+                continue;
+
+            DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, SelectedProfile.AircraftProfile, StringComparison.OrdinalIgnoreCase));
+
+            if (aircraftProfile is null)
+                continue;
+
+            foreach (DeviceButtonBinding binding in aircraftProfile.ButtonBindings)
+            {
+                if (!IsDxShiftCallback(binding.CallbackName))
+                    continue;
+
+                if (binding.ButtonIndex < 0 || binding.ButtonIndex >= buttons.Length)
+                    continue;
+
+                if (buttons[binding.ButtonIndex])
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsDxShiftCallback(string callbackName)
+    {
+        return string.Equals(callbackName, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(callbackName, "SimHotasShift", StringComparison.OrdinalIgnoreCase);
     }
 
     public void ApplyKeyboardMappingFromPopup(
@@ -381,7 +429,8 @@ public sealed class ControlsViewModel : ViewModelBase
     public void ApplyDeviceButtonMappingFromPopup(
         BindingRow selectedRow,
         string? selectedDeviceKey,
-        int? selectedButtonIndex)
+        int? selectedButtonIndex,
+        int? selectedAssignmentIndex)
     {
         if (SelectedProfile is null)
             return;
@@ -394,7 +443,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
         // Null device/button means "clear all DX buttons for this callback."
         // The popup uses this first, then re-adds every pending DX button one at a time.
-        if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedButtonIndex.HasValue)
+        if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedButtonIndex.HasValue || !selectedAssignmentIndex.HasValue)
         {
             foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
             {
@@ -428,10 +477,12 @@ public sealed class ControlsViewModel : ViewModelBase
             return;
 
         // One callback may have multiple DX buttons.
-        // One physical DX button may still belong to only one callback.
+        // v2 treats press/release and shifted/unshifted as four separate slots.
+        // Only the exact same physical button + slot belongs to one callback.
         foreach (DeviceButtonBinding conflict in selectedAircraftProfile.ButtonBindings
                      .Where(binding =>
                          binding.ButtonIndex == selectedButtonIndex.Value &&
+                         binding.AssignmentIndex == selectedAssignmentIndex.Value &&
                          !string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
                      .ToList())
         {
@@ -441,6 +492,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
         bool alreadyAssigned = selectedAircraftProfile.ButtonBindings.Any(binding =>
             binding.ButtonIndex == selectedButtonIndex.Value &&
+            binding.AssignmentIndex == selectedAssignmentIndex.Value &&
             string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase));
 
         if (!alreadyAssigned)
@@ -448,9 +500,9 @@ public sealed class ControlsViewModel : ViewModelBase
             selectedAircraftProfile.ButtonBindings.Add(new DeviceButtonBinding
             {
                 ButtonIndex = selectedButtonIndex.Value,
-                AssignmentIndex = 0,
+                AssignmentIndex = selectedAssignmentIndex.Value,
                 CallbackName = selectedRow.CallbackName,
-                Invoke = "Default",
+                Invoke = DeviceButtonBinding.GetDefaultInvoke(selectedAssignmentIndex.Value),
                 SoundId = selectedRow.SoundId
             });
         }
@@ -531,7 +583,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
                 List<string> parts = aircraftProfile.ButtonBindings
                     .Where(binding => string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
-                    .Select(binding => "DX" + binding.ButtonNumber)
+                    .Select(binding => DeviceButtonBinding.BuildDisplayText(binding.ButtonIndex, binding.AssignmentIndex))
                     .ToList();
 
                 parts.AddRange(aircraftProfile.PovBindings

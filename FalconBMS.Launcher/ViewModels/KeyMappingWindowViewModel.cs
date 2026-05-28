@@ -18,7 +18,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private readonly List<DeviceBindingProfile> _deviceProfiles;
     private readonly string _aircraftProfileName;
     private readonly Action<BindingRow, string, int, string, int> _saveKeyboardBinding;
-    private readonly Action<BindingRow, string?, int?> _saveDeviceButtonBinding;
+    private readonly Action<BindingRow, string?, int?, int?> _saveDeviceButtonBinding;
     private readonly Action _closeWindow;
     private readonly DirectInputManager _di = new();
 
@@ -39,6 +39,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     {
         public string DeviceKey { get; set; } = "";
         public int ButtonIndex { get; set; }
+        public int AssignmentIndex { get; set; }
     }
 
 
@@ -62,14 +63,38 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     public bool IsUnshifted
     {
         get => _isUnshifted;
-        set => Set(ref _isUnshifted, value);
+        set
+        {
+            if (!Set(ref _isUnshifted, value))
+                return;
+
+            OnPropertyChanged(nameof(IsShifted));
+        }
+    }
+
+    public bool IsShifted
+    {
+        get => !IsUnshifted;
+        set => IsUnshifted = !value;
     }
 
     private bool _isOnPress = true;
     public bool IsOnPress
     {
         get => _isOnPress;
-        set => Set(ref _isOnPress, value);
+        set
+        {
+            if (!Set(ref _isOnPress, value))
+                return;
+
+            OnPropertyChanged(nameof(IsOnRelease));
+        }
+    }
+
+    public bool IsOnRelease
+    {
+        get => !IsOnPress;
+        set => IsOnPress = !value;
     }
 
     public ICommand ClearDxCommand { get; }
@@ -83,7 +108,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         IEnumerable<DeviceBindingProfile> deviceProfiles,
         string aircraftProfileName,
         Action<BindingRow, string, int, string, int> saveKeyboardBinding,
-        Action<BindingRow, string?, int?> saveDeviceButtonBinding,
+        Action<BindingRow, string?, int?, int?> saveDeviceButtonBinding,
         Action closeWindow)
     {
         _row = row;
@@ -135,14 +160,15 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 _tempChordModifierFlags);
 
             // Replace this callback's DX list with the current pending list.
-            _saveDeviceButtonBinding(_row, null, null);
+            _saveDeviceButtonBinding(_row, null, null, null);
 
             foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
             {
                 _saveDeviceButtonBinding(
                     _row,
                     pendingDxButton.DeviceKey,
-                    pendingDxButton.ButtonIndex);
+                    pendingDxButton.ButtonIndex,
+                    pendingDxButton.AssignmentIndex);
             }
 
             _closeWindow();
@@ -350,6 +376,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
             DeviceButtonBinding? conflict = aircraft?.ButtonBindings.FirstOrDefault(binding =>
                 binding.ButtonIndex == pendingDxButton.ButtonIndex &&
+                binding.AssignmentIndex == pendingDxButton.AssignmentIndex &&
                 !string.Equals(binding.CallbackName, _row.CallbackName, StringComparison.OrdinalIgnoreCase));
 
             if (conflict is null)
@@ -363,7 +390,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 ?? pendingDxButton.DeviceKey;
 
             dxConflicts.Add(
-                deviceName + " DX" + (pendingDxButton.ButtonIndex + 1) +
+                deviceName + " " + DeviceButtonBinding.BuildDisplayText(pendingDxButton.ButtonIndex, pendingDxButton.AssignmentIndex) +
                 " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
@@ -405,7 +432,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 ?? device?.InstanceName
                 ?? pendingDxButton.DeviceKey;
 
-            parts.Add(deviceName + " DX" + (pendingDxButton.ButtonIndex + 1));
+            parts.Add(deviceName + " " + DeviceButtonBinding.BuildDisplayText(pendingDxButton.ButtonIndex, pendingDxButton.AssignmentIndex));
         }
 
         return parts.Count == 0
@@ -424,6 +451,8 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
     private void LoadExistingDxBindings(string callbackName)
     {
+        var existingBindings = new List<DeviceButtonBinding>();
+
         foreach (DeviceBindingProfile device in _deviceProfiles)
         {
             DeviceAircraftBindingProfile? aircraft = device.AircraftProfiles.FirstOrDefault(profile =>
@@ -437,16 +466,43 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                          .OrderBy(button => button.ButtonIndex)
                          .ThenBy(button => button.AssignmentIndex))
             {
-                AddPendingDxButton(device.DurableDeviceKey, binding.ButtonIndex);
+                existingBindings.Add(binding);
+                AddPendingDxButton(device.DurableDeviceKey, binding.ButtonIndex, binding.AssignmentIndex);
             }
         }
+
+        if (existingBindings.Count == 0)
+            return;
+
+        // Use the first existing DX binding to initialize the radio buttons.
+        // Most rows only have one DX binding. If a row has multiple DX bindings,
+        // the preview still shows all of them, and this simply sets the default
+        // radio state for the next DX input the user captures.
+        DeviceButtonBinding firstBinding = existingBindings[0];
+
+        IsUnshifted = DeviceButtonBinding.GetShiftState(firstBinding.AssignmentIndex) == DeviceButtonBinding.ShiftStateUnshifted;
+        IsOnPress = DeviceButtonBinding.GetTrigger(firstBinding.AssignmentIndex) == DeviceButtonBinding.TriggerPress;
     }
 
     private void AddPendingDxButton(string deviceKey, int buttonIndex)
     {
+        string shiftState = IsUnshifted
+            ? DeviceButtonBinding.ShiftStateUnshifted
+            : DeviceButtonBinding.ShiftStateShifted;
+
+        string trigger = IsOnPress
+            ? DeviceButtonBinding.TriggerPress
+            : DeviceButtonBinding.TriggerRelease;
+
+        AddPendingDxButton(deviceKey, buttonIndex, DeviceButtonBinding.GetAssignmentIndex(shiftState, trigger));
+    }
+
+    private void AddPendingDxButton(string deviceKey, int buttonIndex, int assignmentIndex)
+    {
         bool alreadyPending = _pendingDxButtons.Any(button =>
             string.Equals(button.DeviceKey, deviceKey, StringComparison.OrdinalIgnoreCase) &&
-            button.ButtonIndex == buttonIndex);
+            button.ButtonIndex == buttonIndex &&
+            button.AssignmentIndex == assignmentIndex);
 
         if (alreadyPending)
             return;
@@ -455,7 +511,8 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _pendingDxButtons.Add(new PendingDxButton
         {
             DeviceKey = deviceKey,
-            ButtonIndex = buttonIndex
+            ButtonIndex = buttonIndex,
+            AssignmentIndex = assignmentIndex
         });
     }
 

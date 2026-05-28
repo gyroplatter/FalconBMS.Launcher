@@ -111,7 +111,7 @@ public sealed class KeyControlsGridBuilderService
         foreach (DeviceButtonBinding button in aircraftProfile.ButtonBindings.Where(binding =>
                      string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase)))
         {
-            parts.Add("DX" + button.ButtonNumber);
+            parts.Add(DeviceButtonBinding.BuildDisplayText(button.ButtonIndex, button.AssignmentIndex));
         }
 
         foreach (DevicePovBinding pov in aircraftProfile.PovBindings.Where(binding =>

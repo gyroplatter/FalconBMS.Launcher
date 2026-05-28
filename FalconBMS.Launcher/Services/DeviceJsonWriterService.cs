@@ -185,6 +185,8 @@ public sealed class DeviceJsonWriterService
 
             WriteProperty(sb, 5, "button_index", button.ButtonIndex, comma: true);
             WriteProperty(sb, 5, "assignment_index", button.AssignmentIndex, comma: true);
+            WriteProperty(sb, 5, "shift_state", DeviceButtonBinding.GetShiftState(button.AssignmentIndex), comma: true);
+            WriteProperty(sb, 5, "trigger", DeviceButtonBinding.GetTrigger(button.AssignmentIndex), comma: true);
             WriteProperty(sb, 5, "callback_name", button.CallbackName, comma: true);
             WriteProperty(sb, 5, "invoke", button.Invoke, comma: true);
             WriteProperty(sb, 5, "sound_id", button.SoundId, comma: false);

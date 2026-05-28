@@ -299,12 +299,14 @@ public sealed class DeviceJsonReaderService
             {
                 foreach (JsonDeviceButtonBinding button in jsonAircraft.ButtonBindings)
                 {
+                    int assignmentIndex = GetButtonAssignmentIndex(button);
+
                     aircraft.ButtonBindings.Add(new DeviceButtonBinding
                     {
                         ButtonIndex = button.ButtonIndex.GetValueOrDefault(),
-                        AssignmentIndex = button.AssignmentIndex.GetValueOrDefault(),
+                        AssignmentIndex = assignmentIndex,
                         CallbackName = button.CallbackName ?? "",
-                        Invoke = button.Invoke ?? "Default",
+                        Invoke = button.Invoke ?? DeviceButtonBinding.GetDefaultInvoke(assignmentIndex),
                         SoundId = button.SoundId.GetValueOrDefault()
                     });
                 }
@@ -327,6 +329,27 @@ public sealed class DeviceJsonReaderService
 
             profile.AircraftProfiles.Add(aircraft);
         }
+    }
+
+    private static int GetButtonAssignmentIndex(JsonDeviceButtonBinding button)
+    {
+        bool hasShiftState = !string.IsNullOrWhiteSpace(button.ShiftState);
+        bool hasTrigger = !string.IsNullOrWhiteSpace(button.Trigger);
+
+        if (hasShiftState || hasTrigger)
+        {
+            string shiftState = hasShiftState
+                ? button.ShiftState!
+                : DeviceButtonBinding.GetShiftState(button.AssignmentIndex.GetValueOrDefault());
+
+            string trigger = hasTrigger
+                ? button.Trigger!
+                : DeviceButtonBinding.GetTrigger(button.AssignmentIndex.GetValueOrDefault());
+
+            return DeviceButtonBinding.GetAssignmentIndex(shiftState, trigger);
+        }
+
+        return button.AssignmentIndex.GetValueOrDefault();
     }
 
     private static void LogLoadedProfile(DeviceBindingProfile profile, string jsonFileName, string actionId)
@@ -508,6 +531,12 @@ public sealed class DeviceJsonReaderService
 
         [DataMember(Name = "assignment_index")]
         public int? AssignmentIndex { get; set; }
+
+        [DataMember(Name = "shift_state")]
+        public string? ShiftState { get; set; }
+
+        [DataMember(Name = "trigger")]
+        public string? Trigger { get; set; }
 
         [DataMember(Name = "callback_name")]
         public string? CallbackName { get; set; }

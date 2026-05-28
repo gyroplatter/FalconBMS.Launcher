@@ -62,16 +62,42 @@
             </Border>
 
             <StackPanel Grid.Row="2"
-                        Orientation="Horizontal"
+                        Orientation="Vertical"
                         Margin="0,8,0,0">
-                <CheckBox Content="Unshifted"
-                          IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,18,0"/>
+                <StackPanel Orientation="Horizontal"
+                            Margin="0,0,0,6">
+                    <TextBlock Text="Shift State:"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
 
-                <CheckBox Content="On Press"
-                          IsChecked="{Binding IsOnPress, Mode=TwoWay}"
-                          VerticalAlignment="Center"/>
+                    <RadioButton Content="Unshifted"
+                                 GroupName="ShiftState"
+                                 IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,18,0"/>
+
+                    <RadioButton Content="Shifted"
+                                 GroupName="ShiftState"
+                                 IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                                 VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Trigger:"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+
+                    <RadioButton Content="Press"
+                                 GroupName="TriggerState"
+                                 IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,18,0"/>
+
+                    <RadioButton Content="Release"
+                                 GroupName="TriggerState"
+                                 IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                                 VerticalAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
 
             <StackPanel Grid.Row="5"
