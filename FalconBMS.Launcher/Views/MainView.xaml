@@ -91,7 +91,7 @@
               ClipToBounds="True">
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="220"/>
+            <RowDefinition Height="230"/>
             <RowDefinition Height="12"/>
             <RowDefinition Height="285"/>
             <RowDefinition Height="12"/>

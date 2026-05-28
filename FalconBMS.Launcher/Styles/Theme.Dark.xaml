@@ -41,6 +41,16 @@
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBackgroundBrush" Color="#244760"/>
     <SolidColorBrush x:Key="ControlsTableAxisBadgeForegroundBrush" Color="#EAF5FF"/>
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBorderBrush" Color="#3D6684"/>
+
+    <!-- Checkbox -->
+    <SolidColorBrush x:Key="AppCheckBoxBackgroundBrush" Color="#1E232E"/>
+    <SolidColorBrush x:Key="AppCheckBoxBorderBrush" Color="#64788F"/>
+    <SolidColorBrush x:Key="AppCheckBoxHoverBorderBrush" Color="#2F8DF2"/>
+    <SolidColorBrush x:Key="AppCheckBoxCheckedBrush" Color="#2F8DF2"/>
+    <SolidColorBrush x:Key="AppCheckBoxCheckBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledBackgroundBrush" Color="#3A414D"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledBorderBrush" Color="#4A5564"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledCheckBrush" Color="#A0A8B4"/>
     
     <!-- Default button -->
     <SolidColorBrush x:Key="AppDefaultButtonBrush" Color="#2C303B"/>

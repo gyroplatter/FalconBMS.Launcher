@@ -41,6 +41,16 @@
     <SolidColorBrush x:Key="AppHeadingForegroundBrush" Color="#000000"/>
     <SolidColorBrush x:Key="AppSubHeadingForegroundBrush" Color="#4B5563"/>
     <SolidColorBrush x:Key="AppBodyForegroundBrush" Color="#4B5563"/>
+    
+    <!-- Checkbox -->
+    <SolidColorBrush x:Key="AppCheckBoxBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppCheckBoxBorderBrush" Color="#8AA5C2"/>
+    <SolidColorBrush x:Key="AppCheckBoxHoverBorderBrush" Color="#0B6BCB"/>
+    <SolidColorBrush x:Key="AppCheckBoxCheckedBrush" Color="#0B6BCB"/>
+    <SolidColorBrush x:Key="AppCheckBoxCheckBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledBackgroundBrush" Color="#E1E6EC"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledBorderBrush" Color="#C5CED8"/>
+    <SolidColorBrush x:Key="AppCheckBoxDisabledCheckBrush" Color="#7F8B98"/>
 
     <!-- Default button -->
     <SolidColorBrush x:Key="AppDefaultButtonBrush" Color="#E1E8F2"/> 
