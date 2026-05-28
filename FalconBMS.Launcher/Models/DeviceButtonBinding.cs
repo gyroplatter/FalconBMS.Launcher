@@ -18,6 +18,9 @@ public sealed class DeviceButtonBinding
     public const string TriggerPress = "Press";
     public const string TriggerRelease = "Release";
 
+    public const string DxShiftCallbackName = "SimHotasShift";
+    public const string DxPinkyShiftCallbackName = "SimHotasPinkyShift";
+
     public int ButtonIndex { get; init; }
 
     public int ButtonNumber => ButtonIndex + 1;
@@ -29,6 +32,20 @@ public sealed class DeviceButtonBinding
     public string Invoke { get; set; } = "Default";
 
     public int SoundId { get; set; }
+
+    public static bool IsDxShiftCallback(string callbackName)
+    {
+        return string.Equals(callbackName, DxPinkyShiftCallbackName, System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(callbackName, DxShiftCallbackName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static int NormalizeAssignmentIndexForCallback(string callbackName, int assignmentIndex)
+    {
+        // DX Shift callbacks are special launcher/system callbacks.
+        return IsDxShiftCallback(callbackName)
+            ? 0
+            : assignmentIndex;
+    }
 
     public static int GetAssignmentIndex(string shiftState, string trigger)
     {

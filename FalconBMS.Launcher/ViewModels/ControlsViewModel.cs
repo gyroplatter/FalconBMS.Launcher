@@ -391,8 +391,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private static bool IsDxShiftCallback(string callbackName)
     {
-        return string.Equals(callbackName, "SimHotasPinkyShift", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(callbackName, "SimHotasShift", StringComparison.OrdinalIgnoreCase);
+        return DeviceButtonBinding.IsDxShiftCallback(callbackName);
     }
 
     public void ApplyKeyboardMappingFromPopup(
@@ -467,6 +466,10 @@ public sealed class ControlsViewModel : ViewModelBase
             return;
         }
 
+        int normalizedAssignmentIndex = DeviceButtonBinding.NormalizeAssignmentIndexForCallback(
+            selectedRow.CallbackName,
+            selectedAssignmentIndex.Value);
+
         DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
             string.Equals(device.DurableDeviceKey, selectedDeviceKey, StringComparison.OrdinalIgnoreCase));
 
@@ -482,7 +485,7 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (DeviceButtonBinding conflict in selectedAircraftProfile.ButtonBindings
                      .Where(binding =>
                          binding.ButtonIndex == selectedButtonIndex.Value &&
-                         binding.AssignmentIndex == selectedAssignmentIndex.Value &&
+                         binding.AssignmentIndex == normalizedAssignmentIndex &&
                          !string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
                      .ToList())
         {
@@ -492,7 +495,7 @@ public sealed class ControlsViewModel : ViewModelBase
 
         bool alreadyAssigned = selectedAircraftProfile.ButtonBindings.Any(binding =>
             binding.ButtonIndex == selectedButtonIndex.Value &&
-            binding.AssignmentIndex == selectedAssignmentIndex.Value &&
+            binding.AssignmentIndex == normalizedAssignmentIndex &&
             string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase));
 
         if (!alreadyAssigned)
@@ -500,9 +503,9 @@ public sealed class ControlsViewModel : ViewModelBase
             selectedAircraftProfile.ButtonBindings.Add(new DeviceButtonBinding
             {
                 ButtonIndex = selectedButtonIndex.Value,
-                AssignmentIndex = selectedAssignmentIndex.Value,
+                AssignmentIndex = normalizedAssignmentIndex,
                 CallbackName = selectedRow.CallbackName,
-                Invoke = DeviceButtonBinding.GetDefaultInvoke(selectedAssignmentIndex.Value),
+                Invoke = DeviceButtonBinding.GetDefaultInvoke(normalizedAssignmentIndex),
                 SoundId = selectedRow.SoundId
             });
         }

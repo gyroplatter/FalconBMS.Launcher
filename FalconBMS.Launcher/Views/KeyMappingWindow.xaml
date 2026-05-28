@@ -73,12 +73,14 @@
                     <RadioButton Content="Unshifted"
                                  GroupName="ShiftState"
                                  IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
                                  VerticalAlignment="Center"
                                  Margin="0,0,18,0"/>
 
                     <RadioButton Content="Shifted"
                                  GroupName="ShiftState"
                                  IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
                                  VerticalAlignment="Center"/>
                 </StackPanel>
 
@@ -90,12 +92,14 @@
                     <RadioButton Content="Press"
                                  GroupName="TriggerState"
                                  IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
                                  VerticalAlignment="Center"
                                  Margin="0,0,18,0"/>
 
                     <RadioButton Content="Release"
                                  GroupName="TriggerState"
                                  IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsDxOptionSelectionEnabled}"
                                  VerticalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
