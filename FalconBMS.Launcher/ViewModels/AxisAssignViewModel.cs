@@ -31,7 +31,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     // Jitter guard:
     // Only accept a capture when one axis is clearly stronger than every other moving axis.
     // This prevents a noisy Z/slider axis from winning while the user is moving X/Y/Rx/etc.
-    private const double DominantAxisRatio = 1.75;
+    private const double DominantAxisRatio = 1.5;
 
     private readonly DirectInputManager _di = new();
     private readonly IReadOnlyList<DeviceBindingProfile> _deviceProfiles;
