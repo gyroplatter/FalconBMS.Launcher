@@ -42,8 +42,8 @@ public static class AxisDefinitionService
         FlightAxis(1,  "Roll",                    "Roll",                "Left Wing Down",  "Right Wing Down"),
         FlightAxis(2,  "Yaw",                     "Rudder / Yaw",        "Yaw Left",        "Yaw Right"),
 
-        Throttle   (3,  "Throttle",               "Throttle",            "Afterward",       "Forward"),
-        GenericAxis(4, "Throttle_Right",          "Throttle Right",      "Afterward",       "Forward"),
+        Throttle   (3,  "Throttle",               "Throttle",            "Back",       "Forward"),
+        GenericAxis(4, "Throttle_Right",          "Throttle Right",      "Back",       "Forward"),
 
         GenericAxis(5, "Toe_Brake",               "Toe Brake",           "Release",         "Apply"),
         GenericAxis(6, "Toe_Brake_Right",         "Toe Brake Right",     "Release",         "Apply"),
@@ -57,7 +57,7 @@ public static class AxisDefinitionService
         FlightAxis(11, "Radar_Antenna_Elevation", "Antenna Elevation",      "Elevation Down",  "Elevation Up"),
         FlightAxis(12, "Range_Knob",              "Range Knob",             "Clock Wise",      "Counter CW"),
         FlightAxis(13, "Cursor_X",                "Cursor X",               "Cursor Left",     "Cursor Right"),
-        FlightAxis(14, "Cursor_Y",                "Cursor Y",               "Cursor Afterward","Cursor Forward"),
+        FlightAxis(14, "Cursor_Y",                "Cursor Y",               "Cursor Back","Cursor Forward"),
 
         GenericAxis(15, "COMM_Channel_1",         "Audio Comm Ch1",        "Volume Down",     "Volume Up"),
         GenericAxis(16, "COMM_Channel_2",         "Audio Comm Ch2",        "Volume Down",     "Volume Up"),
