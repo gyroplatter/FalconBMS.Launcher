@@ -417,11 +417,16 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
         _selectedDeviceKey = best.Device.DurableDeviceKey;
         _selectedPhysicalAxisIndex = best.AxisIndex;
+
+        // Clear only means "remove the mapping" if the user saves without movings another axis.
+        // If the user moves a new axis after clearing, Saving should use that new axis.
+        _isCleared = false;
+
         _captureArmed = false;
         HasLiveAxis = true;
 
         DebugDiagnosticsService.Info(
-            $"Axis captured. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | Device={GetDeviceDisplayName(best.Device)} | DeviceKey={best.Device.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(best.AxisIndex)} | Delta={best.Delta} | StableHits={stableHits} | Deadzone={DeadzoneCurve} | Saturation={SaturationCurve} | Invert={Invert}");
+            $"Axis captured. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | Device={GetDeviceDisplayName(best.Device)} | DeviceKey={best.Device.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(best.AxisIndex)} | Delta={best.Delta} | StableHits={stableHits} | Deadzone={DeadzoneCurve} | Saturation={SaturationCurve} | Invert={Invert} | IsCleared={_isCleared}");
 
         StatusText = "Captured " + GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(best.AxisIndex);
         UpdateAxisConflict();
