@@ -28,6 +28,13 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private DispatcherTimer? _timer;
     private HashSet<DiKey> _previousPressedKeys = new();
 
+    // A DirectInput session is opened when the popup opens, so use the first
+    // few polling ticks to learn held/latching switch positions before capturing input.
+    // Increase the DxNeutralWarmupPolls to increase this delay, but that also 
+    // can make the window miss the first real DX press.
+    private const int DxNeutralWarmupPolls = 6;
+    private int _dxNeutralWarmupPollsRemaining;
+
     private string _tempKeyScancode;
     private int _tempModifierFlags;
     private string _tempChordScancode;
@@ -153,6 +160,10 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         {
             _pendingDxButtons.Clear();
 
+            // After Clear DX, ignore anything currently held so latching switches
+            // do not immediately add themselves back.
+            StartDxNeutralWarmup();
+
             UpdateAssignmentPreviewTexts();
             UpdateConflict();
         });
@@ -220,6 +231,8 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 // Keep keyboard capture working even if one controller cannot be opened.
             }
         }
+
+        StartDxNeutralWarmup();
 
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -323,8 +336,46 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         UpdateConflict();
     }
 
+    private void StartDxNeutralWarmup()
+    {
+        _previousButtonsByDeviceKey.Clear();
+        _dxNeutralWarmupPollsRemaining = DxNeutralWarmupPolls;
+    }
+
+    private bool IsDxNeutralWarmupActive()
+    {
+        if (_dxNeutralWarmupPollsRemaining <= 0)
+            return false;
+
+        foreach (KeyValuePair<string, JoystickSession> pair in _joystickSessionsByDeviceKey)
+        {
+            JoystickState state;
+
+            try
+            {
+                state = pair.Value.ReadState();
+            }
+            catch
+            {
+                continue;
+            }
+
+            bool[] buttons = state.Buttons ?? Array.Empty<bool>();
+
+            // Keep replacing the baseline during warmup. The final warmup poll becomes
+            // the neutral state used when real DX capture begins.
+            _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+        }
+
+        _dxNeutralWarmupPollsRemaining--;
+        return true;
+    }
+
     private void PollJoystickButtons()
     {
+        if (IsDxNeutralWarmupActive())
+            return;
+
         foreach (KeyValuePair<string, JoystickSession> pair in _joystickSessionsByDeviceKey)
         {
             JoystickState state;
