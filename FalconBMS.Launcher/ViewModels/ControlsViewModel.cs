@@ -138,6 +138,34 @@ public sealed class ControlsViewModel : ViewModelBase
         List<ControlGridRowViewModel> keyRows = _keyGridBuilder.Build(SelectedProfile, DeviceColumns);
         List<ControlGridRowViewModel> axisRows = _axisGridBuilder.Build(aircraftProfile, DeviceColumns);
 
+        // Axis rows are generated from AxisDefinitionService, not from the .key file.
+        // That means the raw axis row knows its BMS section placement, but it does not
+        // naturally know the parent .key category used by the left-side category filter.
+        //
+        // Example:
+        //   SectionName = "2.19 THROTTLE QUADRANT SYSTEM"
+        //   CategoryName = ""
+        //
+        // Build a lookup from the normal .key rows so axis rows placed in that section
+        // inherit the same category as the surrounding key rows.
+        Dictionary<string, string> categoryBySection = BuildCategoryNameBySection(keyRows);
+
+        // Axis display names are plain names like "Throttle" and "Cursor X".
+        // Normal .key rows in the same section usually include a short prefix such as:
+        //   "TQS: COMMS Switch Up - UHF"
+        //
+        // Build a lookup from section name to prefix so axis rows can display/search as:
+        //   "TQS: Throttle"
+        //   "TQS: Cursor X"
+        //
+        // This makes text filtering for "TQS", "ICP", "HUD", etc. behave the same
+        // for axis rows as it does for normal key rows.
+        Dictionary<string, string> mappingPrefixBySection = BuildMappingPrefixBySection(keyRows);
+
+        axisRows = axisRows
+            .Select(row => ApplyAxisGridContext(row, categoryBySection, mappingPrefixBySection))
+            .ToList();
+
         // Group axis rows by SectionName so we can look them up when iterating key rows.
         // Axes with no section placement (HasSectionPlacement == false) go to the fallback list.
         Dictionary<string, List<ControlGridRowViewModel>> axisBySection = axisRows
@@ -170,6 +198,128 @@ public sealed class ControlsViewModel : ViewModelBase
         // Append any unplaced axes at the bottom so they are never silently lost.
         foreach (ControlGridRowViewModel axisRow in unplacedAxisRows)
             _allRows.Add(axisRow);
+    }
+
+    private static Dictionary<string, string> BuildCategoryNameBySection(
+    IEnumerable<ControlGridRowViewModel> keyRows)
+    {
+        // The .key parser already assigns CategoryName and SectionName to normal key rows.
+        // This creates a section -> category lookup so generated axis rows can participate
+        // in the same left-side category filtering as the .key rows around them.
+        //
+        // Example:
+        //   "2.19 THROTTLE QUADRANT SYSTEM" -> "2. LEFT CONSOLE"
+        return keyRows
+            .Where(row => !string.IsNullOrWhiteSpace(row.SectionName) &&
+                          !string.IsNullOrWhiteSpace(row.CategoryName))
+            .GroupBy(row => row.SectionName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().CategoryName,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static Dictionary<string, string> BuildMappingPrefixBySection(
+        IEnumerable<ControlGridRowViewModel> keyRows)
+    {
+        // Axis definitions only provide clean display names such as "Throttle".
+        // The surrounding .key rows usually include short section prefixes in their
+        // descriptions, such as "TQS: COMMS Switch Up - UHF".
+        //
+        // This creates a section to prefix lookup by reading the first usable prefix
+        // from the normal editable rows in that section.
+        //
+        // Example:
+        //   "2.19 THROTTLE QUADRANT SYSTEM" -> "TQS"
+        return keyRows
+            .Where(row => !row.IsCategoryHeader &&
+                          !row.IsSectionHeader &&
+                          !row.IsRemark &&
+                          !string.IsNullOrWhiteSpace(row.SectionName))
+            .Select(row => new
+            {
+                row.SectionName,
+                Prefix = ExtractMappingPrefix(row.Mapping)
+            })
+            .Where(row => !string.IsNullOrWhiteSpace(row.Prefix))
+            .GroupBy(row => row.SectionName, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First().Prefix,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static ControlGridRowViewModel ApplyAxisGridContext(
+        ControlGridRowViewModel row,
+        IReadOnlyDictionary<string, string> categoryBySection,
+        IReadOnlyDictionary<string, string> mappingPrefixBySection)
+    {
+        if (!row.IsAxisRow)
+            return row;
+
+        string categoryName = row.CategoryName;
+
+        // Generated axis rows already know their section, but not their parent category.
+        // Fill that in from the .key rows so clicking a category like "2. LEFT CONSOLE"
+        // keeps the axes from that category visible.
+        if (!string.IsNullOrWhiteSpace(row.SectionName) &&
+            categoryBySection.TryGetValue(row.SectionName, out string? sectionCategoryName))
+        {
+            categoryName = sectionCategoryName;
+        }
+
+        string mapping = row.Mapping;
+
+        // Prefix generated axis display names with the same short label used by nearby
+        // .key rows. This is mostly for filtering/search, but it also makes the grid
+        // visually consistent:
+        //
+        //   Before: "Throttle"
+        //   After:  "TQS: Throttle"
+        //
+        // The colon check prevents double-prefixing if an axis row ever becomes
+        // explicitly prefixed later.
+        if (!string.IsNullOrWhiteSpace(row.SectionName) &&
+            mappingPrefixBySection.TryGetValue(row.SectionName, out string? prefix) &&
+            !string.IsNullOrWhiteSpace(prefix) &&
+            mapping.IndexOf(':') < 0)
+        {
+            mapping = prefix + ": " + mapping;
+        }
+
+        return new ControlGridRowViewModel
+        {
+            SourceRow = row.SourceRow,
+            RowKind = row.RowKind,
+            SourceLineNumber = row.SourceLineNumber,
+            CategoryName = categoryName,
+            SectionName = row.SectionName,
+            Mapping = mapping,
+            IsAxisRow = row.IsAxisRow,
+            AxisLogicalAxisName = row.AxisLogicalAxisName,
+            DeviceCellsByDeviceKey = row.DeviceCellsByDeviceKey
+        };
+    }
+
+    private static string ExtractMappingPrefix(string mapping)
+    {
+        if (string.IsNullOrWhiteSpace(mapping))
+            return "";
+
+        int colonIndex = mapping.IndexOf(':');
+
+        if (colonIndex <= 0)
+            return "";
+
+        string prefix = mapping.Substring(0, colonIndex).Trim();
+
+        // BMS prefixes are short labels like TQS, ICP, HUD, AF, SIM, etc.
+        // Keep this conservative so a longer sentence with a colon is not treated
+        // as a real mapping prefix.
+        if (prefix.Length > 12)
+            return "";
+
+        return prefix;
     }
 
     private void RebuildCategories()
