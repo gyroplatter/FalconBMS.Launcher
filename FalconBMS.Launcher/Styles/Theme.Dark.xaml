@@ -11,6 +11,9 @@
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
 
+    <!-- Warning text color used for overwrite/conflict warnings -->
+    <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF8A80"/>
+
     <!-- Controls table -->
     <SolidColorBrush x:Key="ControlsTableHeaderBrush" Color="#262D3A"/>
     <SolidColorBrush x:Key="ControlsTableGridLineBrush" Color="#334455"/>

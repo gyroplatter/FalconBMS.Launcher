@@ -5,10 +5,10 @@
 
     <!--
         Shared theme styles.
-        Actual brush values are supplied by Theme.Light.xaml or Theme.Dark.xaml.
+        Actual brush values are supplied by Theme.Light.xaml or Theme.Dark.xaml
     -->
 
-    <!-- Typography tokens. Keep this scale intentionally small. -->
+    <!-- Typography tokens. Keep this scale intentionally small -->
     <FontFamily x:Key="AppFontFamily">Arial</FontFamily>
 
     <System:Double x:Key="FontSizeSmall">12</System:Double>
@@ -75,8 +75,80 @@
     </Style>
 
     <!--
+        Shared popup/dialog typography.
+
+        These are used by KeyMappingWindow and AxisAssignWindow so both dialogs
+        use the same visual language instead of maintaining separate local styles
+    -->
+    <Style x:Key="DialogTitleTextBlockStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,14"/>
+    </Style>
+
+    <Style x:Key="DialogSectionLabelStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
+        <Setter Property="Margin" Value="0,0,0,14"/>
+    </Style>
+
+    <!-- Generic helper label, such as "Assigned key:" or "Assigned axis:" -->
+    <Style x:Key="DialogFieldLabelStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Margin" Value="0,0,14,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Important assigned value, such as "Backslash" or "HOTAS Warthog / Y" -->
+    <Style x:Key="DialogAssignmentValueStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- Shared warning text for overwrite/conflict messages in popup dialogs -->
+    <Style x:Key="DialogWarningTextBlockStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppWarningTextBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- Setting/control labels, such as "Shift State:", "Deadzone", or "Saturation" -->
+    <Style x:Key="DialogOptionLabelStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Direction labels beside an axis bar, such as "Down" and "Up" -->
+    <Style x:Key="DialogAxisDirectionLabelStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <!--
         Main window header:
-        keeps the Falcon BMS logo and top nav in the same dark header row.
+        keeps the Falcon BMS logo and top nav in the same dark header row
     -->
     <Style x:Key="MainWindowHeaderBorderStyle" TargetType="Border">
         <Setter Property="Height" Value="68"/>

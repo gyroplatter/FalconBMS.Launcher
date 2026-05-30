@@ -9,33 +9,6 @@
         ResizeMode="NoResize"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 
-    <Window.Resources>
-        <Style x:Key="KeyMappingSectionLabelStyle"
-               TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
-            <Setter Property="Margin" Value="0,0,0,14"/>
-        </Style>
-
-        <Style x:Key="KeyMappingFieldLabelStyle"
-               TargetType="TextBlock"
-               BasedOn="{StaticResource BodyTextBlockStyle}">
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0,0,14,0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="KeyMappingAssignmentValueStyle"
-               TargetType="TextBlock"
-               BasedOn="{StaticResource BodyTextBlockStyle}">
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
-        </Style>
-    </Window.Resources>
-
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
         <Grid Margin="26">
             <Grid.RowDefinitions>
@@ -48,9 +21,7 @@
 
             <TextBlock Grid.Row="0"
                        Text="{Binding TitleText}"
-                       FontSize="{StaticResource FontSizeLarge}"
-                       FontWeight="SemiBold"
-                       Margin="0,0,0,14"/>
+                       Style="{StaticResource DialogTitleTextBlockStyle}"/>
 
             <Border Grid.Row="1"
                     Style="{StaticResource DashboardCardStyle}"
@@ -65,7 +36,7 @@
 
                     <TextBlock Grid.Row="0"
                                Text="Keyboard"
-                               Style="{StaticResource KeyMappingSectionLabelStyle}"/>
+                               Style="{StaticResource DialogSectionLabelStyle}"/>
 
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
@@ -76,11 +47,11 @@
 
                         <TextBlock Grid.Column="0"
                                    Text="Assigned key:"
-                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+                                   Style="{StaticResource DialogFieldLabelStyle}"/>
 
                         <TextBlock Grid.Column="1"
                                    Text="{Binding KeyboardAssignmentText}"
-                                   Style="{StaticResource KeyMappingAssignmentValueStyle}"/>
+                                   Style="{StaticResource DialogAssignmentValueStyle}"/>
 
                         <Button Grid.Column="2"
                                 Width="96"
@@ -89,12 +60,11 @@
                     </Grid>
 
                     <TextBlock Grid.Row="2"
-                               Text="{Binding KeyboardConflictText}"
-                               Foreground="Red"
-                               TextWrapping="Wrap"
-                               Margin="0,14,0,0">
+           Text="{Binding KeyboardConflictText}"
+           Margin="0,14,0,0">
                         <TextBlock.Style>
-                            <Style TargetType="{x:Type TextBlock}">
+                            <Style TargetType="{x:Type TextBlock}"
+               BasedOn="{StaticResource DialogWarningTextBlockStyle}">
                                 <Setter Property="Visibility" Value="Visible"/>
 
                                 <Style.Triggers>
@@ -125,7 +95,7 @@
 
                     <TextBlock Grid.Row="0"
                                Text="DX Button"
-                               Style="{StaticResource KeyMappingSectionLabelStyle}"/>
+                               Style="{StaticResource DialogSectionLabelStyle}"/>
 
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
@@ -136,11 +106,11 @@
 
                         <TextBlock Grid.Column="0"
                                    Text="Assigned DX:"
-                                   Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+                                   Style="{StaticResource DialogFieldLabelStyle}"/>
 
                         <TextBlock Grid.Column="1"
                                    Text="{Binding DxAssignmentText}"
-                                   Style="{StaticResource KeyMappingAssignmentValueStyle}"/>
+                                   Style="{StaticResource DialogAssignmentValueStyle}"/>
 
                         <Button Grid.Column="2"
                                 Width="96"
@@ -149,7 +119,7 @@
                     </Grid>
 
                     <Grid Grid.Row="2"
-      Margin="0,16,0,0">
+                          Margin="0,16,0,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="10"/>
@@ -162,59 +132,60 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Row="0"
-               Grid.Column="0"
-               Text="Shift State:"
-               Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+                                   Grid.Column="0"
+                                   Text="Shift State:"
+                                   Style="{StaticResource DialogOptionLabelStyle}"
+                                   Margin="0,0,14,0"/>
 
                         <StackPanel Grid.Row="0"
-                Grid.Column="1"
-                Orientation="Horizontal"
-                VerticalAlignment="Center">
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
                             <RadioButton Content="Unshifted"
-                     GroupName="ShiftState"
-                     IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
-                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,18,0"/>
+                                         GroupName="ShiftState"
+                                         IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,18,0"/>
 
                             <RadioButton Content="Shifted"
-                     GroupName="ShiftState"
-                     IsChecked="{Binding IsShifted, Mode=TwoWay}"
-                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                     VerticalAlignment="Center"/>
+                                         GroupName="ShiftState"
+                                         IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <TextBlock Grid.Row="2"
-               Grid.Column="0"
-               Text="Trigger:"
-               Style="{StaticResource KeyMappingFieldLabelStyle}"/>
+                                   Grid.Column="0"
+                                   Text="Trigger:"
+                                   Style="{StaticResource DialogOptionLabelStyle}"
+                                   Margin="0,0,14,0"/>
 
                         <StackPanel Grid.Row="2"
-                Grid.Column="1"
-                Orientation="Horizontal"
-                VerticalAlignment="Center">
+                                    Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Center">
                             <RadioButton Content="Press"
-                     GroupName="TriggerState"
-                     IsChecked="{Binding IsOnPress, Mode=TwoWay}"
-                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,18,0"/>
+                                         GroupName="TriggerState"
+                                         IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,18,0"/>
 
                             <RadioButton Content="Release"
-                     GroupName="TriggerState"
-                     IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
-                     IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                     VerticalAlignment="Center"/>
+                                         GroupName="TriggerState"
+                                         IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                         VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
 
                     <TextBlock Grid.Row="3"
-                               Text="{Binding DxConflictText}"
-                               Foreground="Red"
-                               TextWrapping="Wrap"
-                               Margin="0,14,0,0">
+                       Text="{Binding DxConflictText}"
+                       Margin="0,14,0,0">
                         <TextBlock.Style>
-                            <Style TargetType="{x:Type TextBlock}">
+                            <Style TargetType="{x:Type TextBlock}"
+                                BasedOn="{StaticResource DialogWarningTextBlockStyle}">
                                 <Setter Property="Visibility" Value="Visible"/>
 
                                 <Style.Triggers>

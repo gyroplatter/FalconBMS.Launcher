@@ -197,7 +197,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _closeWindow = closeWindow;
 
         _definition = AxisDefinitionService.Find(axisRow.AxisLogicalAxisName);
-        TitleText = "Assign " + (_definition?.DisplayName ?? axisRow.Mapping) + " Axis";
+        TitleText = (_definition?.DisplayName ?? axisRow.Mapping) + " Axis";
         LeftLabel = _definition?.LeftLabel ?? "";
         RightLabel = _definition?.RightLabel ?? "";
 
@@ -237,7 +237,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
         StatusText = _captureArmed
             ? "Awaiting inputs: move the axis to assign"
-            : "Assigned to " + GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(_selectedPhysicalAxisIndex!.Value);
+            : GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(_selectedPhysicalAxisIndex!.Value);
 
         UpdateAxisConflict();
     }
@@ -428,7 +428,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         DebugDiagnosticsService.Info(
             $"Axis captured. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | Device={GetDeviceDisplayName(best.Device)} | DeviceKey={best.Device.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(best.AxisIndex)} | Delta={best.Delta} | StableHits={stableHits} | Deadzone={DeadzoneCurve} | Saturation={SaturationCurve} | Invert={Invert} | IsCleared={_isCleared}");
 
-        StatusText = "Captured " + GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(best.AxisIndex);
+        StatusText = GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(best.AxisIndex);
         UpdateAxisConflict();
     }
 

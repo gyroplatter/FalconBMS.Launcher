@@ -38,9 +38,9 @@ public static class AxisDefinitionService
 
     private static readonly List<DeviceAxisDefinition> _capabilities = new()
     {
-        FlightAxis(0,  "Pitch",                   "Pitch",               "Pitch Down",      "Pitch Up"),
-        FlightAxis(1,  "Roll",                    "Roll",                "Left Wing Down",  "Right Wing Down"),
-        FlightAxis(2,  "Yaw",                     "Rudder / Yaw",        "Yaw Left",        "Yaw Right"),
+        FlightAxis(0,  "Pitch",                   "Pitch",               "Down",            "Up"),
+        FlightAxis(1,  "Roll",                    "Roll",                "Left",            "Right"),
+        FlightAxis(2,  "Yaw",                     "Rudder / Yaw",        "Left",            "Right"),
 
         Throttle   (3,  "Throttle",               "Throttle",            "Back",       "Forward"),
         GenericAxis(4, "Throttle_Right",          "Throttle Right",      "Back",       "Forward"),
@@ -48,23 +48,23 @@ public static class AxisDefinitionService
         GenericAxis(5, "Toe_Brake",               "Toe Brake",           "Release",         "Apply"),
         GenericAxis(6, "Toe_Brake_Right",         "Toe Brake Right",     "Release",         "Apply"),
 
-        GenericAxis(7, "FOV",                     "FOV",               "Narrow",          "Wide"),
+        GenericAxis(7, "FOV",                     "FOV",                 "Narrow",          "Wide"),
 
-        FlightAxis(8,  "Trim_Pitch",              "Trim Pitch",          "Pitch Down",      "Pitch Up"),
-        FlightAxis(9,  "Trim_Yaw",                "Trim Yaw",            "Yaw Left",        "Yaw Right"),
-        FlightAxis(10, "Trim_Roll",               "Trim Roll",           "Left Wing Down",  "Right Wing Down"),
+        FlightAxis(8,  "Trim_Pitch",              "Trim Pitch",          "Down",            "Up"),
+        FlightAxis(9,  "Trim_Yaw",                "Trim Yaw",            "Left",            "Right"),
+        FlightAxis(10, "Trim_Roll",               "Trim Roll",           "Left",            "Right"),
 
-        FlightAxis(11, "Radar_Antenna_Elevation", "Antenna Elevation",      "Elevation Down",  "Elevation Up"),
-        FlightAxis(12, "Range_Knob",              "Range Knob",             "Clock Wise",      "Counter CW"),
-        FlightAxis(13, "Cursor_X",                "Cursor X",               "Cursor Left",     "Cursor Right"),
-        FlightAxis(14, "Cursor_Y",                "Cursor Y",               "Cursor Back","Cursor Forward"),
+        FlightAxis(11, "Radar_Antenna_Elevation", "Antenna Elevation",      "Down",           "Up"),
+        FlightAxis(12, "Range_Knob",              "Range Knob",             "Clockwise",      "Counter"),
+        FlightAxis(13, "Cursor_X",                "Cursor X",               "Left",           "Right"),
+        FlightAxis(14, "Cursor_Y",                "Cursor Y",               "Back",           "Forward"),
 
-        GenericAxis(15, "COMM_Channel_1",         "Audio Comm Ch1",        "Volume Down",     "Volume Up"),
-        GenericAxis(16, "COMM_Channel_2",         "Audio Comm Ch2",        "Volume Down",     "Volume Up"),
-        GenericAxis(17, "MSL_Volume",             "Missile Volume",        "Volume Down",     "Volume Up"),
-        GenericAxis(18, "Threat_Volume",          "Audio Threat Volume",        "Volume Down",     "Volume Up"),
-        GenericAxis(19, "IntercomVolumeVolume",   "Audio IntercomVolumem Volume","Volume Down",    "Volume Up"),
-        GenericAxis(20, "AI_vs_IVC",              "Audio AI vs IVC",            "Volume Down",     "Volume Up"),
+        GenericAxis(15, "COMM_Channel_1",         "Audio Comm Ch1",        "Decrease",     "Increase"),
+        GenericAxis(16, "COMM_Channel_2",         "Audio Comm Ch2",        "Decrease",     "Increase"),
+        GenericAxis(17, "MSL_Volume",             "Missile Volume",        "Decrease",     "Increase"),
+        GenericAxis(18, "Threat_Volume",          "Audio Threat Volume",   "Decrease",     "Increase"),
+        GenericAxis(19, "IntercomVolumeVolume",   "Audio Intercom Volume", "Decrease",     "Increase"),
+        GenericAxis(20, "AI_vs_IVC",              "Audio AI vs IVC",       "Decrease",     "Increase"),
 
         GenericAxis(21, "HUD_Brightness",         "HUD Brightness",         "Dark",            "Bright"),
         GenericAxis(22, "FLIR_Brightness",        "FLIR Brightness",        "Dark",            "Bright"),
@@ -73,10 +73,10 @@ public static class AxisDefinitionService
 
         GenericAxis(25, "Camera_Distance",        "Camera Distance",        "Close",           "Far"),
 
-        GenericAxis(26, "HSI_Course_Knob",        "HSI Course",                "Decrease",        "Increase"),
-        GenericAxis(27, "HSI_Heading_Knob",       "HSI Heading",               "Decrease",        "Increase"),
-        GenericAxis(28, "Altimeter_Knob",         "Altimeter Setting",         "Decrease",        "Increase"),
-        GenericAxis(29, "ILS_Volume_Knob",        "Audio ILS Vol",             "Volume Down",     "Volume Up")
+        GenericAxis(26, "HSI_Course_Knob",        "HSI Course",             "Decrease",        "Increase"),
+        GenericAxis(27, "HSI_Heading_Knob",       "HSI Heading",            "Decrease",        "Increase"),
+        GenericAxis(28, "Altimeter_Knob",         "Altimeter Setting",      "Decrease",        "Increase"),
+        GenericAxis(29, "ILS_Volume_Knob",        "Audio ILS Vol",          "Decrease",        "Increase")
     };
 
     // ---------------------------------------------------------------------------

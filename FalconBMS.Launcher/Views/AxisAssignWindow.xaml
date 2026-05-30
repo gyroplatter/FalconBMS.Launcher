@@ -3,175 +3,213 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:FalconBMS.Launcher.Views"
         Title="Assign Axis"
-        Width="560"
+        Width="650"
         MinHeight="310"
         SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="{DynamicResource AppSurfaceBrush}">
+        Background="{DynamicResource AppWindowBackgroundBrush}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid Margin="18"
-          Background="{DynamicResource AppSurfaceBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+        <Grid Margin="26">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="{Binding TitleText}"
-                   FontSize="{StaticResource FontSizeLarge}"
-                   FontWeight="SemiBold"
-                   Foreground="{DynamicResource AppForegroundBrush}"
-                   Margin="6,0,0,8"/>
-
-        <Grid Grid.Row="1"
-              Margin="6,0,6,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="110"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="110"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0"
-           Text="{Binding LeftLabel}"
-           HorizontalAlignment="Right"
-           VerticalAlignment="Center"
-           Margin="0,0,8,0"
-           Foreground="{DynamicResource AppForegroundBrush}"/>
+            <TextBlock Grid.Row="0"
+                       Text="{Binding TitleText}"
+                       Style="{StaticResource DialogTitleTextBlockStyle}"/>
 
             <!--
-            Keep the axis bar visible in the assignment window even before an axis is mapped.
-            The AxisBar control always draws its outline; IsActive only controls whether the
-            live fill is active. This lets the user see the target bar immediately while
-            still preserving blank unmapped cells in the main keymapping table.
+                Axis assignment stays in one card because the live axis,
+                invert state, curve settings, and throttle detents are all
+                settings for the same physical axis assignment.
             -->
-            <views:AxisBar Grid.Column="1"
-               Height="18"
-               VerticalAlignment="Center"
-               Value="{Binding AxisBarValue, Mode=OneWay}"
-               IsActive="{Binding HasLiveAxis}"
-               ShowDetents="{Binding ShowThrottleDetents}"
-               IdleDetentFraction="{Binding IdleDetentFraction}"
-               AfterburnerDetentFraction="{Binding AfterburnerDetentFraction}"/>
+            <Border Grid.Row="1"
+                    Style="{StaticResource DashboardCardStyle}"
+                    Padding="16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="16"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-            <TextBlock Grid.Column="2"
-           Text="{Binding RightLabel}"
-           HorizontalAlignment="Left"
-           VerticalAlignment="Center"
-           Margin="8,0,0,0"
-           Foreground="{DynamicResource AppForegroundBrush}"/>
-        </Grid>
+                    <!-- Axis direction labels and live movement bar. -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <!--
+                                Side columns are wide enough for longer labels,
+                                but the labels align toward the axis bar so short
+                                labels like Back/Forward do not drift away.
+                            -->
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="120"/>
+                        </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="2"
-        BorderBrush="{DynamicResource AppBorderBrush}"
-        BorderThickness="1"
-        Background="{DynamicResource AppWindowBackgroundBrush}"
-        CornerRadius="4"
-        Padding="10"
-        Margin="0,0,0,16">
-            <StackPanel Orientation="Vertical">
-                <TextBlock Text="{Binding StatusText}"
-                   VerticalAlignment="Center"
-                   Foreground="{DynamicResource AppForegroundBrush}"/>
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding LeftLabel}"
+                                   Style="{StaticResource DialogSectionLabelStyle}"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,0,10,0"/>
 
-                <!--
-        Match keyboard-mapping behavior: warn before Save when this physical axis
-        is already assigned elsewhere. Save is still allowed and will replace
-        the previous assignment.
-        -->
-                <TextBlock Text="{Binding ConflictText}"
-                   Visibility="{Binding HasAxisConflict, Converter={StaticResource BooleanToVisibilityConverter}}"
-                   Foreground="Red"
-                   TextWrapping="Wrap"
-                   Margin="0,8,0,0"/>
+                        <!--
+                            MaxWidth stops the axis bar from taking too much space.
+                            It still stretches/shrinks naturally inside the available row.
+                        -->
+                        <views:AxisBar Grid.Column="1"
+                                       Height="18"
+                                       MaxWidth="320"
+                                       HorizontalAlignment="Stretch"
+                                       VerticalAlignment="Center"
+                                       Value="{Binding AxisBarValue, Mode=OneWay}"
+                                       IsActive="{Binding HasLiveAxis}"
+                                       ShowDetents="{Binding ShowThrottleDetents}"
+                                       IdleDetentFraction="{Binding IdleDetentFraction}"
+                                       AfterburnerDetentFraction="{Binding AfterburnerDetentFraction}"/>
+
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding RightLabel}"
+                                   Style="{StaticResource DialogSectionLabelStyle}"
+                                   HorizontalAlignment="Left"
+                                   Margin="10,0,0,0"/>
+                    </Grid>
+
+                    <!-- Current assignment / awaiting-input status. -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="Assigned axis:"
+                                   Style="{StaticResource DialogFieldLabelStyle}"/>
+
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding StatusText}"
+                                   Style="{StaticResource DialogAssignmentValueStyle}"/>
+                    </Grid>
+
+                    <!--
+                        Match keyboard-mapping behavior: warn before Save when this physical axis
+                        is already assigned elsewhere. Save is still allowed and will replace
+                        the previous assignment.
+                    -->
+                    <TextBlock Grid.Row="3"
+                               Text="{Binding ConflictText}"
+                               Visibility="{Binding HasAxisConflict, Converter={StaticResource BooleanToVisibilityConverter}}"
+                               Style="{StaticResource DialogWarningTextBlockStyle}"
+                               Margin="0,10,0,0"/>
+
+                    <Border Grid.Row="5"
+                            Height="1"
+                            Background="{DynamicResource AppBorderBrush}"/>
+
+                    <!--
+                        Invert remains separate because it reverses the entire axis.
+                        Deadzone, Saturation, and throttle points are tuning controls.
+                    -->
+                    <CheckBox Grid.Row="7"
+                              Content="Invert"
+                              IsChecked="{Binding Invert, Mode=TwoWay}"
+                              Visibility="{Binding InvertVisibility}"
+                              HorizontalAlignment="Left"
+                              Foreground="{DynamicResource AppForegroundBrush}"
+                              FontWeight="Bold"
+                              Margin="0"/>
+
+                    <!--
+                        WrapPanel lets the same row handle all three axis layouts:
+                        - Deadzone + Saturation
+                        - Saturation only
+                        - Saturation + Idle Cutoff + Afterburner Point
+
+                        Collapsed controls are removed from the flow, so Saturation
+                        moves left when Deadzone is not supported.
+                    -->
+                    <WrapPanel Grid.Row="9"
+                               Orientation="Horizontal">
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,24,0"
+                                    Visibility="{Binding DeadzoneVisibility}">
+                            <TextBlock Text="Deadzone"
+                                       Style="{StaticResource DialogOptionLabelStyle}"/>
+
+                            <ComboBox Width="150"
+                                      HorizontalAlignment="Left"
+                                      ItemsSource="{Binding AxisCurveOptions}"
+                                      SelectedItem="{Binding DeadzoneCurve, Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <StackPanel Width="150"
+                                    Margin="0,0,64,0"
+                                    Visibility="{Binding SaturationVisibility}">
+                            <TextBlock Text="Saturation"
+                                       Style="{StaticResource DialogOptionLabelStyle}"/>
+
+                            <ComboBox Width="150"
+                                      HorizontalAlignment="Left"
+                                      ItemsSource="{Binding AxisCurveOptions}"
+                                      SelectedItem="{Binding SaturationCurve, Mode=TwoWay}"/>
+                        </StackPanel>
+
+                        <StackPanel Width="300"
+            Visibility="{Binding ThrottleDetentVisibility}">
+                            <TextBlock Text="Throttle Detents"
+               Style="{StaticResource DialogOptionLabelStyle}"/>
+
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Set Idle Cutoff"
+                Width="138"
+                Margin="0,0,24,0"
+                Command="{Binding SetIdleDetentCommand}"/>
+
+                                <Button Content="Set Afterburner"
+                Width="138"
+                Command="{Binding SetAfterburnerDetentCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Row="2"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+                <Button Content="Clear"
+                        Width="96"
+                        Margin="0,0,8,0"
+                        Command="{Binding ClearCommand}"/>
+
+                <Button Content="Cancel"
+                        Width="96"
+                        Margin="0,0,8,0"
+                        IsCancel="True"
+                        Command="{Binding CancelCommand}"/>
+
+                <Button Content="Save"
+                        Width="96"
+                        IsDefault="True"
+                        Style="{StaticResource TertiaryButtonStyle}"
+                        Command="{Binding SaveCommand}"/>
             </StackPanel>
-        </Border>
-
-        <!--
-        Keep option controls in normal document flow.
-        Do not use absolute bottom alignment here; throttle rows need room for
-        Invert, Saturation, and detent buttons without overlapping Save/Cancel.
-        -->
-        <StackPanel Grid.Row="3"
-                    Orientation="Vertical">
-
-            <CheckBox Content="Invert"
-                      IsChecked="{Binding Invert, Mode=TwoWay}"
-                      Visibility="{Binding InvertVisibility}"
-                      Foreground="{DynamicResource AppForegroundBrush}"
-                      Margin="0,0,0,10"/>
-
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="18"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0"
-                            Orientation="Vertical"
-                            Visibility="{Binding DeadzoneVisibility}">
-                    <TextBlock Text="DeadZone"
-                               Foreground="{DynamicResource AppForegroundBrush}"
-                               Margin="0,0,0,4"/>
-                    <ComboBox Width="120"
-                              ItemsSource="{Binding AxisCurveOptions}"
-                              SelectedItem="{Binding DeadzoneCurve, Mode=TwoWay}"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2"
-                            Orientation="Vertical"
-                            Visibility="{Binding SaturationVisibility}">
-                    <TextBlock Text="Saturation"
-                               Foreground="{DynamicResource AppForegroundBrush}"
-                               Margin="0,0,0,4"/>
-                    <ComboBox Width="120"
-                              ItemsSource="{Binding AxisCurveOptions}"
-                              SelectedItem="{Binding SaturationCurve, Mode=TwoWay}"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="4"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Bottom"
-                            Visibility="{Binding ThrottleDetentVisibility}">
-                    <Button Content="Idle Detent"
-                            Width="100"
-                            Margin="0,0,10,0"
-                            Command="{Binding SetIdleDetentCommand}"/>
-                    <Button Content="AB Detent"
-                            Width="100"
-                            Command="{Binding SetAfterburnerDetentCommand}"/>
-                </StackPanel>
-            </Grid>
-        </StackPanel>
-
-        <StackPanel Grid.Row="5"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right">
-            <Button Content="Clear"
-                    Width="90"
-                    Margin="0,0,10,0"
-                    Command="{Binding ClearCommand}"/>
-            <Button Content="Cancel"
-                    Width="90"
-                    Margin="0,0,10,0"
-                    IsCancel="True"
-                    Command="{Binding CancelCommand}"/>
-            <Button Content="Save"
-                    Width="90"
-                    IsDefault="True"
-                    Style="{StaticResource TertiaryButtonStyle}" 
-                    Command="{Binding SaveCommand}"/>
-        </StackPanel>
+        </Grid>
     </Grid>
 </Window>
