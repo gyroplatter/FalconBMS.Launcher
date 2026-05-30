@@ -31,7 +31,7 @@ public sealed class JsonKeyboardBindingWriterService
             jsonDir,
             bindingModel,
             aircraftProfile: "F-16",
-            fileName: "KeyboardBindings.json",
+            fileName: "KeyboardBindings_F-16.json",
             actionId: actionId);
 
         WriteProfile(
@@ -40,6 +40,8 @@ public sealed class JsonKeyboardBindingWriterService
             aircraftProfile: "F-15ABCD",
             fileName: "KeyboardBindings_F-15ABCD.json",
             actionId: actionId);
+
+        DeleteLegacyF16KeyboardJson(jsonDir, actionId);
 
         DebugDiagnosticsService.Info($"Keyboard JSON write end. | ActionId={actionId}");
     }
@@ -82,6 +84,27 @@ public sealed class JsonKeyboardBindingWriterService
             "JsonKeyboardBindingWriterService.WriteProfile",
             aircraftProfile,
             actionId);
+    }
+
+    private static void DeleteLegacyF16KeyboardJson(string configDir, string actionId)
+    {
+        string legacyPath = Path.Combine(configDir, "KeyboardBindings.json");
+
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.SetAttributes(legacyPath, File.GetAttributes(legacyPath) & ~FileAttributes.ReadOnly);
+            File.Delete(legacyPath);
+
+            DebugDiagnosticsService.Info(
+                $"Legacy F-16 keyboard JSON removed after aircraft-specific keyboard JSON write | Json=\"KeyboardBindings.json\" | ActionId={actionId}");
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(ex, $"Legacy F-16 keyboard JSON delete failed: {legacyPath}");
+        }
     }
 
     private static string BuildProfileJson(BindingAircraftProfile profile)

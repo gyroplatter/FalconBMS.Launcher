@@ -28,8 +28,21 @@ public sealed class JsonKeyboardBindingReaderService
 
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
 
-        bool f16NeedsCatalogSync = ApplyProfile(jsonDir, bindingModel, "F-16", "KeyboardBindings.json", actionId);
-        bool f15NeedsCatalogSync = ApplyProfile(jsonDir, bindingModel, "F-15ABCD", "KeyboardBindings_F-15ABCD.json", actionId);
+        bool f16NeedsCatalogSync = ApplyProfile(
+            jsonDir,
+            bindingModel,
+            "F-16",
+            "KeyboardBindings_F-16.json",
+            fallbackFileName: "KeyboardBindings.json",
+            actionId);
+
+        bool f15NeedsCatalogSync = ApplyProfile(
+            jsonDir,
+            bindingModel,
+            "F-15ABCD",
+            "KeyboardBindings_F-15ABCD.json",
+            fallbackFileName: null,
+            actionId);
 
         bool needsCatalogSync = f16NeedsCatalogSync || f15NeedsCatalogSync;
 
@@ -44,6 +57,7 @@ public sealed class JsonKeyboardBindingReaderService
         BindingModel bindingModel,
         string aircraftProfile,
         string fileName,
+        string? fallbackFileName,
         string actionId)
     {
         var profile = bindingModel.AircraftProfiles.FirstOrDefault(
@@ -56,6 +70,21 @@ public sealed class JsonKeyboardBindingReaderService
         }
 
         string path = Path.Combine(configDir, fileName);
+
+        if (!File.Exists(path) && !string.IsNullOrWhiteSpace(fallbackFileName))
+        {
+            string fallbackPath = Path.Combine(configDir, fallbackFileName);
+
+            if (File.Exists(fallbackPath))
+            {
+                path = fallbackPath;
+
+                DebugDiagnosticsService.Info(
+                    $"Keyboard JSON read using fallback file. Aircraft={aircraftProfile} | " +
+                    $"Requested={Path.Combine(configDir, fileName)} | Fallback={fallbackPath} | ActionId={actionId}");
+            }
+        }
+
         if (!File.Exists(path))
         {
             bool missingJsonNeedsCatalogSync = profile.Rows.Count > 0;
