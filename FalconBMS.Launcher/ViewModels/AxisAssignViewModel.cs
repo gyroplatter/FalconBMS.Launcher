@@ -475,8 +475,14 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _captureStartedUtc = DateTime.UtcNow;
         _stableHitsByCandidate.Clear();
         _baselineByDeviceKey.Clear();
+
         HasLiveAxis = false;
         AxisBarValue = 0.5;
+
+        // Clearing the axis assignment also resets throttle detents
+        IdleDetent = DetentPosition.DefaultIdleDetent;
+        AfterburnerDetent = DetentPosition.DefaultAfterburnerDetent;
+
         ConflictText = "";
         HasAxisConflict = false;
         StatusText = "Cleared. Move the axis to assign, or Save to leave this unmapped.";

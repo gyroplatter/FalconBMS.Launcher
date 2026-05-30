@@ -93,16 +93,24 @@
                     <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="70*"/>
+                            <ColumnDefinition Width="117*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
                                    Text="Assigned axis:"
-                                   Style="{StaticResource DialogFieldLabelStyle}"/>
+                                   Style="{StaticResource DialogFieldLabelStyle}" Margin="0,0,14,0"/>
 
                         <TextBlock Grid.Column="1"
                                    Text="{Binding StatusText}"
-                                   Style="{StaticResource DialogAssignmentValueStyle}"/>
+                                   Style="{StaticResource DialogAssignmentValueStyle}"
+                                   Margin="0,0,16,0" Grid.ColumnSpan="2"/>
+
+                        <Button Grid.Column="3"
+                                Content="Clear"
+                                Width="96"
+                                Command="{Binding ClearCommand}"/>
                     </Grid>
 
                     <!--
@@ -193,11 +201,6 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,16,0,0">
-                <Button Content="Clear"
-                        Width="96"
-                        Margin="0,0,8,0"
-                        Command="{Binding ClearCommand}"/>
-
                 <Button Content="Cancel"
                         Width="96"
                         Margin="0,0,8,0"
