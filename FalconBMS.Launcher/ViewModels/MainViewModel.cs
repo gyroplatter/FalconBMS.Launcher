@@ -38,6 +38,14 @@ public sealed class MainViewModel : ViewModelBase
     // callbacks should sync JSON without being treated as a user binding edit.
     private bool _needsKeyboardJsonCatalogSync;
 
+    // Set when a keyboard/device JSON file failed to read during startup.
+    // When true, output writes are blocked so fallback/partial in-memory data
+    // cannot overwrite the user's broken JSON file or generated outputs.
+    private bool _jsonReadFailureBlocksOutputSave;
+
+    // Prevents the startup warning from being shown more than once for the same load.
+    private bool _hasShownJsonReadFailureStartupWarning;
+
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
     public ObservableCollection<string> Theaters { get; } = new();
@@ -70,7 +78,10 @@ public sealed class MainViewModel : ViewModelBase
 
                 OnPropertyChanged(nameof(CurrentBindingModel));
 
+                ShowJsonReadFailureStartupWarningIfNeeded();
+
                 LoadTheaterForSelectedInstall();
+
                 RefreshLauncherStrips();
             }
             else
@@ -82,6 +93,8 @@ public sealed class MainViewModel : ViewModelBase
 
                 KeyCatalogs = Array.Empty<KeyCatalog>();
                 CurrentBindingModel = new();
+                _jsonReadFailureBlocksOutputSave = false;
+                _hasShownJsonReadFailureStartupWarning = false;
                 OnPropertyChanged(nameof(KeyCatalogs));
                 OnPropertyChanged(nameof(CurrentBindingModel));
 
@@ -421,6 +434,9 @@ public sealed class MainViewModel : ViewModelBase
     /// </summary>
     private void LoadFullBindingModelForInstall(BmsInstall install)
     {
+        _jsonReadFailureBlocksOutputSave = false;
+        _hasShownJsonReadFailureStartupWarning = false;
+
         // Step 1+2: keyboard bindings
         KeyCatalogs = _keyCatalogService.LoadForInstall(install.BaseDir);
         CurrentBindingModel = _bindingModelBuilder.Build(KeyCatalogs);
@@ -445,6 +461,25 @@ public sealed class MainViewModel : ViewModelBase
 
         foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(install.BaseDir, stockDeviceMatches))
             CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
+
+        if (_deviceJsonReader.HasReadFailuresBlockingSave)
+        {
+            CurrentBindingModel.HasJsonReadFailureBlockingSave = true;
+
+            foreach (string message in _deviceJsonReader.ReadFailureMessages)
+                CurrentBindingModel.JsonReadFailureMessages.Add(message);
+        }
+
+        _jsonReadFailureBlocksOutputSave = CurrentBindingModel.HasJsonReadFailureBlockingSave;
+
+        if (_jsonReadFailureBlocksOutputSave)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Output saving disabled for this launcher run because one or more JSON files failed to read. Failures={CurrentBindingModel.JsonReadFailureMessages.Count}");
+
+            foreach (string message in CurrentBindingModel.JsonReadFailureMessages)
+                DebugDiagnosticsService.Warn($"JSON read failure blocking output save: {message}");
+        }
     }
 
     private void LoadTheaterForSelectedInstall()
@@ -505,6 +540,52 @@ public sealed class MainViewModel : ViewModelBase
     // can check IsDirty and skip the write pipeline when nothing has changed.
     public ViewModels.ControlsViewModel? ControlsViewModel { get; set; }
 
+    private bool IsOutputSaveBlockedByJsonReadFailure()
+    {
+        return _jsonReadFailureBlocksOutputSave ||
+               CurrentBindingModel.HasJsonReadFailureBlockingSave;
+    }
+
+    private string GetJsonReadFailureSummary()
+    {
+        if (CurrentBindingModel.JsonReadFailureMessages.Count == 0)
+            return "One or more JSON binding files failed to read.";
+
+        return string.Join("\n", CurrentBindingModel.JsonReadFailureMessages);
+    }
+
+    private void ShowJsonReadFailureStartupWarningIfNeeded()
+    {
+        if (!IsOutputSaveBlockedByJsonReadFailure())
+            return;
+
+        if (_hasShownJsonReadFailureStartupWarning)
+            return;
+
+        _hasShownJsonReadFailureStartupWarning = true;
+
+        string summary = GetJsonReadFailureSummary();
+
+        DebugDiagnosticsService.Warn(
+            $"Showing startup JSON binding file warning. {summary}");
+
+        // Use the dispatcher so the warning appears after the main binding model
+        // has finished loading and the selected install change has completed.
+        Application.Current.Dispatcher.BeginInvoke(new Action(() =>
+        {
+            MessageBox.Show(
+                "One or more Launcher JSON binding files could not be read.\n\n" +
+                "Saving and launching have been disabled for this session to avoid overwriting your bindings with incomplete fallback data.\n\n" +
+                "Fix or restore the broken JSON file, then reopen the Launcher.\n\n" +
+                summary,
+                "JSON Binding File Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            StatusText = "Fix the broken JSON binding file and reopen the Launcher.";
+        }));
+    }
+
     public void SaveOutputsForClose()
     {
         if (SelectedInstall is null)
@@ -512,6 +593,14 @@ public sealed class MainViewModel : ViewModelBase
 
         bool hasUserBindingChanges = ControlsViewModel?.IsDirty == true;
         bool needsKeyboardJsonCatalogSync = _needsKeyboardJsonCatalogSync;
+
+        if (IsOutputSaveBlockedByJsonReadFailure())
+        {
+            DebugDiagnosticsService.Warn(
+                $"SaveOutputsForClose skipped because JSON read failed earlier in this launcher run. {GetJsonReadFailureSummary()}");
+
+            return;
+        }
 
         // Skip the full write pipeline only when there are no user binding edits
         // and no startup-discovered FULL-key catalog differences that need to be synced to JSON.
@@ -575,6 +664,26 @@ public sealed class MainViewModel : ViewModelBase
                     DebugDiagnosticsService.Warn("Launch canceled because valid pilot identity is still not defined.");
                     return;
                 }
+            }
+
+            if (IsOutputSaveBlockedByJsonReadFailure())
+            {
+                string summary = GetJsonReadFailureSummary();
+
+                DebugDiagnosticsService.Warn(
+                    $"Launch canceled because JSON read failed earlier in this launcher run. {summary}");
+
+                MessageBox.Show(
+                    "One or more Launcher JSON binding files failed to read.\n\n" +
+                    "The Launcher will not write JSON or generated BMS output files because that could overwrite valid bindings with partial fallback data.\n\n" +
+                    "Fix or restore the broken JSON file, then reopen the Launcher.\n\n" +
+                    summary,
+                    "JSON Binding File Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                StatusText = "Launch canceled. Fix the broken JSON binding file and reopen the Launcher.";
+                return;
             }
 
             StatusText = "Launching…";

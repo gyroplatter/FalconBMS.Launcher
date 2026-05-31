@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -16,10 +15,24 @@ public sealed class DeviceJsonReaderService
 
     private readonly DeviceBindingProfileBuilderService _fallbackBuilder = new();
 
+    /// <summary>
+    /// True when one or more device JSON files failed to read during the most
+    /// recent LoadOrBuild pass.
+    /// 
+    /// MainViewModel copies this into BindingModel so output writing can be
+    /// blocked for the rest of the launcher run.
+    /// </summary>
+    public bool HasReadFailuresBlockingSave { get; private set; }
+
+    public List<string> ReadFailureMessages { get; } = new();
+
     public IReadOnlyList<DeviceBindingProfile> LoadOrBuild(
         string baseDir,
         IReadOnlyList<StockDeviceSetupMatch> matches)
     {
+        HasReadFailuresBlockingSave = false;
+        ReadFailureMessages.Clear();
+
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTASREAD");
         DebugDiagnosticsService.Info($"Device JSON read begin. DetectedDeviceCount={matches.Count} | ActionId={actionId}");
 
@@ -49,6 +62,11 @@ public sealed class DeviceJsonReaderService
             catch (Exception ex)
             {
                 DebugDiagnosticsService.Exception(ex, $"Device JSON read failed: {savedProfileGroup.DisplayPath}");
+
+                // Show the actual JSON parser message to the user so they can see
+                // the bad file and the line/position reported by System.Text.Json.
+                MarkReadFailureBlockingSave($"Device JSON read failed:\n{ex.Message}");
+
                 profiles.Add(BuildFallbackProfile(match, actionId));
                 matchedSavedKeys.Add(durableDeviceKey);
             }
@@ -72,6 +90,10 @@ public sealed class DeviceJsonReaderService
             catch (Exception ex)
             {
                 DebugDiagnosticsService.Exception(ex, $"Offline device JSON read failed: {savedProfileGroup.DisplayPath}");
+
+                // Show the actual JSON parser message to the user so they can see
+                // the bad file and the line/position reported by System.Text.Json.
+                MarkReadFailureBlockingSave($"Offline device JSON read failed:\n{ex.Message}");
             }
         }
 
@@ -119,6 +141,10 @@ public sealed class DeviceJsonReaderService
             catch (Exception ex)
             {
                 DebugDiagnosticsService.Exception(ex, $"Device JSON read failed: {path}");
+
+                // Show the actual JSON parser message to the user so they can see
+                // the bad file and the line/position reported by System.Text.Json.
+                MarkReadFailureBlockingSave($"Device JSON read failed:\n{ex.Message}");
             }
         }
 
@@ -143,12 +169,16 @@ public sealed class DeviceJsonReaderService
 
     private static JsonDeviceBindingDocument? ReadDocument(string path)
     {
-        byte[] bytes = File.ReadAllBytes(path);
+        return JsonFileHelper.FromJsonFile<JsonDeviceBindingDocument>(path);
+    }
 
-        using var stream = new MemoryStream(bytes);
+    private void MarkReadFailureBlockingSave(string message)
+    {
+        HasReadFailuresBlockingSave = true;
+        ReadFailureMessages.Add(message);
 
-        var serializer = new DataContractJsonSerializer(typeof(JsonDeviceBindingDocument));
-        return serializer.ReadObject(stream) as JsonDeviceBindingDocument;
+        DebugDiagnosticsService.Warn(
+            $"Device JSON read failure marked output saving unsafe for this launcher run. {message}");
     }
 
     private DeviceBindingProfile CreateConnectedProfileFromJson(

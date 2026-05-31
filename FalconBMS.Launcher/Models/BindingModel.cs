@@ -18,6 +18,21 @@ public sealed class BindingModel
 
     public List<DeviceBindingProfile> DeviceProfiles { get; } = new();
 
+    /// <summary>
+    /// True when one or more JSON binding files failed to load during startup.
+    /// 
+    /// When this is true, the Launcher must not write JSON or generated legacy
+    /// outputs during the same run. Otherwise a broken or partially unreadable
+    /// JSON file could be replaced with fallback or incomplete in-memory data.
+    /// </summary>
+    public bool HasJsonReadFailureBlockingSave { get; set; }
+
+    /// <summary>
+    /// Human-readable list of JSON files/errors that made saving unsafe.
+    /// These are shown to the user and logged before save/launch is blocked.
+    /// </summary>
+    public List<string> JsonReadFailureMessages { get; } = new();
+
     public int ProfileCount => AircraftProfiles.Count;
     public int TotalRows => AircraftProfiles.Sum(x => x.TotalRows);
     public int VisibleRows => AircraftProfiles.Sum(x => x.VisibleRows);

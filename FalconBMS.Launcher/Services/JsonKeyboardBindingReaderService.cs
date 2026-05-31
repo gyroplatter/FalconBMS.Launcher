@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -106,7 +105,15 @@ public sealed class JsonKeyboardBindingReaderService
         {
             DebugDiagnosticsService.Exception(ex, $"Keyboard JSON read failed: {path}");
 
-            // Do not auto-overwrite unreadable JSON. Leave the file for manual inspection.
+            // Do not overwrite unreadable JSON. Leave the file for manual inspection.
+            // Mark the full binding model as unsafe so close/launch cannot regenerate
+            // outputs from partial fallback data during this run.
+            //
+            // Show the actual JSON parser message to the user so they can see
+            // the bad file and the line/position reported by System.Text.Json.
+            bindingModel.HasJsonReadFailureBlockingSave = true;
+            bindingModel.JsonReadFailureMessages.Add($"Keyboard JSON read failed:\n{ex.Message}");
+
             return false;
         }
 
@@ -230,12 +237,7 @@ public sealed class JsonKeyboardBindingReaderService
 
     private static JsonKeyboardBindingDocument? ReadDocument(string path)
     {
-        byte[] bytes = File.ReadAllBytes(path);
-
-        using var stream = new MemoryStream(bytes);
-
-        var serializer = new DataContractJsonSerializer(typeof(JsonKeyboardBindingDocument));
-        return serializer.ReadObject(stream) as JsonKeyboardBindingDocument;
+        return JsonFileHelper.FromJsonFile<JsonKeyboardBindingDocument>(path);
     }
 
     private static bool IsJsonRowUserModified(JsonKeyboardBindingRow jsonRow, BindingRow fullRow)
