@@ -1,6 +1,9 @@
 ﻿using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -9,18 +12,25 @@ namespace FalconBMS.Launcher.ViewModels;
 
 /// <summary>
 /// View model for the visual Devices tab.
-///
-/// The device list is loaded from the real in-memory BindingModel.DeviceProfiles.
-/// Do not hard-code connected devices here. The only prototype-specific logic is
-/// the temporary visual template matcher and DX2 callout for the Warthog/Viper image.
+/// The Devices tab consumes the already-loaded in-memory binding model.
+/// Visual maps only provide image coordinates for known device inputs.
 /// </summary>
 public sealed class DevicesViewModel : ViewModelBase
 {
+    private const string DefaultAircraftProfile = "F-16";
+
+    private readonly DeviceVisualMapService _visualMapService = new();
+    private readonly IReadOnlyList<DeviceVisualMap> _visualMaps;
+
     public ObservableCollection<DeviceVisualListItemViewModel> Devices { get; } = new();
 
     private DeviceVisualListItemViewModel? _selectedDevice;
-
     private DeviceVisualCalloutViewModel? _activeCallout;
+
+    public DevicesViewModel()
+    {
+        _visualMaps = _visualMapService.LoadMaps();
+    }
 
     public DeviceVisualListItemViewModel? SelectedDevice
     {
@@ -29,15 +39,15 @@ public sealed class DevicesViewModel : ViewModelBase
         {
             if (!Set(ref _selectedDevice, value)) return;
 
-            // Option B behavior: the active callout represents the most recently
-            // pressed control for the currently selected visual device. When the
-            // user selects another device, clear the stale callout.
             ActiveCallout = null;
 
             OnPropertyChanged(nameof(SelectedDeviceName));
             OnPropertyChanged(nameof(SelectedDeviceSummary));
             OnPropertyChanged(nameof(VisualTemplateVisibility));
             OnPropertyChanged(nameof(GenericFallbackVisibility));
+            OnPropertyChanged(nameof(VisualCanvasWidth));
+            OnPropertyChanged(nameof(VisualCanvasHeight));
+            OnPropertyChanged(nameof(VisualImageSource));
             OnPropertyChanged(nameof(HighlightedControl));
             OnPropertyChanged(nameof(HighlightedControlDescription));
             OnPropertyChanged(nameof(DeviceCapabilitiesText));
@@ -55,17 +65,12 @@ public sealed class DevicesViewModel : ViewModelBase
             OnPropertyChanged(nameof(ActiveCalloutInputId));
             OnPropertyChanged(nameof(ActiveCalloutPhysicalName));
             OnPropertyChanged(nameof(ActiveCalloutMappingName));
-            OnPropertyChanged(nameof(ActiveHighlightX));
-            OnPropertyChanged(nameof(ActiveHighlightY));
-            OnPropertyChanged(nameof(ActiveHighlightWidth));
-            OnPropertyChanged(nameof(ActiveHighlightHeight));
+            OnPropertyChanged(nameof(ActiveHotspots));
             OnPropertyChanged(nameof(ActiveCalloutX));
             OnPropertyChanged(nameof(ActiveCalloutY));
             OnPropertyChanged(nameof(ActiveCalloutWidth));
-            OnPropertyChanged(nameof(ActiveConnectorGeometry));
-
-            // These right-panel values are computed from ActiveCallout, so they
-            // also need to refresh when the most recent live input changes.
+            OnPropertyChanged(nameof(ActiveCalloutScale));
+            OnPropertyChanged(nameof(ActiveConnectors));
             OnPropertyChanged(nameof(HighlightedControl));
             OnPropertyChanged(nameof(HighlightedControlDescription));
         }
@@ -81,9 +86,9 @@ public sealed class DevicesViewModel : ViewModelBase
                 return "No device selected.";
 
             if (SelectedDevice.HasVisualTemplate)
-                return "Prototype visual layout. Press a mapped control on the selected device to show the most recent control callout.";
+                return "Press a button on your device to show it's current mapped control.";
 
-            return "No visual template has been added for this detected device yet.";
+            return "No visual layout has been added for this device yet.";
         }
     }
 
@@ -102,14 +107,22 @@ public sealed class DevicesViewModel : ViewModelBase
             ? Visibility.Visible
             : Visibility.Collapsed;
 
+    public double VisualCanvasWidth => SelectedDevice?.VisualMap?.CanvasWidth ?? 1000;
+    public double VisualCanvasHeight => SelectedDevice?.VisualMap?.CanvasHeight ?? 1000;
+
+    public string VisualImageSource =>
+        SelectedDevice?.VisualMap is null
+            ? ""
+            : BuildPackUri(SelectedDevice.VisualMap.ImagePath);
+
     public string HighlightedControl =>
         ActiveCallout?.InputId
         ?? (SelectedDevice?.HasVisualTemplate == true ? "Waiting for input" : "None");
 
     public string HighlightedControlDescription =>
         ActiveCallout is not null
-            ? $"{ActiveCallout.PhysicalName} / {ActiveCallout.MappingName}"
-            : "Press a mapped control on the selected device to keep its callout visible.";
+            ? $"{ActiveCallout.PhysicalName}\n{ActiveCallout.MappingName}"
+            : "Press a button on this device.";
 
     public string DeviceCapabilitiesText
     {
@@ -136,29 +149,19 @@ public sealed class DevicesViewModel : ViewModelBase
     public string ActiveCalloutPhysicalName => ActiveCallout?.PhysicalName ?? "";
     public string ActiveCalloutMappingName => ActiveCallout?.MappingName ?? "";
 
-    public double ActiveHighlightX => ActiveCallout?.HighlightX ?? 0;
-    public double ActiveHighlightY => ActiveCallout?.HighlightY ?? 0;
-    public double ActiveHighlightWidth => ActiveCallout?.HighlightWidth ?? 0;
-    public double ActiveHighlightHeight => ActiveCallout?.HighlightHeight ?? 0;
+    public IReadOnlyList<DeviceVisualHotspotViewModel> ActiveHotspots =>
+        ActiveCallout?.Hotspots ?? Array.Empty<DeviceVisualHotspotViewModel>();
 
     public double ActiveCalloutX => ActiveCallout?.CalloutX ?? 0;
     public double ActiveCalloutY => ActiveCallout?.CalloutY ?? 0;
     public double ActiveCalloutWidth => ActiveCallout?.CalloutWidth ?? 0;
 
-    public Geometry ActiveConnectorGeometry
-    {
-        get
-        {
-            if (ActiveCallout is null)
-                return Geometry.Empty;
+    // The callout lives inside the image Canvas so connector lines stay aligned,
+    // but it is visually scaled up so the shared theme text styles remain readable.
+    public double ActiveCalloutScale => ActiveCallout?.CalloutScale ?? 1.0;
 
-            return Geometry.Parse(
-                $"M {ActiveCallout.AnchorX},{ActiveCallout.AnchorY} " +
-                $"C {ActiveCallout.AnchorX - 90},{ActiveCallout.AnchorY + 20} " +
-                $"{ActiveCallout.CalloutX + ActiveCallout.CalloutWidth},{ActiveCallout.CalloutY + 48} " +
-                $"{ActiveCallout.CalloutX + ActiveCallout.CalloutWidth},{ActiveCallout.CalloutY + 48}");
-        }
-    }
+    public IReadOnlyList<DeviceVisualConnectorViewModel> ActiveConnectors =>
+        ActiveCallout?.Connectors ?? Array.Empty<DeviceVisualConnectorViewModel>();
 
     public void LoadBindingModel(BindingModel bindingModel)
     {
@@ -166,11 +169,13 @@ public sealed class DevicesViewModel : ViewModelBase
 
         Devices.Clear();
 
-        foreach (DeviceBindingProfile deviceProfile in bindingModel.DeviceProfiles.OrderBy(device => device.DiscoveryIndex))
+        foreach (DeviceBindingProfile deviceProfile in GetDeviceProfilesInControlsColumnOrder(bindingModel))
         {
+            DeviceVisualMap? visualMap = _visualMapService.FindMapForDevice(deviceProfile, _visualMaps);
+
             Devices.Add(new DeviceVisualListItemViewModel(
                 deviceProfile,
-                HasPrototypeVisualTemplate(deviceProfile)));
+                visualMap));
         }
 
         SelectedDevice =
@@ -180,76 +185,132 @@ public sealed class DevicesViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Shows the visual callout for a live physical button press.
-    ///
-    /// This is intentionally small for the first live prototype: only the Warthog
-    /// visual template's DX2 red pickle button has coordinates. Later this should
-    /// look up the pressed input in a data-driven visual template.
+    /// Uses the same saved device order as the Controls table columns.
+    /// Devices that are not found in the saved column order fall back to discovery order.
     /// </summary>
+    private static IEnumerable<DeviceBindingProfile> GetDeviceProfilesInControlsColumnOrder(BindingModel bindingModel)
+    {
+        Dictionary<string, int> savedOrderByDurableKey = ParseSavedControlsDeviceColumnOrder();
+
+        return bindingModel.DeviceProfiles
+            .OrderBy(device =>
+                savedOrderByDurableKey.TryGetValue(device.DurableDeviceKey, out int savedOrder)
+                    ? savedOrder
+                    : int.MaxValue)
+            .ThenBy(device => device.DiscoveryIndex);
+    }
+
+    private static Dictionary<string, int> ParseSavedControlsDeviceColumnOrder()
+    {
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        string savedOrder = Properties.Settings.Default.ControlsDeviceColumnOrder ?? "";
+
+        string[] durableKeys = savedOrder
+            // ControlsView device column separators
+            .Split(new[] { '|', ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(key => key.Trim())
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .ToArray();
+
+        for (int index = 0; index < durableKeys.Length; index++)
+        {
+            if (!result.ContainsKey(durableKeys[index]))
+                result.Add(durableKeys[index], index);
+        }
+
+        return result;
+    }
+
     public bool TryShowVisualCalloutForButton(string durableDeviceKey, int buttonIndex)
     {
-        if (SelectedDevice?.HasVisualTemplate != true)
+        if (SelectedDevice?.DeviceProfile is null || SelectedDevice.VisualMap is null)
             return false;
 
-        if (SelectedDevice.DeviceProfile is null)
+        DeviceBindingProfile deviceProfile = SelectedDevice.DeviceProfile;
+        DeviceVisualMap visualMap = SelectedDevice.VisualMap;
+
+        if (!string.Equals(deviceProfile.DurableDeviceKey, durableDeviceKey, StringComparison.OrdinalIgnoreCase))
             return false;
 
-        if (!string.Equals(
-                SelectedDevice.DeviceProfile.DurableDeviceKey,
-                durableDeviceKey,
-                StringComparison.OrdinalIgnoreCase))
+        // Available DX buttons come from the current in-memory device profile.
+        // The visual map only says where supported inputs are drawn on the image.
+        if (buttonIndex < 0 || buttonIndex >= deviceProfile.ButtonCount)
             return false;
 
-        // DirectInput button indexes are zero-based.
-        // DX2 is button index 1.
-        if (buttonIndex != 1)
+        DeviceVisualControlMap? control = visualMap.Controls.FirstOrDefault(item =>
+            string.Equals(item.Kind, "button", StringComparison.OrdinalIgnoreCase) &&
+            item.ButtonIndex == buttonIndex);
+
+        if (control is null)
             return false;
 
-        ActiveCallout = new DeviceVisualCalloutViewModel(
-            inputId: "DX2",
-            physicalName: "Red pickle button",
-            mappingName: "SimPickle",
-            highlightX: 386,
-            highlightY: 86,
-            highlightWidth: 95,
-            highlightHeight: 82,
-            anchorX: 430,
-            anchorY: 128,
-            calloutX: 96,
-            calloutY: 200,
-            calloutWidth: 210);
+        ActiveCallout = DeviceVisualCalloutViewModel.FromMap(
+            control,
+            visualMap.CalloutBox,
+            GetButtonMappingDisplay(deviceProfile, buttonIndex));
 
         return true;
     }
 
-    /// <summary>
-    /// Temporary proof-of-concept template matcher.
-    ///
-    /// The device list itself is not hard-coded. This only decides whether a real
-    /// detected/saved device should use the one prototype image currently available.
-    /// Later this should become a data-driven DeviceVisualTemplate service.
-    /// </summary>
-    private static bool HasPrototypeVisualTemplate(DeviceBindingProfile deviceProfile)
+    private static string GetButtonMappingDisplay(DeviceBindingProfile deviceProfile, int buttonIndex)
     {
-        return Contains(deviceProfile.ProductName, "HOTAS Warthog") ||
-               Contains(deviceProfile.InstanceName, "HOTAS Warthog");
+        DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, DefaultAircraftProfile, StringComparison.OrdinalIgnoreCase));
+
+        if (aircraftProfile is null)
+            return "Mapped to: Unmapped";
+
+        List<DeviceButtonBinding> bindings = aircraftProfile.ButtonBindings
+            .Where(binding =>
+                binding.ButtonIndex == buttonIndex &&
+                !string.IsNullOrWhiteSpace(binding.CallbackName))
+            .OrderBy(binding => binding.AssignmentIndex)
+            .ToList();
+
+        if (bindings.Count == 0)
+            return "Mapped to: Unmapped";
+
+        if (bindings.Count == 1 && bindings[0].AssignmentIndex == 0)
+            return bindings[0].CallbackName;
+
+        return string.Join(", ", bindings.Select(FormatButtonBinding));
     }
 
-    private static bool Contains(string value, string text)
+    private static string FormatButtonBinding(DeviceButtonBinding binding)
     {
-        return value?.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0;
+        return $"{DeviceButtonBinding.BuildDisplayText(binding.ButtonIndex, binding.AssignmentIndex)}: {binding.CallbackName}";
+    }
+
+    private static string BuildPackUri(string resourcePath)
+    {
+        string normalizedPath = resourcePath.Replace('\\', '/');
+
+        string escapedPath = string.Join(
+            "/",
+            normalizedPath
+                .Split('/')
+                .Select(Uri.EscapeDataString));
+
+        return $"pack://application:,,,/{escapedPath}";
+    }
+
+    private static string Format(double value)
+    {
+        return value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 }
 
 /// <summary>
-/// Lightweight list item used by the Devices tab left pane.
-/// Wraps a real DeviceBindingProfile from the in-memory binding model.
+/// Left-pane item for a detected or saved device profile.
+/// The profile comes from the in-memory BindingModel.
 /// </summary>
 public sealed class DeviceVisualListItemViewModel
 {
     public DeviceBindingProfile DeviceProfile { get; }
+    public DeviceVisualMap? VisualMap { get; }
 
-    public bool HasVisualTemplate { get; }
+    public bool HasVisualTemplate => VisualMap is not null;
 
     public string DisplayName
     {
@@ -266,67 +327,171 @@ public sealed class DeviceVisualListItemViewModel
     }
 
     public string TemplateStatus => HasVisualTemplate
-        ? "Visual template available"
+        ? "Visual layout available"
         : "Generic fallback";
 
-    public DeviceVisualListItemViewModel(DeviceBindingProfile deviceProfile, bool hasVisualTemplate)
+    public DeviceVisualListItemViewModel(DeviceBindingProfile deviceProfile, DeviceVisualMap? visualMap)
     {
         DeviceProfile = deviceProfile;
-        HasVisualTemplate = hasVisualTemplate;
+        VisualMap = visualMap;
     }
 
     public override string ToString() => DisplayName;
 }
 
 /// <summary>
-/// Represents the one active callout currently shown on the device image.
-///
-/// Only one of these should be active at a time. That keeps the visual map readable
-/// even when every button on a HOTAS is mapped.
+/// Represents the one active callout currently shown on the device image
 /// </summary>
 public sealed class DeviceVisualCalloutViewModel
 {
+    private const double DefaultCalloutScale = 1.7;
+
     public string InputId { get; }
     public string PhysicalName { get; }
     public string MappingName { get; }
 
-    public double HighlightX { get; }
-    public double HighlightY { get; }
-    public double HighlightWidth { get; }
-    public double HighlightHeight { get; }
-
-    public double AnchorX { get; }
-    public double AnchorY { get; }
+    public IReadOnlyList<DeviceVisualHotspotViewModel> Hotspots { get; }
+    public IReadOnlyList<DeviceVisualConnectorViewModel> Connectors { get; }
 
     public double CalloutX { get; }
     public double CalloutY { get; }
     public double CalloutWidth { get; }
+    public double CalloutScale { get; }
 
-    public DeviceVisualCalloutViewModel(
+    private DeviceVisualCalloutViewModel(
         string inputId,
         string physicalName,
         string mappingName,
-        double highlightX,
-        double highlightY,
-        double highlightWidth,
-        double highlightHeight,
-        double anchorX,
-        double anchorY,
+        IReadOnlyList<DeviceVisualHotspotViewModel> hotspots,
+        IReadOnlyList<DeviceVisualConnectorViewModel> connectors,
         double calloutX,
         double calloutY,
-        double calloutWidth)
+        double calloutWidth,
+        double calloutScale)
     {
         InputId = inputId;
         PhysicalName = physicalName;
         MappingName = mappingName;
-        HighlightX = highlightX;
-        HighlightY = highlightY;
-        HighlightWidth = highlightWidth;
-        HighlightHeight = highlightHeight;
-        AnchorX = anchorX;
-        AnchorY = anchorY;
+        Hotspots = hotspots;
+        Connectors = connectors;
         CalloutX = calloutX;
         CalloutY = calloutY;
         CalloutWidth = calloutWidth;
+        CalloutScale = calloutScale;
+    }
+
+    public static DeviceVisualCalloutViewModel FromMap(
+        DeviceVisualControlMap control,
+        DeviceVisualCalloutBoxMap calloutBox,
+        string mappingName)
+    {
+        List<DeviceVisualHotspotViewModel> hotspots = control.Hotspots
+            .Select(DeviceVisualHotspotViewModel.FromMap)
+            .ToList();
+
+        // The visible callout is scaled inside the Canvas. Use the scaled visual
+        // width for connector endpoints so lines meet the actual visible box.
+        double visualCalloutWidth = calloutBox.Width * DefaultCalloutScale;
+
+        List<DeviceVisualConnectorViewModel> connectors = hotspots
+            .Select(hotspot => DeviceVisualConnectorViewModel.FromHotspot(
+                hotspot,
+                calloutBox.X,
+                calloutBox.Y,
+                visualCalloutWidth))
+            .ToList();
+
+        return new DeviceVisualCalloutViewModel(
+            control.InputId,
+            control.PhysicalName,
+            mappingName,
+            hotspots,
+            connectors,
+            calloutBox.X,
+            calloutBox.Y,
+            calloutBox.Width,
+            DefaultCalloutScale);
+    }
+}
+
+public sealed class DeviceVisualHotspotViewModel
+{
+    public double X { get; }
+    public double Y { get; }
+    public double Width { get; }
+    public double Height { get; }
+    public double AnchorX { get; }
+    public double AnchorY { get; }
+
+    private DeviceVisualHotspotViewModel(
+        double x,
+        double y,
+        double width,
+        double height,
+        double anchorX,
+        double anchorY)
+    {
+        X = x;
+        Y = y;
+        Width = width;
+        Height = height;
+        AnchorX = anchorX;
+        AnchorY = anchorY;
+    }
+
+    public static DeviceVisualHotspotViewModel FromMap(DeviceVisualHotspotMap hotspot)
+    {
+        return new DeviceVisualHotspotViewModel(
+            hotspot.X,
+            hotspot.Y,
+            hotspot.Width,
+            hotspot.Height,
+            hotspot.AnchorX,
+            hotspot.AnchorY);
+    }
+}
+
+public sealed class DeviceVisualConnectorViewModel
+{
+    public Geometry Geometry { get; }
+
+    private DeviceVisualConnectorViewModel(Geometry geometry)
+    {
+        Geometry = geometry;
+    }
+
+    public static DeviceVisualConnectorViewModel FromHotspot(
+        DeviceVisualHotspotViewModel hotspot,
+        double calloutX,
+        double calloutY,
+        double calloutWidth)
+    {
+        double calloutLeft = calloutX;
+        double calloutRight = calloutX + calloutWidth;
+        double targetX;
+
+        if (hotspot.AnchorX < calloutLeft)
+            targetX = calloutLeft;
+        else if (hotspot.AnchorX > calloutRight)
+            targetX = calloutRight;
+        else
+            targetX = calloutX + (calloutWidth / 2);
+
+        double targetY = calloutY + 48;
+        double control1X = hotspot.AnchorX + ((targetX - hotspot.AnchorX) * 0.45);
+        double control2X = hotspot.AnchorX + ((targetX - hotspot.AnchorX) * 0.65);
+
+        Geometry geometry = Geometry.Parse(
+            $"M {Format(hotspot.AnchorX)},{Format(hotspot.AnchorY)} " +
+            $"C {Format(control1X)},{Format(hotspot.AnchorY)} " +
+            $"{Format(control2X)},{Format(targetY)} " +
+            $"{Format(targetX)},{Format(targetY)}");
+
+        return new DeviceVisualConnectorViewModel(geometry);
+    }
+
+    private static string Format(double value)
+    {
+        return value.ToString("0.###", CultureInfo.InvariantCulture);
     }
 }

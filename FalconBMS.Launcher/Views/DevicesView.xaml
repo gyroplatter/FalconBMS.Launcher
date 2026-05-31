@@ -142,68 +142,113 @@
 
                     <Grid Grid.Column="0">
                         <!--
-                            Supported visual template.
-                            The image, highlight, connector, and callout all live in the same
-                            1000x1000 Canvas so the Viewbox scales them together.
+                            The image and all visual overlays share the map's canvas size.
+                            The Viewbox scales the whole visual together, so map coordinates
+                            stay based on the full-sized image, not the on-screen container.
                         -->
                         <Viewbox Stretch="Uniform"
                                  Visibility="{Binding VisualTemplateVisibility}">
-                            <Canvas Width="1000"
-        Height="1000">
-                                <Image Source="pack://application:,,,/Assets/Devices/Thrustmaster-Viper.png"
-           Width="1000"
-           Height="1000"
-           Stretch="Uniform"/>
+                            <Canvas Width="{Binding VisualCanvasWidth}"
+                                    Height="{Binding VisualCanvasHeight}">
+                                <Image Source="{Binding VisualImageSource}"
+                                       Width="{Binding VisualCanvasWidth}"
+                                       Height="{Binding VisualCanvasHeight}"
+                                       Stretch="Uniform"/>
 
-                                <!-- Active transparent shape for the most recently pressed control. -->
-                                <Ellipse Canvas.Left="{Binding ActiveHighlightX}"
-             Canvas.Top="{Binding ActiveHighlightY}"
-             Width="{Binding ActiveHighlightWidth}"
-             Height="{Binding ActiveHighlightHeight}"
-             Visibility="{Binding ActiveCalloutVisibility}"
-             Fill="{DynamicResource AppAccentBrush}"
-             Opacity="0.32"
-             Stroke="{DynamicResource AppAccentBrush}"
-             StrokeThickness="8"/>
+                                <!-- Active hotspots for the most recently pressed visual control. -->
+                                <ItemsControl ItemsSource="{Binding ActiveHotspots}"
+                                              Visibility="{Binding ActiveCalloutVisibility}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
 
-                                <!-- Active connector line for the most recently pressed control. -->
-                                <Path Data="{Binding ActiveConnectorGeometry}"
-          Visibility="{Binding ActiveCalloutVisibility}"
-          Stroke="{DynamicResource AppAccentBrush}"
-          StrokeThickness="3"
-          StrokeStartLineCap="Round"
-          StrokeEndLineCap="Round"
-          Opacity="0.9"/>
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                            <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                            <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
 
-                                <!-- Active single callout box. -->
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Ellipse Width="{Binding Width}"
+                                                     Height="{Binding Height}"
+                                                     Fill="{DynamicResource AppAccentBrush}"
+                                                     Opacity="0.32"
+                                                     Stroke="{DynamicResource AppAccentBrush}"
+                                                     StrokeThickness="8"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Active connector lines for the most recently pressed control.
+                                     If a control has multiple hotspots, each hotspot gets its own
+                                     line to the single center callout box. -->
+                                <ItemsControl ItemsSource="{Binding ActiveConnectors}"
+                                              Visibility="{Binding ActiveCalloutVisibility}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <Canvas/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Path Data="{Binding Geometry}"
+                                                  Stroke="{DynamicResource AppAccentBrush}"
+                                                  StrokeThickness="3"
+                                                  StrokeStartLineCap="Round"
+                                                  StrokeEndLineCap="Round"
+                                                  Opacity="0.9"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!--
+                                    Active single callout box.
+
+                                    This stays inside the same map Canvas as the hotspots and
+                                    connector lines, so all positions line up. Only this box is
+                                    scaled up so the shared theme text styles remain readable.
+                                -->
                                 <Border Canvas.Left="{Binding ActiveCalloutX}"
-            Canvas.Top="{Binding ActiveCalloutY}"
-            Width="{Binding ActiveCalloutWidth}"
-            Visibility="{Binding ActiveCalloutVisibility}"
-            Padding="12"
-            BorderThickness="1"
-            BorderBrush="{DynamicResource AppAccentBrush}"
-            Background="{DynamicResource AppWindowBackgroundBrush}">
+                                        Canvas.Top="{Binding ActiveCalloutY}"
+                                        Width="{Binding ActiveCalloutWidth}"
+                                        Visibility="{Binding ActiveCalloutVisibility}"
+                                        Padding="12"
+                                        BorderThickness="1"
+                                        BorderBrush="{DynamicResource AppAccentBrush}"
+                                        Background="{DynamicResource AppWindowBackgroundBrush}"
+                                        RenderTransformOrigin="0,0">
+                                    <Border.RenderTransform>
+                                        <ScaleTransform ScaleX="{Binding ActiveCalloutScale}"
+                                                        ScaleY="{Binding ActiveCalloutScale}"/>
+                                    </Border.RenderTransform>
+
                                     <StackPanel>
                                         <TextBlock Text="{Binding ActiveCalloutInputId}"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource AppAccentBrush}"/>
+                                                   Style="{StaticResource DialogAssignmentValueStyle}"
+                                                   Foreground="{DynamicResource AppAccentBrush}"
+                                                   TextWrapping="Wrap"/>
 
                                         <TextBlock Text="{Binding ActiveCalloutPhysicalName}"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       FontWeight="SemiBold"
-                       Margin="0,4,0,8"
-                       TextWrapping="Wrap"/>
+                                                   Style="{StaticResource DialogOptionLabelStyle}"
+                                                   Margin="0,4,0,2"
+                                                   TextWrapping="Wrap"/>
 
                                         <TextBlock Text="{Binding ActiveCalloutMappingName}"
-                       Style="{StaticResource MutedTextBlockStyle}"
-                       TextWrapping="Wrap"/>
+                                                   Style="{StaticResource BodyTextBlockStyle}"
+                                                   TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
+
                             </Canvas>
+                            
                         </Viewbox>
 
-                        <!-- Generic placeholder shown for detected devices without a visual template yet. -->
+                        <!-- Generic placeholder shown for detected devices without a visual layout yet. -->
                         <Border Visibility="{Binding GenericFallbackVisibility}"
                                 BorderThickness="1"
                                 BorderBrush="{DynamicResource AppBorderBrush}"
@@ -212,11 +257,11 @@
                             <StackPanel HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
                                         Width="460">
-                                <TextBlock Text="No Visual Template Yet"
+                                <TextBlock Text="No Visual Layout Yet"
                                            Style="{StaticResource SubheadingTextBlockStyle}"
                                            HorizontalAlignment="Center"/>
 
-                                <TextBlock Text="This detected device does not have an image/button overlay template yet. The device still comes from the real binding model; only the visual layout is missing."
+                                <TextBlock Text="This detected device does not have an image/control layout map yet. The device still comes from the real binding model; only the visual layout is missing."
                                            Style="{StaticResource MutedTextBlockStyle}"
                                            TextWrapping="Wrap"
                                            TextAlignment="Center"
@@ -243,28 +288,30 @@
                             Background="{DynamicResource AppWindowBackgroundBrush}">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedDeviceName}"
+                                       d:Text="Device Name"
                                        Style="{StaticResource SubheadingTextBlockStyle}"
                                        TextWrapping="Wrap"/>
 
-                            <TextBlock Text="{Binding SelectedDeviceSummary}"
-                                       Style="{StaticResource BodyTextBlockStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,8,0,8"/>
-
                             <TextBlock Text="{Binding DeviceCapabilitiesText}"
+                                       d:Text="19 buttons, 1 POV, 2 axes · connected, caps read"
                                        Style="{StaticResource MutedTextBlockStyle}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,18"/>
 
-                            <TextBlock Text="Highlighted Control"
-                                       Style="{StaticResource DialogOptionLabelStyle}"/>
+                            <TextBlock Text="{Binding SelectedDeviceSummary}"
+                                       d:Text="Press a button on your device to show it's current mapped control."
+                                       Style="{StaticResource BodyTextBlockStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,18"/>
 
                             <TextBlock Text="{Binding HighlightedControl}"
+                                       d:Text="DX2"
                                        Style="{StaticResource DialogAssignmentValueStyle}"
                                        Margin="0,0,0,8"
                                        TextWrapping="Wrap"/>
 
                             <TextBlock Text="{Binding HighlightedControlDescription}"
+                                       d:Text="SimPickle"
                                        Style="{StaticResource MutedTextBlockStyle}"
                                        TextWrapping="Wrap"/>
                         </StackPanel>

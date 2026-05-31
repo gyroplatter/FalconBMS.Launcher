@@ -43,6 +43,8 @@
 	  <None Remove="Assets\bms-logo.png" />
 	  <None Remove="Assets\BmsMultiMon.png" />
 	  <None Remove="Assets\CFG.png" />
+	  <None Remove="Assets\Devices\Joystick - HOTAS Warthog.map.json" />
+	  <None Remove="Assets\Devices\Joystick - HOTAS Warthog.png" />
 	  <None Remove="Assets\Devices\Thrustmaster-Viper.png" />
 	  <None Remove="Assets\DISX.png" />
 	  <None Remove="Assets\EDIT.png" />
@@ -92,7 +94,7 @@
     <Resource Include="Assets\bms-logo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Assets\Devices\Thrustmaster-Viper.png">
+    <Resource Include="Assets\Devices\Joystick - HOTAS Warthog.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
@@ -105,6 +107,12 @@
 
 	<ItemGroup>
 	  <Content Include="Assets\favicon.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Assets\Devices\Joystick - HOTAS Warthog.map.json">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 </Project>

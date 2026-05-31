@@ -1,0 +1,463 @@
+﻿{
+	"stockDeviceName": "Joystick - HOTAS Warthog",
+	"imagePath": "Assets/Devices/Joystick - HOTAS Warthog.png",
+	"canvasWidth": 1300,
+	"canvasHeight": 1000,
+	"calloutBox": {
+		"x": 430,
+		"y": 360,
+		"width": 230
+	},
+	"controls": [
+		{
+			"kind": "button",
+			"buttonIndex": 0,
+			"inputId": "DX1",
+			"physicalName": "Trigger 1st Stage",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 382,
+					"y": 250,
+					"width": 42,
+					"height": 118,
+					"anchorX": 403,
+					"anchorY": 310
+				},
+				{
+					"shape": "ellipse",
+					"x": 875,
+					"y": 255,
+					"width": 42,
+					"height": 118,
+					"anchorX": 896,
+					"anchorY": 315
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 1,
+			"inputId": "DX2",
+			"physicalName": "Weapons Release Button",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 180,
+					"y": 48,
+					"width": 70,
+					"height": 70,
+					"anchorX": 215,
+					"anchorY": 83
+				},
+				{
+					"shape": "ellipse",
+					"x": 890,
+					"y": 76,
+					"width": 70,
+					"height": 70,
+					"anchorX": 925,
+					"anchorY": 111
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 2,
+			"inputId": "DX3",
+			"physicalName": "Nosewheel Steering Button",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 938,
+					"y": 655,
+					"width": 58,
+					"height": 58,
+					"anchorX": 967,
+					"anchorY": 684
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 3,
+			"inputId": "DX4",
+			"physicalName": "Paddle Switch",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 294,
+					"y": 532,
+					"width": 70,
+					"height": 230,
+					"anchorX": 329,
+					"anchorY": 647
+				},
+				{
+					"shape": "ellipse",
+					"x": 828,
+					"y": 555,
+					"width": 70,
+					"height": 250,
+					"anchorX": 863,
+					"anchorY": 680
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 4,
+			"inputId": "DX5",
+			"physicalName": "Master Mode Control Button",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 486,
+					"y": 150,
+					"width": 60,
+					"height": 60,
+					"anchorX": 516,
+					"anchorY": 180
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 5,
+			"inputId": "DX6",
+			"physicalName": "Trigger 2nd Stage",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 390,
+					"y": 300,
+					"width": 36,
+					"height": 95,
+					"anchorX": 408,
+					"anchorY": 348
+				},
+				{
+					"shape": "ellipse",
+					"x": 882,
+					"y": 305,
+					"width": 36,
+					"height": 95,
+					"anchorX": 900,
+					"anchorY": 352
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 6,
+			"inputId": "DX7",
+			"physicalName": "TMS Up",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 154,
+					"y": 120,
+					"width": 44,
+					"height": 44,
+					"anchorX": 176,
+					"anchorY": 142
+				},
+				{
+					"shape": "ellipse",
+					"x": 812,
+					"y": 158,
+					"width": 44,
+					"height": 44,
+					"anchorX": 834,
+					"anchorY": 180
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 7,
+			"inputId": "DX8",
+			"physicalName": "TMS Right",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 184,
+					"y": 150,
+					"width": 44,
+					"height": 44,
+					"anchorX": 206,
+					"anchorY": 172
+				},
+				{
+					"shape": "ellipse",
+					"x": 842,
+					"y": 188,
+					"width": 44,
+					"height": 44,
+					"anchorX": 864,
+					"anchorY": 210
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 8,
+			"inputId": "DX9",
+			"physicalName": "TMS Down",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 154,
+					"y": 180,
+					"width": 44,
+					"height": 44,
+					"anchorX": 176,
+					"anchorY": 202
+				},
+				{
+					"shape": "ellipse",
+					"x": 812,
+					"y": 218,
+					"width": 44,
+					"height": 44,
+					"anchorX": 834,
+					"anchorY": 240
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 9,
+			"inputId": "DX10",
+			"physicalName": "TMS Left",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 124,
+					"y": 150,
+					"width": 44,
+					"height": 44,
+					"anchorX": 146,
+					"anchorY": 172
+				},
+				{
+					"shape": "ellipse",
+					"x": 782,
+					"y": 188,
+					"width": 44,
+					"height": 44,
+					"anchorX": 804,
+					"anchorY": 210
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 10,
+			"inputId": "DX11",
+			"physicalName": "DMS Up",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 282,
+					"y": 60,
+					"width": 48,
+					"height": 48,
+					"anchorX": 306,
+					"anchorY": 84
+				},
+				{
+					"shape": "ellipse",
+					"x": 1010,
+					"y": 155,
+					"width": 48,
+					"height": 48,
+					"anchorX": 1034,
+					"anchorY": 179
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 11,
+			"inputId": "DX12",
+			"physicalName": "DMS Right",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 320,
+					"y": 102,
+					"width": 48,
+					"height": 48,
+					"anchorX": 344,
+					"anchorY": 126
+				},
+				{
+					"shape": "ellipse",
+					"x": 1048,
+					"y": 197,
+					"width": 48,
+					"height": 48,
+					"anchorX": 1072,
+					"anchorY": 221
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 12,
+			"inputId": "DX13",
+			"physicalName": "DMS Down",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 282,
+					"y": 144,
+					"width": 48,
+					"height": 48,
+					"anchorX": 306,
+					"anchorY": 168
+				},
+				{
+					"shape": "ellipse",
+					"x": 1010,
+					"y": 239,
+					"width": 48,
+					"height": 48,
+					"anchorX": 1034,
+					"anchorY": 263
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 13,
+			"inputId": "DX14",
+			"physicalName": "DMS Left",
+			"preferredHotspotIndex": 1,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 244,
+					"y": 102,
+					"width": 48,
+					"height": 48,
+					"anchorX": 268,
+					"anchorY": 126
+				},
+				{
+					"shape": "ellipse",
+					"x": 972,
+					"y": 197,
+					"width": 48,
+					"height": 48,
+					"anchorX": 996,
+					"anchorY": 221
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 14,
+			"inputId": "DX15",
+			"physicalName": "CMS Up",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 928,
+					"y": 342,
+					"width": 46,
+					"height": 46,
+					"anchorX": 951,
+					"anchorY": 365
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 15,
+			"inputId": "DX16",
+			"physicalName": "CMS Right",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 960,
+					"y": 375,
+					"width": 46,
+					"height": 46,
+					"anchorX": 983,
+					"anchorY": 398
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 16,
+			"inputId": "DX17",
+			"physicalName": "CMS Down",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 928,
+					"y": 408,
+					"width": 46,
+					"height": 46,
+					"anchorX": 951,
+					"anchorY": 431
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 17,
+			"inputId": "DX18",
+			"physicalName": "CMS Left",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 896,
+					"y": 375,
+					"width": 46,
+					"height": 46,
+					"anchorX": 919,
+					"anchorY": 398
+				}
+			]
+		},
+		{
+			"kind": "button",
+			"buttonIndex": 18,
+			"inputId": "DX19",
+			"physicalName": "CMS Push",
+			"preferredHotspotIndex": 0,
+			"hotspots": [
+				{
+					"shape": "ellipse",
+					"x": 922,
+					"y": 368,
+					"width": 64,
+					"height": 64,
+					"anchorX": 954,
+					"anchorY": 400
+				}
+			]
+		}
+	]
+}
