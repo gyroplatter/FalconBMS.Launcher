@@ -263,6 +263,40 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="HeaderNavButtonDevicesStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource HeaderNavButtonStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding CurrentTab}"
+                         Value="{x:Static models:LauncherTab.Devices}">
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Background="{TemplateBinding Background}">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           FontWeight="{TemplateBinding FontWeight}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Height="2"
+                                        CornerRadius="1"
+                                        Background="{DynamicResource AppAccentBrush}"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Bottom"
+                                        Margin="0,0,0,10"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="HeaderNavButtonViewsStyle"
            TargetType="Button"
            BasedOn="{StaticResource HeaderNavButtonStyle}">

@@ -21,9 +21,9 @@ namespace FalconBMS.Launcher.Views;
 public partial class ControlsView : UserControl
 {
     private readonly DirectInputManager _di = new();
+    private readonly LiveDeviceButtonPollingService _deviceButtonPolling = new();
     private KeyboardSession? _keyboard;
     private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
-    private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
 
     // Tracks which dynamic device column belongs to which DurableDeviceKey.
     // This keeps double-click mapping correct even after the user reorders columns.
@@ -39,6 +39,8 @@ public partial class ControlsView : UserControl
     public ControlsView()
     {
         InitializeComponent();
+
+        _deviceButtonPolling.ButtonStateChanged += DeviceButtonPolling_ButtonStateChanged;
 
         Loaded += ControlsView_Loaded;
         Unloaded += ControlsView_Unloaded;
@@ -411,7 +413,12 @@ public partial class ControlsView : UserControl
             session.Dispose();
 
         _joystickSessionsByDeviceKey.Clear();
-        _previousButtonsByDeviceKey.Clear();
+
+        // Button transition polling is shared with DevicesView.
+        // Reset it whenever Controls polling stops so stale held-button state
+        // does not carry into the next polling session.
+        _deviceButtonPolling.Reset();
+
         _previousPressedKeys.Clear();
     }
 
@@ -522,74 +529,31 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        List<DeviceBindingProfile> connectedDevices = viewModel.DeviceColumns
-            .Where(device => device.IsConnected && device.ButtonCount > 0)
-            .ToList();
+        _deviceButtonPolling.Poll(viewModel.DeviceColumns, hwnd);
+    }
 
-        Dictionary<string, bool[]> currentButtonsByDeviceKey = new();
+    private void DeviceButtonPolling_ButtonStateChanged(object? sender, LiveDeviceButtonStateChangedEventArgs e)
+    {
+        if (IsFilterControlFocused())
+            return;
 
-        // Read every connected device first so DX shift state is based on the
-        // full current controller state, not just the device currently being scanned.
-        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        bool isShifted = viewModel.IsDxShiftActive(e.CurrentButtonsByDeviceKey);
+
+        if (!viewModel.SelectFirstVisibleDxMatch(e.DurableDeviceKey, e.ButtonIndex, e.IsRelease, isShifted))
+            return;
+
+        if (viewModel.SelectedRow is null)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
         {
-            JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
-            if (session is null)
-                continue;
-
-            try
-            {
-                bool[] buttons = session.ReadState().Buttons ?? Array.Empty<bool>();
-                currentButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = buttons;
-            }
-            catch
-            {
-                continue;
-            }
-        }
-
-        bool isShifted = viewModel.IsDxShiftActive(currentButtonsByDeviceKey);
-
-        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
-        {
-            if (!currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons))
-                continue;
-
-            if (!_previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons))
-            {
-                _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
-                continue;
-            }
-
-            int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
-
-            for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
-            {
-                bool wasPressed = previousButtons[buttonIndex];
-                bool isPressed = buttons[buttonIndex];
-
-                if (wasPressed == isPressed)
-                    continue;
-
-                bool isRelease = wasPressed && !isPressed;
-
-                if (!viewModel.SelectFirstVisibleDxMatch(deviceProfile.DurableDeviceKey, buttonIndex, isRelease, isShifted))
-                    break;
-
-                if (viewModel.SelectedRow is null)
-                    break;
-
-                Dispatcher.BeginInvoke(() =>
-                {
-                    ControlsGrid.UpdateLayout();
-                    ControlsGrid.SelectedItem = viewModel.SelectedRow;
-                    ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
-                }, DispatcherPriority.Background);
-
-                break;
-            }
-
-            _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
-        }
+            ControlsGrid.UpdateLayout();
+            ControlsGrid.SelectedItem = viewModel.SelectedRow;
+            ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
+        }, DispatcherPriority.Background);
     }
 
     private void PollLiveAxes()

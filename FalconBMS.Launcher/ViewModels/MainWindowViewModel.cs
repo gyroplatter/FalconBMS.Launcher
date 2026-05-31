@@ -12,6 +12,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     public MainViewModel Main { get; } = new();
     public ViewsViewModel Views { get; } = new();
     public ControlsViewModel Controls { get; } = new();
+    public DevicesViewModel Devices { get; } = new();
     public StylesViewModel Styles { get; } = new();
 
     private LauncherTab _currentTab = LauncherTab.Main;
@@ -30,6 +31,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         {
             LauncherTab.Views => Views,
             LauncherTab.Controls => Controls,
+            LauncherTab.Devices => Devices,
             LauncherTab.Styles => Styles,
             _ => Main
         };
@@ -53,6 +55,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             if (e.PropertyName == nameof(Main.CurrentBindingModel))
             {
                 Controls.LoadBindingModel(Main.CurrentBindingModel);
+                Devices.LoadBindingModel(Main.CurrentBindingModel);
 
                 // The model was just reloaded from disk. No user binding edit has happened yet.
                 Controls.ResetDirty();
@@ -60,6 +63,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         };
 
         Controls.LoadBindingModel(Main.CurrentBindingModel);
+        Devices.LoadBindingModel(Main.CurrentBindingModel);
     }
 
     public void SetTab(LauncherTab tab) => CurrentTab = tab;

@@ -24,6 +24,10 @@
             <views:ControlsView/>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:DevicesViewModel}">
+            <views:DevicesView/>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:StylesViewModel}">
             <views:StylesView/>
         </DataTemplate>

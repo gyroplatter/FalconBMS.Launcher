@@ -43,6 +43,7 @@
 	  <None Remove="Assets\bms-logo.png" />
 	  <None Remove="Assets\BmsMultiMon.png" />
 	  <None Remove="Assets\CFG.png" />
+	  <None Remove="Assets\Devices\Thrustmaster-Viper.png" />
 	  <None Remove="Assets\DISX.png" />
 	  <None Remove="Assets\EDIT.png" />
 	  <None Remove="Assets\F4RADAR.png" />
@@ -89,6 +90,9 @@
 
   <ItemGroup>
     <Resource Include="Assets\bms-logo.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Devices\Thrustmaster-Viper.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
