@@ -123,23 +123,18 @@ public static class ThemeService
             ? DarkDictionaryPath
             : LightDictionaryPath;
 
-        for (var i = 0; i < dictionaries.Count; i++)
+        // Remove every active light/dark theme dictionary before adding the selected one.
+        // This keeps the resource stack deterministic and prevents stale theme dictionaries
+        // from surviving after a runtime theme change, especially under Wine/WPF.
+        for (var i = dictionaries.Count - 1; i >= 0; i--)
         {
             var source = dictionaries[i].Source?.OriginalString;
             if (IsThemeDictionaryPath(source))
-            {
-                if (!PathMatches(source, activeThemePath))
-                {
-                    dictionaries[i] = new ResourceDictionary
-                    {
-                        Source = new Uri(activeThemePath, UriKind.Relative)
-                    };
-                }
-
-                return;
-            }
+                dictionaries.RemoveAt(i);
         }
 
+        // Add exactly one active theme dictionary back after the shared dictionary
+        // so the selected theme brush values win lookup.
         dictionaries.Add(new ResourceDictionary
         {
             Source = new Uri(activeThemePath, UriKind.Relative)
@@ -160,16 +155,20 @@ public static class ThemeService
 
     private static bool IsThemeDictionaryPath(string? source)
     {
-        if (string.IsNullOrWhiteSpace(source))
-            return false;
-
-        return PathMatches(source, LightDictionaryPath) || PathMatches(source, DarkDictionaryPath);
+        return PathMatches(source, LightDictionaryPath) ||
+               PathMatches(source, DarkDictionaryPath);
     }
 
     private static bool PathMatches(string? source, string expectedPath)
     {
-        return source is string sourceValue &&
-               !string.IsNullOrWhiteSpace(sourceValue) &&
-               sourceValue.EndsWith(expectedPath, StringComparison.OrdinalIgnoreCase);
+        if (source is not string sourceValue || string.IsNullOrWhiteSpace(sourceValue))
+            return false;
+
+        // Normalize separators so relative paths and pack URIs compare consistently
+        // across Windows and Wine/WPF.
+        var normalizedSource = sourceValue.Replace('\\', '/');
+        var normalizedExpected = expectedPath.Replace('\\', '/');
+
+        return normalizedSource.EndsWith(normalizedExpected, StringComparison.OrdinalIgnoreCase);
     }
 }
