@@ -259,7 +259,7 @@ public sealed class DevicesViewModel : ViewModelBase
             string.Equals(profile.AircraftProfile, DefaultAircraftProfile, StringComparison.OrdinalIgnoreCase));
 
         if (aircraftProfile is null)
-            return "Mapped to: Unmapped";
+            return "Not mapped";
 
         List<DeviceButtonBinding> bindings = aircraftProfile.ButtonBindings
             .Where(binding =>
@@ -269,7 +269,7 @@ public sealed class DevicesViewModel : ViewModelBase
             .ToList();
 
         if (bindings.Count == 0)
-            return "Mapped to: Unmapped";
+            return "Not mapped";
 
         if (bindings.Count == 1 && bindings[0].AssignmentIndex == 0)
             return bindings[0].CallbackName;

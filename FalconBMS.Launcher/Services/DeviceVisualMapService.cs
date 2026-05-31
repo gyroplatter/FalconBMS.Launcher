@@ -15,7 +15,10 @@ public sealed class DeviceVisualMapService
 {
     private static readonly string[] BuiltInMapResourcePaths =
     {
-        "Assets/Devices/Joystick - HOTAS Warthog.map.json"
+        // Add JSON image maps here:
+        "Assets/Devices/Joystick - HOTAS Warthog.map.json",
+        "Assets/Devices/F16 MFD 1.map.json",
+        "Assets/Devices/F16 MFD 2.map.json"
     };
 
     public IReadOnlyList<DeviceVisualMap> LoadMaps()

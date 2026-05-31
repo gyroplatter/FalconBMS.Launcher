@@ -43,6 +43,10 @@
 	  <None Remove="Assets\bms-logo.png" />
 	  <None Remove="Assets\BmsMultiMon.png" />
 	  <None Remove="Assets\CFG.png" />
+	  <None Remove="Assets\Devices\F16 MFD 1.map.json" />
+	  <None Remove="Assets\Devices\F16 MFD 1.png" />
+	  <None Remove="Assets\Devices\F16 MFD 2.map.json" />
+	  <None Remove="Assets\Devices\F16 MFD 2.png" />
 	  <None Remove="Assets\Devices\Joystick - HOTAS Warthog.map.json" />
 	  <None Remove="Assets\Devices\Joystick - HOTAS Warthog.png" />
 	  <None Remove="Assets\Devices\Thrustmaster-Viper.png" />
@@ -92,6 +96,18 @@
 
   <ItemGroup>
     <Resource Include="Assets\bms-logo.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Devices\F16 MFD 1.map.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Devices\F16 MFD 1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Devices\F16 MFD 2.map.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Devices\F16 MFD 2.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\Devices\Joystick - HOTAS Warthog.png">
