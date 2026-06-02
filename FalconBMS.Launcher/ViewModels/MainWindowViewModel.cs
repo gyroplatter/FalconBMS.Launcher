@@ -46,6 +46,10 @@ public sealed class MainWindowViewModel : ViewModelBase
         // can check IsDirty and skip the write pipeline when nothing has changed.
         Main.ControlsViewModel = Controls;
 
+        // Devices does not edit mappings directly. It resolves the selected physical
+        // DX button back to a Controls row, then opens the same KeyMappingWindow.
+        Devices.ControlsViewModel = Controls;
+
         // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
         // and notifies here. ControlsViewModel reloads from the new complete model.
         // User-edit dirty state is reset here, but MainViewModel separately tracks whether

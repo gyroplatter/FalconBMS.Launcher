@@ -16,6 +16,14 @@
             <Setter Property="Margin" Value="0,0,0,6"/>
         </Style>
 
+        <Style x:Key="DashboardSectionLabelStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
+            <Setter Property="Margin" Value="0,0,0,7"/>
+        </Style>
+
         <Style x:Key="DevicesNavListBoxStyle"
                TargetType="ListBox">
             <Setter Property="BorderThickness" Value="0"/>
@@ -228,18 +236,12 @@
                                     </Border.RenderTransform>
 
                                     <StackPanel>
-                                        <TextBlock Text="{Binding ActiveCalloutInputId}"
-                                                   Style="{StaticResource DialogAssignmentValueStyle}"
-                                                   Foreground="{DynamicResource AppAccentBrush}"
-                                                   TextWrapping="Wrap"/>
-
                                         <TextBlock Text="{Binding ActiveCalloutPhysicalName}"
-                                                   Style="{StaticResource DialogOptionLabelStyle}"
-                                                   Margin="0,4,0,2"
+                                                   Style="{StaticResource DialogAssignmentValueStyle}"
                                                    TextWrapping="Wrap"/>
-
-                                        <TextBlock Text="{Binding ActiveCalloutMappingName}"
+                                        <TextBlock Text="{Binding ActiveCalloutInputId}"
                                                    Style="{StaticResource BodyTextBlockStyle}"
+                                                   Margin="0,4,0,0"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
@@ -288,32 +290,55 @@
                             Background="{DynamicResource AppWindowBackgroundBrush}">
                         <StackPanel>
                             <TextBlock Text="{Binding SelectedDeviceName}"
-                                       d:Text="Device Name"
+                                       d:Text="Joystick - HOTAS Warthog"
                                        Style="{StaticResource SubheadingTextBlockStyle}"
                                        TextWrapping="Wrap"/>
 
                             <TextBlock Text="{Binding DeviceCapabilitiesText}"
-                                       d:Text="19 buttons, 1 POV, 2 axes · connected, caps read"
+                                       d:Text="19 buttons, 1 POV, 2 axes"
                                        Style="{StaticResource MutedTextBlockStyle}"
                                        TextWrapping="Wrap"
-                                       Margin="0,0,0,18"/>
+                                       Margin="0,0,0,34"/>
 
-                            <TextBlock Text="{Binding SelectedDeviceSummary}"
-                                       d:Text="Press a button on your device to show it's current mapped control."
-                                       Style="{StaticResource BodyTextBlockStyle}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,8,0,18"/>
+                            <!--
+                                Devices is not a second mapping editor.
+                                This right panel summarizes the mapped Controls row for the selected DX button.
+                                Modify opens the existing KeyMappingWindow for that same row.
+                            -->
+                            <StackPanel Visibility="{Binding MappedControlDetailsVisibility}">
+                                <TextBlock Text="{Binding MappedControlDescription}"
+                                           d:Text="Pickle Release"
+                                           Style="{StaticResource DashboardSectionLabelStyle}"
+                                           Margin="0,0,0,32"
+                                           TextWrapping="Wrap"/>
 
-                            <TextBlock Text="{Binding HighlightedControl}"
-                                       d:Text="DX2"
-                                       Style="{StaticResource DialogAssignmentValueStyle}"
-                                       Margin="0,0,0,8"
-                                       TextWrapping="Wrap"/>
+                                <TextBlock Text="Keyboard"
+                                           Style="{StaticResource DialogOptionLabelStyle}"
+                                           Margin="0,0,0,6"
+                                           TextWrapping="Wrap"/>
 
-                            <TextBlock Text="{Binding HighlightedControlDescription}"
-                                       d:Text="SimPickle"
-                                       Style="{StaticResource MutedTextBlockStyle}"
-                                       TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding MappedKeyboardText}"
+                                           d:Text="Alt A"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           Margin="0,0,0,26"
+                                           TextWrapping="Wrap"/>
+
+                                <TextBlock Text="DX Button"
+                                           Style="{StaticResource DialogOptionLabelStyle}"
+                                           Margin="0,0,0,6"
+                                           TextWrapping="Wrap"/>
+
+                                <TextBlock Text="{Binding MappedDxButtonText}"
+                                           d:Text="DX4"
+                                           Style="{StaticResource BodyTextBlockStyle}"
+                                           Margin="0,0,0,28"
+                                           TextWrapping="Wrap"/>
+
+                                <Button Content="Modify"
+                                        Command="{Binding ModifyMappingCommand}"
+                                        Width="110"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </Grid>

@@ -13,6 +13,7 @@ public partial class DevicesView : UserControl
 {
     private readonly LiveDeviceButtonPollingService _deviceButtonPolling = new();
     private DispatcherTimer? _timer;
+    private DevicesViewModel? _subscribedViewModel;
 
     public DevicesView()
     {
@@ -22,16 +23,38 @@ public partial class DevicesView : UserControl
 
         Loaded += DevicesView_Loaded;
         Unloaded += DevicesView_Unloaded;
+        DataContextChanged += DevicesView_DataContextChanged;
     }
 
     private void DevicesView_Loaded(object sender, RoutedEventArgs e)
     {
+        SubscribeToViewModel(DataContext as DevicesViewModel);
         StartLiveDevicePolling();
     }
 
     private void DevicesView_Unloaded(object sender, RoutedEventArgs e)
     {
         StopLiveDevicePolling();
+        SubscribeToViewModel(null);
+    }
+
+    private void DevicesView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        SubscribeToViewModel(e.NewValue as DevicesViewModel);
+    }
+
+    private void SubscribeToViewModel(DevicesViewModel? viewModel)
+    {
+        if (ReferenceEquals(_subscribedViewModel, viewModel))
+            return;
+
+        if (_subscribedViewModel is not null)
+            _subscribedViewModel.KeyMappingRequested -= DevicesViewModel_KeyMappingRequested;
+
+        _subscribedViewModel = viewModel;
+
+        if (_subscribedViewModel is not null)
+            _subscribedViewModel.KeyMappingRequested += DevicesViewModel_KeyMappingRequested;
     }
 
     private void StartLiveDevicePolling()
@@ -89,5 +112,39 @@ public partial class DevicesView : UserControl
             return;
 
         viewModel.TryShowVisualCalloutForButton(e.DurableDeviceKey, e.ButtonIndex);
+    }
+
+    private void DevicesViewModel_KeyMappingRequested(object? sender, DevicesKeyMappingRequestedEventArgs e)
+    {
+        if (DataContext is not DevicesViewModel viewModel)
+            return;
+
+        ControlsViewModel? controlsViewModel = viewModel.ControlsViewModel;
+        if (controlsViewModel?.SelectedProfile is null)
+            return;
+
+        StopLiveDevicePolling();
+
+        var window = new KeyMappingWindow
+        {
+            Owner = Window.GetWindow(this)
+        };
+
+        window.DataContext = new KeyMappingWindowViewModel(
+            e.Row,
+            controlsViewModel.SelectedProfileRows,
+            controlsViewModel.DeviceColumns,
+            controlsViewModel.SelectedProfile.AircraftProfile,
+            controlsViewModel.ApplyKeyboardMappingFromPopup,
+            controlsViewModel.ApplyDeviceButtonMappingFromPopup,
+            () => window.Close());
+
+        window.ShowDialog();
+
+        // KeyMappingWindow saves through ControlsViewModel.
+        // Refresh this panel from the same in-memory model after the popup closes.
+        viewModel.RefreshActiveMappedControlDetails();
+
+        StartLiveDevicePolling();
     }
 }

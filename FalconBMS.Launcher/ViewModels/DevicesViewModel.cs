@@ -1,5 +1,7 @@
-﻿using FalconBMS.Launcher.Models;
+﻿using FalconBMS.Launcher.Input;
+using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services;
+using FalconBMS.Launcher.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,11 +28,32 @@ public sealed class DevicesViewModel : ViewModelBase
 
     private DeviceVisualListItemViewModel? _selectedDevice;
     private DeviceVisualCalloutViewModel? _activeCallout;
+    private BindingRow? _activeMappedBindingRow;
+    private string? _activeButtonDeviceKey;
+    private int? _activeButtonIndex;
 
     public DevicesViewModel()
     {
         _visualMaps = _visualMapService.LoadMaps();
+
+        ModifyMappingCommand = new RelayCommand(
+            () =>
+            {
+                if (ActiveMappedBindingRow is not null)
+                    KeyMappingRequested?.Invoke(this, new DevicesKeyMappingRequestedEventArgs(ActiveMappedBindingRow));
+            },
+            () => ActiveMappedBindingRow is not null);
     }
+
+    /// <summary>
+    /// Devices does not edit mappings directly. It uses ControlsViewModel so Modify
+    /// opens the same KeyMappingWindow and save path used by the Controls tab.
+    /// </summary>
+    public ControlsViewModel? ControlsViewModel { get; set; }
+
+    public RelayCommand ModifyMappingCommand { get; }
+
+    public event EventHandler<DevicesKeyMappingRequestedEventArgs>? KeyMappingRequested;
 
     public DeviceVisualListItemViewModel? SelectedDevice
     {
@@ -40,6 +63,9 @@ public sealed class DevicesViewModel : ViewModelBase
             if (!Set(ref _selectedDevice, value)) return;
 
             ActiveCallout = null;
+            ActiveMappedBindingRow = null;
+            _activeButtonDeviceKey = null;
+            _activeButtonIndex = null;
 
             OnPropertyChanged(nameof(SelectedDeviceName));
             OnPropertyChanged(nameof(SelectedDeviceSummary));
@@ -51,6 +77,7 @@ public sealed class DevicesViewModel : ViewModelBase
             OnPropertyChanged(nameof(HighlightedControl));
             OnPropertyChanged(nameof(HighlightedControlDescription));
             OnPropertyChanged(nameof(DeviceCapabilitiesText));
+            OnPropertyChanged(nameof(MappedControlDetailsVisibility));
         }
     }
 
@@ -64,7 +91,6 @@ public sealed class DevicesViewModel : ViewModelBase
             OnPropertyChanged(nameof(ActiveCalloutVisibility));
             OnPropertyChanged(nameof(ActiveCalloutInputId));
             OnPropertyChanged(nameof(ActiveCalloutPhysicalName));
-            OnPropertyChanged(nameof(ActiveCalloutMappingName));
             OnPropertyChanged(nameof(ActiveHotspots));
             OnPropertyChanged(nameof(ActiveCalloutX));
             OnPropertyChanged(nameof(ActiveCalloutY));
@@ -73,6 +99,22 @@ public sealed class DevicesViewModel : ViewModelBase
             OnPropertyChanged(nameof(ActiveConnectors));
             OnPropertyChanged(nameof(HighlightedControl));
             OnPropertyChanged(nameof(HighlightedControlDescription));
+            OnPropertyChanged(nameof(MappedDxButtonText));
+        }
+    }
+
+    private BindingRow? ActiveMappedBindingRow
+    {
+        get => _activeMappedBindingRow;
+        set
+        {
+            if (!Set(ref _activeMappedBindingRow, value)) return;
+
+            OnPropertyChanged(nameof(MappedControlDetailsVisibility));
+            OnPropertyChanged(nameof(MappedControlDescription));
+            OnPropertyChanged(nameof(MappedKeyboardText));
+            OnPropertyChanged(nameof(MappedDxButtonText));
+            ModifyMappingCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -116,12 +158,12 @@ public sealed class DevicesViewModel : ViewModelBase
             : BuildPackUri(SelectedDevice.VisualMap.ImagePath);
 
     public string HighlightedControl =>
-        ActiveCallout?.InputId
+        ActiveCallout?.PhysicalName
         ?? (SelectedDevice?.HasVisualTemplate == true ? "Waiting for input" : "None");
 
     public string HighlightedControlDescription =>
         ActiveCallout is not null
-            ? $"{ActiveCallout.PhysicalName}\n{ActiveCallout.MappingName}"
+            ? ActiveCallout.InputId
             : "Press a button on this device.";
 
     public string DeviceCapabilitiesText
@@ -133,21 +175,42 @@ public sealed class DevicesViewModel : ViewModelBase
 
             DeviceBindingProfile device = SelectedDevice.DeviceProfile;
 
-            string capsStatus = device.CapabilitiesReadSuccessfully
-                ? "caps read"
-                : "caps unavailable";
-
-            string connectionStatus = device.IsConnected
-                ? "connected"
-                : "offline saved profile";
-
-            return $"{device.ButtonCount} buttons, {device.PovCount} POVs, {device.AxisCount} axes · {connectionStatus}, {capsStatus}";
+            return FormatCount(device.ButtonCount, "button", "buttons") + ", " +
+                   FormatCount(device.PovCount, "POV", "POVs") + ", " +
+                   FormatCount(device.AxisCount, "axis", "axes");
         }
     }
 
     public string ActiveCalloutInputId => ActiveCallout?.InputId ?? "";
     public string ActiveCalloutPhysicalName => ActiveCallout?.PhysicalName ?? "";
-    public string ActiveCalloutMappingName => ActiveCallout?.MappingName ?? "";
+
+    public Visibility MappedControlDetailsVisibility =>
+        ActiveMappedBindingRow is not null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+    public string MappedControlDescription => ActiveMappedBindingRow?.Description ?? "";
+
+    public string MappedKeyboardText
+    {
+        get
+        {
+            if (ActiveMappedBindingRow is null)
+                return "";
+
+            string keyboardText = KeyAssgn.GetKeyAssignmentStatus(
+                ActiveMappedBindingRow.KeyScancode,
+                ActiveMappedBindingRow.KeyModifierFlags,
+                ActiveMappedBindingRow.ChordScancode,
+                ActiveMappedBindingRow.ChordModifierFlags);
+
+            return string.IsNullOrWhiteSpace(keyboardText)
+                ? "None"
+                : keyboardText;
+        }
+    }
+
+    public string MappedDxButtonText => ActiveCallout?.InputId ?? "";
 
     public IReadOnlyList<DeviceVisualHotspotViewModel> ActiveHotspots =>
         ActiveCallout?.Hotspots ?? Array.Empty<DeviceVisualHotspotViewModel>();
@@ -247,39 +310,52 @@ public sealed class DevicesViewModel : ViewModelBase
 
         ActiveCallout = DeviceVisualCalloutViewModel.FromMap(
             control,
-            visualMap.CalloutBox,
-            GetButtonMappingDisplay(deviceProfile, buttonIndex));
+            visualMap.CalloutBox);
+
+        _activeButtonDeviceKey = durableDeviceKey;
+        _activeButtonIndex = buttonIndex;
+        ActiveMappedBindingRow = FindMappedBindingRow(deviceProfile, buttonIndex);
 
         return true;
     }
 
-    private static string GetButtonMappingDisplay(DeviceBindingProfile deviceProfile, int buttonIndex)
+    public void RefreshActiveMappedControlDetails()
     {
-        DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
-            string.Equals(profile.AircraftProfile, DefaultAircraftProfile, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(_activeButtonDeviceKey) || !_activeButtonIndex.HasValue)
+            return;
 
-        if (aircraftProfile is null)
-            return "Not mapped";
+        if (SelectedDevice?.DeviceProfile is not DeviceBindingProfile deviceProfile)
+            return;
 
-        List<DeviceButtonBinding> bindings = aircraftProfile.ButtonBindings
-            .Where(binding =>
-                binding.ButtonIndex == buttonIndex &&
-                !string.IsNullOrWhiteSpace(binding.CallbackName))
-            .OrderBy(binding => binding.AssignmentIndex)
-            .ToList();
+        if (!string.Equals(deviceProfile.DurableDeviceKey, _activeButtonDeviceKey, StringComparison.OrdinalIgnoreCase))
+            return;
 
-        if (bindings.Count == 0)
-            return "Not mapped";
-
-        if (bindings.Count == 1 && bindings[0].AssignmentIndex == 0)
-            return bindings[0].CallbackName;
-
-        return string.Join(", ", bindings.Select(FormatButtonBinding));
+        ActiveMappedBindingRow = FindMappedBindingRow(deviceProfile, _activeButtonIndex.Value);
     }
 
-    private static string FormatButtonBinding(DeviceButtonBinding binding)
+    private BindingRow? FindMappedBindingRow(DeviceBindingProfile deviceProfile, int buttonIndex)
     {
-        return $"{DeviceButtonBinding.BuildDisplayText(binding.ButtonIndex, binding.AssignmentIndex)}: {binding.CallbackName}";
+        string aircraftProfileName = ControlsViewModel?.SelectedProfile?.AircraftProfile ?? DefaultAircraftProfile;
+
+        DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+        if (aircraftProfile is null)
+            return null;
+
+        DeviceButtonBinding? binding = aircraftProfile.ButtonBindings
+            .Where(item =>
+                item.ButtonIndex == buttonIndex &&
+                !string.IsNullOrWhiteSpace(item.CallbackName))
+            .OrderBy(item => item.AssignmentIndex)
+            .FirstOrDefault();
+
+        if (binding is null)
+            return null;
+
+        return ControlsViewModel?.SelectedProfileRows.FirstOrDefault(row =>
+            row.IsEditable &&
+            string.Equals(row.CallbackName, binding.CallbackName, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string BuildPackUri(string resourcePath)
@@ -295,9 +371,28 @@ public sealed class DevicesViewModel : ViewModelBase
         return $"pack://application:,,,/{escapedPath}";
     }
 
+    private static string FormatCount(int count, string singularLabel, string pluralLabel)
+    {
+        string label = count == 1
+            ? singularLabel
+            : pluralLabel;
+
+        return $"{count} {label}";
+    }
+
     private static string Format(double value)
     {
         return value.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+}
+
+public sealed class DevicesKeyMappingRequestedEventArgs : EventArgs
+{
+    public BindingRow Row { get; }
+
+    public DevicesKeyMappingRequestedEventArgs(BindingRow row)
+    {
+        Row = row;
     }
 }
 
@@ -348,7 +443,6 @@ public sealed class DeviceVisualCalloutViewModel
 
     public string InputId { get; }
     public string PhysicalName { get; }
-    public string MappingName { get; }
 
     public IReadOnlyList<DeviceVisualHotspotViewModel> Hotspots { get; }
     public IReadOnlyList<DeviceVisualConnectorViewModel> Connectors { get; }
@@ -361,7 +455,6 @@ public sealed class DeviceVisualCalloutViewModel
     private DeviceVisualCalloutViewModel(
         string inputId,
         string physicalName,
-        string mappingName,
         IReadOnlyList<DeviceVisualHotspotViewModel> hotspots,
         IReadOnlyList<DeviceVisualConnectorViewModel> connectors,
         double calloutX,
@@ -371,7 +464,6 @@ public sealed class DeviceVisualCalloutViewModel
     {
         InputId = inputId;
         PhysicalName = physicalName;
-        MappingName = mappingName;
         Hotspots = hotspots;
         Connectors = connectors;
         CalloutX = calloutX;
@@ -382,8 +474,7 @@ public sealed class DeviceVisualCalloutViewModel
 
     public static DeviceVisualCalloutViewModel FromMap(
         DeviceVisualControlMap control,
-        DeviceVisualCalloutBoxMap calloutBox,
-        string mappingName)
+        DeviceVisualCalloutBoxMap calloutBox)
     {
         List<DeviceVisualHotspotViewModel> hotspots = control.Hotspots
             .Select(DeviceVisualHotspotViewModel.FromMap)
@@ -404,7 +495,6 @@ public sealed class DeviceVisualCalloutViewModel
         return new DeviceVisualCalloutViewModel(
             control.InputId,
             control.PhysicalName,
-            mappingName,
             hotspots,
             connectors,
             calloutBox.X,
