@@ -6,5 +6,7 @@ public sealed class StockDeviceSetupMatch
 
     public string? StockXmlPath { get; init; }
 
+    public string MatchMethod { get; init; } = "";
+
     public bool HasStockXml => !string.IsNullOrWhiteSpace(StockXmlPath);
 }

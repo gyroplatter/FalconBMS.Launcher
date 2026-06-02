@@ -61,6 +61,7 @@
 	  <None Remove="Assets\UPD.png" />
 	  <None Remove="Assets\WC.png" />
 	  <None Remove="Assets\WDP.png" />
+	  <None Remove="Services\Controls\StockDeviceManifest.json" />
 	</ItemGroup>
 
   <ItemGroup>
@@ -102,6 +103,9 @@
 
 	<ItemGroup>
 	  <Content Include="Assets\favicon.ico" />
+	  <Content Include="Services\Controls\StockDeviceManifest.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	</ItemGroup>
 
 </Project>

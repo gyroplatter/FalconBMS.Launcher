@@ -43,12 +43,12 @@ public sealed class DeviceDiscoveryService
                 if (match.HasStockXml)
                 {
                     DebugDiagnosticsService.Info(
-                        $"Stock XML matched | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | File=\"{Path.GetFileName(match.StockXmlPath!)}\" | Path=\"{match.StockXmlPath}\" | ActionId={actionId}");
+                        $"Stock XML matched | MatchMethod={match.MatchMethod} | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | File=\"{Path.GetFileName(match.StockXmlPath!)}\" | Path=\"{match.StockXmlPath}\" | ActionId={actionId}");
                 }
                 else
                 {
                     DebugDiagnosticsService.Warn(
-                        $"Stock XML missing | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | ProductGuid={match.Device.ProductGuid:B} | ActionId={actionId}");
+                        $"Stock XML missing | MatchMethod={match.MatchMethod} | Device=\"{match.Device.ProductName}\" | PIDVID={match.Device.PidVid} | DurableKey={match.Device.DurableDeviceKey} | ProductGuid={match.Device.ProductGuid:B} | ActionId={actionId}");
                 }
             }
 

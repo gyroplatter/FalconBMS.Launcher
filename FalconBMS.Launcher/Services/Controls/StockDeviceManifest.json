@@ -1,0 +1,27 @@
+[
+  {
+    "displayName": "Joystick - HOTAS Warthog",
+    "stockFile": "Setup.v100.Joystick - HOTAS Warthog {Stock}.xml",
+    "pidvid": "044F0402"
+  },
+  {
+    "displayName": "F16 MFD 1",
+    "stockFile": "Setup.v100.F16 MFD 1 {Stock}.xml",
+    "pidvid": "044FB351"
+  },
+  {
+    "displayName": "F16 MFD 2",
+    "stockFile": "Setup.v100.F16 MFD 2 {Stock}.xml",
+    "pidvid": "044FB352"
+  },
+  {
+    "displayName": "Saitek Pro Flight Rudder Pedals",
+    "stockFile": "Setup.v100.Saitek Pro Flight Rudder Pedals {Stock}.xml",
+    "pidvid": "06A30763"
+  },
+  {
+    "displayName": "WINWING Orion Throttle Base II + TGRIP-F16",
+    "stockFile": "Setup.v100.WINWING Orion Throttle Base II  TGRIP-F16 {Stock}.xml",
+    "pidvid": "4098BE68"
+  }
+]
