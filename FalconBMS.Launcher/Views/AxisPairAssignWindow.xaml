@@ -273,8 +273,6 @@
 
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="116"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
@@ -284,11 +282,6 @@
                                         Height="32"
                                         Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MapPrimaryCommand}"/>
-
-                                <Button Grid.Column="2"
-                                        Content="Clear"
-                                        Height="32"
-                                        Command="{Binding ClearPrimaryCommand}"/>
                             </Grid>
 
                             <TextBlock Grid.Row="3"
@@ -372,22 +365,15 @@
 
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="116"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
                                 <Button Grid.Column="0"
                                         Content="{Binding Secondary.MapButtonText}"
-                                        d:Content="Map Pitch"
+                                        d:Content="Map Roll"
                                         Height="32"
                                         Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MapSecondaryCommand}"/>
-
-                                <Button Grid.Column="2"
-                                        Content="Clear"
-                                        Height="32"
-                                        Command="{Binding ClearSecondaryCommand}"/>
                             </Grid>
 
                             <TextBlock Grid.Row="3"
@@ -445,6 +431,11 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,16,0,0">
+
+                <Button Content="Clear"
+                        Width="110"
+                        Margin="0,0,8,0"
+                        Command="{Binding ClearBothCommand}"/>
 
                 <Button Content="Cancel"
                         Width="96"

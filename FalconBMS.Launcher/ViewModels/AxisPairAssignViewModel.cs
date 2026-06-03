@@ -112,9 +112,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     }
 
     public RelayCommand MapPrimaryCommand { get; }
-    public RelayCommand ClearPrimaryCommand { get; }
     public RelayCommand MapSecondaryCommand { get; }
-    public RelayCommand ClearSecondaryCommand { get; }
+    public RelayCommand ClearBothCommand { get; }
     public RelayCommand SaveCommand { get; }
     public RelayCommand CancelCommand { get; }
 
@@ -147,9 +146,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             _deviceProfiles);
 
         MapPrimaryCommand = new RelayCommand(() => StartCapture(AxisPairCaptureTarget.Primary));
-        ClearPrimaryCommand = new RelayCommand(() => ClearAxis(Primary));
         MapSecondaryCommand = new RelayCommand(() => StartCapture(AxisPairCaptureTarget.Secondary));
-        ClearSecondaryCommand = new RelayCommand(() => ClearAxis(Secondary));
+        ClearBothCommand = new RelayCommand(ClearBothAxes);
         SaveCommand = new RelayCommand(SaveAndClose);
         CancelCommand = new RelayCommand(CancelAndClose);
 
@@ -207,19 +205,32 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             $"Axis pair capture armed. | ActionId={_actionId} | PairId={PairDefinition.PairId} | Target={target} | LogicalAxis={axis.LogicalAxisName}");
     }
 
-    private void ClearAxis(AxisEditViewModel axis)
+    private void ClearBothAxes()
     {
         DebugDiagnosticsService.Info(
-            $"Axis pair axis clear clicked. | ActionId={_actionId} | PairId={PairDefinition.PairId} | LogicalAxis={axis.LogicalAxisName} | PreviousDeviceKey={axis.SelectedDeviceKey ?? "<null>"} | PreviousPhysicalAxis={FormatPhysicalAxis(axis.SelectedPhysicalAxisIndex)}");
+            $"Axis pair clear both clicked. | ActionId={_actionId} | PairId={PairDefinition.PairId} | PrimaryLogicalAxis={Primary.LogicalAxisName} | PrimaryPreviousDeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | PrimaryPreviousPhysicalAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | SecondaryLogicalAxis={Secondary.LogicalAxisName} | SecondaryPreviousDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | SecondaryPreviousPhysicalAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
 
+        // Clearing the pair should never leave capture/listening mode active.
+        _captureTarget = AxisPairCaptureTarget.None;
+        _baselineByDeviceKey.Clear();
+        _stableHitsByCandidate.Clear();
+        IsMappingPrimary = false;
+        IsMappingSecondary = false;
+
+        ClearAxisEdit(Primary, "Cleared. Click Map Pitch to assign this axis.");
+        ClearAxisEdit(Secondary, "Cleared. Click Map Roll to assign this axis.");
+
+        UpdateLiveGraphFromCurrentAssignments();
+    }
+
+    private static void ClearAxisEdit(AxisEditViewModel axis, string statusText)
+    {
         axis.SelectedDeviceKey = null;
         axis.SelectedPhysicalAxisIndex = null;
         axis.IsCleared = true;
-        axis.StatusText = "Cleared. Map this axis, or Save to leave it unmapped.";
+        axis.StatusText = statusText;
         axis.ConflictText = "";
         axis.HasAxisConflict = false;
-
-        UpdateLiveGraphFromCurrentAssignments();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -473,8 +484,54 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         DebugDiagnosticsService.Info(
             $"Axis pair save clicked. | ActionId={_actionId} | PairId={PairDefinition.PairId} | PrimaryDeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | PrimaryCleared={Primary.IsCleared} | SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)} | SecondaryCleared={Secondary.IsCleared}");
 
+        if (!ValidateBeforeSave())
+            return;
+
         _saveAxisAssignment(this);
         _closeWindow();
+    }
+
+    private bool ValidateBeforeSave()
+    {
+        ClearPairValidationWarning();
+
+        if (Primary.SelectedPhysicalAxisIndex.HasValue &&
+            Secondary.SelectedPhysicalAxisIndex.HasValue &&
+            string.Equals(Primary.SelectedDeviceKey, Secondary.SelectedDeviceKey, StringComparison.OrdinalIgnoreCase) &&
+            Primary.SelectedPhysicalAxisIndex.Value == Secondary.SelectedPhysicalAxisIndex.Value)
+        {
+            string warningText = "Pitch and Roll cannot use the same physical axis. Map one of them to a different axis before saving.";
+
+            Primary.ConflictText = warningText;
+            Primary.HasAxisConflict = true;
+
+            Secondary.ConflictText = warningText;
+            Secondary.HasAxisConflict = true;
+
+            DebugDiagnosticsService.Warn(
+                $"Axis pair save blocked because both axes use the same physical input. | ActionId={_actionId} | PairId={PairDefinition.PairId} | PrimaryLogicalAxis={Primary.LogicalAxisName} | SecondaryLogicalAxis={Secondary.LogicalAxisName} | DeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | PhysicalAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)}");
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ClearPairValidationWarning()
+    {
+        if (Primary.HasAxisConflict &&
+            Primary.ConflictText.StartsWith("Pitch and Roll cannot use the same physical axis.", StringComparison.OrdinalIgnoreCase))
+        {
+            Primary.ConflictText = "";
+            Primary.HasAxisConflict = false;
+        }
+
+        if (Secondary.HasAxisConflict &&
+            Secondary.ConflictText.StartsWith("Pitch and Roll cannot use the same physical axis.", StringComparison.OrdinalIgnoreCase))
+        {
+            Secondary.ConflictText = "";
+            Secondary.HasAxisConflict = false;
+        }
     }
 
     private void CancelAndClose()
