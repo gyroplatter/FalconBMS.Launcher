@@ -20,6 +20,12 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsAxisRow { get; init; }
     public string AxisLogicalAxisName { get; init; } = "";
 
+    // Axis pair rows are user-facing grouping rows.
+    // They display one physical X/Y control in the Controls table while still saving
+    // as two separate logical BMS axis bindings underneath.
+    public bool IsAxisPairRow { get; init; }
+    public AxisPairDefinition? AxisPairDefinition { get; init; }
+
     private string _key = "";
     public string Key
     {
@@ -33,8 +39,8 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsSectionHeader => RowKind == BindingRowKind.SectionHeader;
     public bool IsRemark => RowKind == BindingRowKind.Remark;
 
-    // Axis rows are editable even though they do not come from a .key BindingRow.
-    public bool IsEditable => IsAxisRow || SourceRow?.IsEditable == true;
+    // Axis rows and axis pair rows are editable even though they do not come from a .key BindingRow.
+    public bool IsEditable => IsAxisRow || IsAxisPairRow || SourceRow?.IsEditable == true;
 
     public void RefreshFromSource()
     {

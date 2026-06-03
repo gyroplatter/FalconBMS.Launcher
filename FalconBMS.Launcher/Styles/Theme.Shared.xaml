@@ -574,6 +574,10 @@
             <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
                 <Setter Property="Visibility" Value="Visible"/>
             </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsAxisPairRow}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
         </Style.Triggers>
     </Style>
 

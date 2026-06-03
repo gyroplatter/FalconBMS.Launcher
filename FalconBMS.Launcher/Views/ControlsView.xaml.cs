@@ -316,6 +316,42 @@ public partial class ControlsView : UserControl
         if (selectedRow is null)
             return;
 
+        if (selectedRow.IsAxisPairRow)
+        {
+            if (selectedRow.AxisPairDefinition is null)
+                return;
+
+            StopKeyboardSearchCapture();
+
+            Window? ownerWindow = Window.GetWindow(this);
+
+            var axisPairWindow = new AxisPairAssignWindow
+            {
+                Owner = ownerWindow
+            };
+
+            string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
+
+            // The owner should normally be the main launcher window, but use IntPtr.Zero as a safe fallback
+            // so nullable analysis and unusual design/runtime states do not break the axis-pair popup flow.
+            IntPtr hwnd = ownerWindow is not null
+                ? new WindowInteropHelper(ownerWindow).Handle
+                : IntPtr.Zero;
+
+            axisPairWindow.DataContext = new AxisPairAssignViewModel(
+                selectedRow.AxisPairDefinition,
+                viewModel.DeviceColumns,
+                clickedDeviceKey,
+                hwnd,
+                viewModel.ApplyAxisPairMappingFromPopup,
+                () => axisPairWindow.Close());
+
+            axisPairWindow.ShowDialog();
+
+            StartKeyboardSearchCapture();
+            return;
+        }
+
         if (selectedRow.IsAxisRow)
         {
             StopKeyboardSearchCapture();
