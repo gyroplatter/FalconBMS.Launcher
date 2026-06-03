@@ -496,9 +496,46 @@ public sealed class ControlsViewModel : ViewModelBase
         if (binding is null)
             return false;
 
+        return SelectFirstVisibleCallbackMatch(binding.CallbackName);
+    }
+
+    public bool SelectFirstVisiblePovMatch(string durableDeviceKey, int povIndex, int direction, bool isShifted)
+    {
+        if (SelectedProfile is null)
+            return false;
+
+        DeviceBindingProfile? deviceProfile = DeviceColumns.FirstOrDefault(device =>
+            string.Equals(device.DurableDeviceKey, durableDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+        DeviceAircraftBindingProfile? aircraftProfile = deviceProfile?.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, SelectedProfile.AircraftProfile, StringComparison.OrdinalIgnoreCase));
+
+        if (aircraftProfile is null)
+            return false;
+
+        string invoke = isShifted
+            ? "Shift"
+            : "Default";
+
+        DevicePovBinding? binding = aircraftProfile.PovBindings
+            .Where(binding =>
+                binding.PovIndex == povIndex &&
+                binding.Direction == direction &&
+                string.Equals(binding.Invoke, invoke, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(binding.CallbackName))
+            .FirstOrDefault();
+
+        if (binding is null)
+            return false;
+
+        return SelectFirstVisibleCallbackMatch(binding.CallbackName);
+    }
+
+    private bool SelectFirstVisibleCallbackMatch(string callbackName)
+    {
         ControlGridRowViewModel? match = Rows.FirstOrDefault(row =>
             row.SourceRow is not null &&
-            string.Equals(row.SourceRow.CallbackName, binding.CallbackName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(row.SourceRow.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase));
 
         if (match is null)
             return false;
@@ -753,9 +790,13 @@ public sealed class ControlsViewModel : ViewModelBase
         return direction switch
         {
             0 => "Up",
-            1 => "Right",
-            2 => "Down",
-            3 => "Left",
+            1 => "Up-Right",
+            2 => "Right",
+            3 => "Down-Right",
+            4 => "Down",
+            5 => "Down-Left",
+            6 => "Left",
+            7 => "Up-Left",
             _ => direction.ToString()
         };
     }

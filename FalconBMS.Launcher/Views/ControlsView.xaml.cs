@@ -24,6 +24,7 @@ public partial class ControlsView : UserControl
     private KeyboardSession? _keyboard;
     private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
     private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
+    private readonly Dictionary<string, int[]> _previousPovsByDeviceKey = new();
 
     // Tracks which dynamic device column belongs to which DurableDeviceKey.
     // This keeps double-click mapping correct even after the user reorders columns.
@@ -523,13 +524,16 @@ public partial class ControlsView : UserControl
             return;
 
         List<DeviceBindingProfile> connectedDevices = viewModel.DeviceColumns
-            .Where(device => device.IsConnected && device.ButtonCount > 0)
+            .Where(device => device.IsConnected && (device.ButtonCount > 0 || device.PovCount > 0))
             .ToList();
 
-        Dictionary<string, bool[]> currentButtonsByDeviceKey = new();
+        var currentButtonsByDeviceKey = new Dictionary<string, bool[]>();
+        var currentPovsByDeviceKey = new Dictionary<string, int[]>();
 
         // Read every connected device first so DX shift state is based on the
         // full current controller state, not just the device currently being scanned.
+        // POV hats are captured from the same state read so POV clicks can also
+        // jump the Controls table to the currently mapped callback row.
         foreach (DeviceBindingProfile deviceProfile in connectedDevices)
         {
             JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
@@ -538,8 +542,13 @@ public partial class ControlsView : UserControl
 
             try
             {
-                bool[] buttons = session.ReadState().Buttons ?? Array.Empty<bool>();
-                currentButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = buttons;
+                var state = session.ReadState();
+
+                currentButtonsByDeviceKey[deviceProfile.DurableDeviceKey] =
+                    state.Buttons ?? Array.Empty<bool>();
+
+                currentPovsByDeviceKey[deviceProfile.DurableDeviceKey] =
+                    state.PointOfViewControllers ?? Array.Empty<int>();
             }
             catch
             {
@@ -551,14 +560,26 @@ public partial class ControlsView : UserControl
 
         foreach (DeviceBindingProfile deviceProfile in connectedDevices)
         {
-            if (!currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons))
-                continue;
+            currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons);
+            currentPovsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out int[]? povs);
 
-            if (!_previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons))
+            buttons ??= Array.Empty<bool>();
+            povs ??= Array.Empty<int>();
+
+            bool hasPreviousButtons = _previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons);
+            bool hasPreviousPovs = _previousPovsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out int[]? previousPovs);
+
+            if (!hasPreviousButtons && !hasPreviousPovs)
             {
                 _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
+                _previousPovsByDeviceKey[deviceProfile.DurableDeviceKey] = (int[])povs.Clone();
                 continue;
             }
+
+            previousButtons ??= Array.Empty<bool>();
+            previousPovs ??= Array.Empty<int>();
+
+            bool selectedMatch = false;
 
             int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
 
@@ -572,24 +593,67 @@ public partial class ControlsView : UserControl
 
                 bool isRelease = wasPressed && !isPressed;
 
-                if (!viewModel.SelectFirstVisibleDxMatch(deviceProfile.DurableDeviceKey, buttonIndex, isRelease, isShifted))
-                    break;
+                selectedMatch = viewModel.SelectFirstVisibleDxMatch(
+                    deviceProfile.DurableDeviceKey,
+                    buttonIndex,
+                    isRelease,
+                    isShifted);
 
-                if (viewModel.SelectedRow is null)
-                    break;
+                break;
+            }
 
+            int povLimit = Math.Min(povs.Length, previousPovs.Length);
+
+            for (int povIndex = 0; !selectedMatch && povIndex < povLimit; povIndex++)
+            {
+                int previousDirectionValue = previousPovs[povIndex];
+                int currentDirectionValue = povs[povIndex];
+
+                if (previousDirectionValue == currentDirectionValue)
+                    continue;
+
+                int? direction = NormalizeDirectInputPovDirection(currentDirectionValue);
+
+                if (!direction.HasValue)
+                    continue;
+
+                selectedMatch = viewModel.SelectFirstVisiblePovMatch(
+                    deviceProfile.DurableDeviceKey,
+                    povIndex,
+                    direction.Value,
+                    isShifted);
+
+                break;
+            }
+
+            if (selectedMatch && viewModel.SelectedRow is not null)
+            {
                 Dispatcher.BeginInvoke(() =>
                 {
                     ControlsGrid.UpdateLayout();
                     ControlsGrid.SelectedItem = viewModel.SelectedRow;
                     ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
                 }, DispatcherPriority.Background);
-
-                break;
             }
 
             _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
+            _previousPovsByDeviceKey[deviceProfile.DurableDeviceKey] = (int[])povs.Clone();
         }
+    }
+
+    private static int? NormalizeDirectInputPovDirection(int povValue)
+    {
+        // DirectInput POV values are hundredths of a degree:
+        // 0=Up, 9000=Right, 18000=Down, 27000=Left, -1=centered.
+        // BMS stock XML stores POV directions in 8-way slots:
+        // 0=Up, 2=Right, 4=Down, 6=Left, with odd numbers as diagonals.
+        if (povValue < 0)
+            return null;
+
+        int normalizedDegrees = ((povValue / 100) + 360) % 360;
+        int eightWayDirection = (int)Math.Round(normalizedDegrees / 45.0) % 8;
+
+        return eightWayDirection;
     }
 
     private void PollLiveAxes()

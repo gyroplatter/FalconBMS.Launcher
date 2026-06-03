@@ -128,9 +128,13 @@ public sealed class KeyControlsGridBuilderService
         return direction switch
         {
             0 => "Up",
-            1 => "Right",
-            2 => "Down",
-            3 => "Left",
+            1 => "Up-Right",
+            2 => "Right",
+            3 => "Down-Right",
+            4 => "Down",
+            5 => "Down-Left",
+            6 => "Left",
+            7 => "Up-Left",
             _ => direction.ToString()
         };
     }

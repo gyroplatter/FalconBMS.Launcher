@@ -3,7 +3,9 @@
 /// <summary>
 /// Represents one POV direction binding.
 /// PovIndex is zero-based (POV0, POV1, etc).
-/// Direction is the slot (0=Up,1=Right,2=Down,3=Left).
+/// Direction is the legacy BMS 8-way POV slot:
+/// 0=Up, 2=Right, 4=Down, 6=Left.
+/// Odd values are diagonals.
 /// </summary>
 public sealed class DevicePovBinding
 {
