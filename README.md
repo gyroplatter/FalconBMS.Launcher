@@ -2,7 +2,7 @@
 
 ## Summary
 
-This is a full rebuild of the Falcon BMS Launcher using **.NET 4.8 (WPF) x64**.
+This is a full rebuild of the Falcon BMS Launcher using **.NET 4.8 (WPF)**.
 
 
 The goal of this project is to modernize the Launcher codebase and redesign the UI/UX so Falcon BMS control configuration is easier for new users to understand. This Launcher also moves toward a unified controls model built around a cleaner in-memory binding system and JSON-based storage.
@@ -33,10 +33,13 @@ This project uses the following NuGet packages:
   For DirectInput bindings used for device detection, axis polling, and button input.
 
 - System.ServiceModel.Syndication  
-  For RSS feed handling in the launcher UI.
+  For RSS feed handling in the Launcher UI.
 
 - System.Net.Http
   For RSS feed usage in .NET 4.8
+
+- System.Text.Json  
+  For reading and writing JSON binding files while correcting small formatting issues such as trailing commas and comments
 
 ---
 
@@ -69,24 +72,26 @@ This project uses the following NuGet packages:
 
 ### Current JSON Binding Files
 
-The Launcher generates JSON files within the selected install's `User\Config\JSON` folder.
+The Launcher generates aircraft specific JSON files within the selected install's `User\Config\JSON` folder.
 
 Current keyboard JSON files:
 
-- KeyboardBindings.json
+- KeyboardBindings_F-16.json
 - KeyboardBindings_F-15ABCD.json
 
 Current device JSON files:
 
-- DeviceBindings_{DurableDeviceKey}_{ProductName}.json
+- DeviceBindings_{Aircraft}_{DurableDeviceKey}_{ProductName}.json
 
 For duplicate devices with the same PID/VID, the durable device key includes a sequence number.
 
 Examples:
 
-- DeviceBindings_044F0402_Joystick - HOTAS Warthog.json
-- DeviceBindings_06A30762_X52 Professional H.O.T.A.S.json
-- DeviceBindings_044FB351_F16 MFD 1.json
+- DeviceBindings_F-16_044F0402_Joystick - HOTAS Warthog.json
+- DeviceBindings_F-15ABCD_06A30762_X52 Professional H.O.T.A.S.json
+- DeviceBindings_F-16_044FB351_F16 MFD 1.json
+
+Keyboard, button, and POV bindings are stored separately for each aircraft profile. Falcon BMS 4.38 still uses shared axis mappings, so axis assignments are synchronized between the F-16 and F-15 profiles.
 
 ### Compatibility Outputs
 
@@ -110,14 +115,14 @@ The Launcher does not treat JSON loading as an all-or-nothing step. Keyboard and
 2. Load `BMS - Full*.key` files
 3. Build the current keyboard/control catalog from the FULL key files
 4. Check for existing keyboard JSON files:
-   - `KeyboardBindings.json`
+   - `KeyboardBindings_F-16.json`
    - `KeyboardBindings_F-15ABCD.json`
 5. If keyboard JSON files exist, overlay saved keyboard bindings onto the current catalog
 6. If keyboard JSON files do not exist, keep the current FULL key defaults
 7. Discover DirectInput devices
-8. Match discovered devices to stock `Setup.v100.*.xml` files
+8. Match discovered devices to stock `Setup.v100.*.xml` files, using PID/VID fallback when device names differ
 9. For each discovered device, check for an existing device JSON file:
-   - `DeviceBindings_{DurableDeviceKey}_{ProductName}.json`
+   - `DeviceBindings_{Aircraft}_{DurableDeviceKey}_{ProductName}.json`
 10. If device JSON exists, load that device profile from JSON
 11. If device JSON does not exist, build that device profile from matched stock XML
 12. If no stock XML exists for that device, build an empty device profile
@@ -189,5 +194,7 @@ The Launcher writes diagnostic log output to:
 - User\Config\Launcher_Log.txt
 
 The log records application startup, selected install changes, device discovery, JSON loading/writing, generated compatibility file writes, launch preparation, Falcon launch events, close-time save behavior, warnings, and exceptions.
+
+This file is overwritten on every restart of the Launcher.
 
 Generated file writes include before/after file signatures so it is possible to see whether a file actually changed.
