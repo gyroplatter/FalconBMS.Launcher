@@ -59,6 +59,52 @@ public sealed class ControlGridDeviceCellViewModel : ViewModelBase
         }
     }
 
+    private string _secondaryDisplayText = "";
+    public string SecondaryDisplayText
+    {
+        get => _secondaryDisplayText;
+        set => Set(ref _secondaryDisplayText, value ?? "");
+    }
+
+    private bool _secondaryHasAxisBinding;
+    public bool SecondaryHasAxisBinding
+    {
+        get => _secondaryHasAxisBinding;
+        set => Set(ref _secondaryHasAxisBinding, value);
+    }
+
+    private int _secondaryPhysicalAxisIndex = -1;
+    public int SecondaryPhysicalAxisIndex
+    {
+        get => _secondaryPhysicalAxisIndex;
+        set => Set(ref _secondaryPhysicalAxisIndex, value);
+    }
+
+    private bool _secondaryInvert;
+    public bool SecondaryInvert
+    {
+        get => _secondaryInvert;
+        set => Set(ref _secondaryInvert, value);
+    }
+
+    private double _secondaryAxisBarValue = 0.5;
+    public double SecondaryAxisBarValue
+    {
+        get => _secondaryAxisBarValue;
+        set
+        {
+            double clampedValue = Math.Max(0.0, Math.Min(1.0, value));
+
+            if (Math.Abs(_secondaryAxisBarValue - clampedValue) <
+                AxisBarUpdateThreshold)
+            {
+                return;
+            }
+
+            Set(ref _secondaryAxisBarValue, clampedValue);
+        }
+    }
+
     private bool _showDetents;
     public bool ShowDetents
     {

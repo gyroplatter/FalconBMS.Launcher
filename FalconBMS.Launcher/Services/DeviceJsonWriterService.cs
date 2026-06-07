@@ -177,6 +177,7 @@ public sealed class DeviceJsonWriterService
             WriteProperty(sb, itemIndentLevel + 1, "physical_axis_index", axis.PhysicalAxisIndex, comma: true);
             WriteProperty(sb, itemIndentLevel + 1, "saturation", axis.Saturation, comma: true);
             WriteProperty(sb, itemIndentLevel + 1, "deadzone", axis.Deadzone, comma: true);
+            WriteProperty(sb, itemIndentLevel + 1, "curve", axis.Curve, comma: true);
 
             if (string.Equals(axis.LogicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase))
             {

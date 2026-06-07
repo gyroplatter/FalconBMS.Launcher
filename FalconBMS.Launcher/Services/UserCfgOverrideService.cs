@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -66,6 +67,11 @@ public sealed class UserCfgOverrideService
         sw.WriteLine($"set g_nPOV1ID 0 {OverrideComment}");
         sw.WriteLine($"set g_nPOV2DeviceID {pov2DeviceId} {OverrideComment}");
         sw.WriteLine($"set g_nPOV2ID {pov2Id} {OverrideComment}");
+
+        LegacyAxisCurveUserCfgWriterService.WriteOverrides(
+            sw,
+            deviceProfiles,
+            OverrideComment);
 
         if (exportRttTextures)
             sw.WriteLine($"set g_bExportRTTTextures 1 {OverrideComment}");

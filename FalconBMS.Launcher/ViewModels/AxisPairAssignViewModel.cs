@@ -274,14 +274,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         if (TryGetAxisValueForEdit(Primary, device, axisValues, out int primaryValue))
         {
             RawY = RawAxisToSigned(primaryValue, Primary.LogicalAxisName);
-            OutputY = ApplyAxisOutputCurve(RawY, Primary);
+            OutputY = CalculateAxisOutput(RawY, Primary);
             updated = true;
         }
 
         if (TryGetAxisValueForEdit(Secondary, device, axisValues, out int secondaryValue))
         {
             RawX = RawAxisToSigned(secondaryValue, Secondary.LogicalAxisName);
-            OutputX = ApplyAxisOutputCurve(RawX, Secondary);
+            OutputX = CalculateAxisOutput(RawX, Secondary);
             updated = true;
         }
 
@@ -553,33 +553,54 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         return (displayed - 0.5) * 2.0;
     }
 
-    private static double ApplyAxisOutputCurve(double rawSignedValue, AxisEditViewModel axis)
+    public static double CalculateAxisOutput(
+        double rawSignedValue,
+        AxisEditViewModel axis)
     {
-        double value = axis.Invert ? -rawSignedValue : rawSignedValue;
+        double value = axis.Invert
+            ? -rawSignedValue
+            : rawSignedValue;
+
         double sign = Math.Sign(value);
         double magnitude = Math.Abs(value);
 
         double deadzone = GetDeadzoneRadius(axis.DeadzoneCurve);
+
         if (magnitude <= deadzone)
             return 0.0;
 
         if (deadzone > 0.0)
             magnitude = (magnitude - deadzone) / (1.0 - deadzone);
 
-        double saturation = GetSaturationLimit(axis.SaturationCurve);
-        if (saturation < 1.0)
-            magnitude = Math.Min(1.0, magnitude / saturation);
+        double saturationLimit = GetSaturationLimit(axis.SaturationCurve);
 
-        return Math.Max(-1.0, Math.Min(1.0, sign * magnitude));
+        if (saturationLimit < 1.0)
+            magnitude = Math.Min(1.0, magnitude / saturationLimit);
+
+        double curveValue = axis.CurveValue;
+
+        if (curveValue > 1.0)
+        {
+            // This matches the BMS formula exactly:
+            //
+            // output = (input^3 * (x - 1) + input) / x
+            magnitude =
+                (Math.Pow(magnitude, 3.0) * (curveValue - 1.0) + magnitude) /
+                curveValue;
+        }
+
+        return Math.Max(
+            -1.0,
+            Math.Min(1.0, sign * magnitude));
     }
 
     private static double GetDeadzoneRadius(AxCurve curve)
     {
         return curve switch
         {
-            AxCurve.Small => 0.08,
-            AxCurve.Medium => 0.15,
-            AxCurve.Large => 0.25,
+            AxCurve.Small => 0.01,
+            AxCurve.Medium => 0.05,
+            AxCurve.Large => 0.10,
             _ => 0.0
         };
     }
@@ -588,9 +609,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     {
         return curve switch
         {
-            AxCurve.Small => 0.85,
-            AxCurve.Medium => 0.70,
-            AxCurve.Large => 0.55,
+            AxCurve.Small => 0.99,
+            AxCurve.Medium => 0.95,
+            AxCurve.Large => 0.90,
             _ => 1.0
         };
     }
@@ -641,6 +662,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         private bool _hasAxisConflict;
         private AxCurve _deadzoneCurve = AxCurve.None;
         private AxCurve _saturationCurve = AxCurve.None;
+        private int _curveValue = 1;
         private bool _invert;
         private bool _isCleared;
 
@@ -656,6 +678,39 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             MapButtonText = mapButtonText;
 
             LoadExistingMapping(initialDeviceKey, deviceProfiles);
+        }
+
+        private static int CurveToStep(AxCurve curve)
+        {
+            return curve switch
+            {
+                AxCurve.Small => 1,
+                AxCurve.Medium => 2,
+                AxCurve.Large => 3,
+                _ => 0
+            };
+        }
+
+        private static AxCurve StepToCurve(int step)
+        {
+            return step switch
+            {
+                1 => AxCurve.Small,
+                2 => AxCurve.Medium,
+                3 => AxCurve.Large,
+                _ => AxCurve.None
+            };
+        }
+
+        private static string CurveToPercentageText(AxCurve curve)
+        {
+            return curve switch
+            {
+                AxCurve.Small => "1%",
+                AxCurve.Medium => "5%",
+                AxCurve.Large => "10%",
+                _ => "0%"
+            };
         }
 
         public string LogicalAxisName { get; }
@@ -695,14 +750,92 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         public AxCurve DeadzoneCurve
         {
             get => _deadzoneCurve;
-            set => Set(ref _deadzoneCurve, value);
+            set
+            {
+                if (!Set(ref _deadzoneCurve, value))
+                    return;
+
+                OnPropertyChanged(nameof(DeadzoneStep));
+                OnPropertyChanged(nameof(DeadzonePercentageText));
+            }
         }
+
+        public int DeadzoneStep
+        {
+            get => CurveToStep(DeadzoneCurve);
+            set => DeadzoneCurve = StepToCurve(value);
+        }
+
+        public string DeadzonePercentageText =>
+            CurveToPercentageText(DeadzoneCurve);
 
         public AxCurve SaturationCurve
         {
             get => _saturationCurve;
-            set => Set(ref _saturationCurve, value);
+            set
+            {
+                if (!Set(ref _saturationCurve, value))
+                    return;
+
+                OnPropertyChanged(nameof(SaturationStep));
+                OnPropertyChanged(nameof(SaturationPercentageText));
+            }
         }
+
+        public int SaturationStep
+        {
+            get => CurveToStep(SaturationCurve);
+            set => SaturationCurve = StepToCurve(value);
+        }
+
+        public string SaturationPercentageText =>
+            CurveToPercentageText(SaturationCurve);
+
+        /// <summary>
+        /// Actual BMS x value used by the exponential-axis formula.
+        /// The current UI exposes values 1 through 5.
+        /// </summary>
+        public int CurveValue
+        {
+            get => _curveValue;
+            set
+            {
+                int clampedValue = Math.Max(
+                    1,
+                    Math.Min(5, value));
+
+                if (!Set(ref _curveValue, clampedValue))
+                    return;
+
+                OnPropertyChanged(nameof(CurveStep));
+                OnPropertyChanged(nameof(CurvePercentageText));
+            }
+        }
+
+        /// <summary>
+        /// Zero-based slider position:
+        ///
+        /// 0 -> x 1
+        /// 1 -> x 2
+        /// 2 -> x 3
+        /// 3 -> x 4
+        /// 4 -> x 5
+        /// </summary>
+        public int CurveStep
+        {
+            get => CurveValue - 1;
+            set => CurveValue = Math.Max(0, Math.Min(4, value)) + 1;
+        }
+
+        public string CurvePercentageText =>
+            CurveValue switch
+            {
+                2 => "25%",
+                3 => "50%",
+                4 => "75%",
+                5 => "100%",
+                _ => "0%"
+            };
 
         public bool Invert
         {
@@ -749,6 +882,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             SelectedPhysicalAxisIndex = physicalAxisIndex;
             DeadzoneCurve = ParseCurve(mappedBinding.Deadzone);
             SaturationCurve = ParseCurve(mappedBinding.Saturation);
+            CurveValue = mappedBinding.Curve;
             Invert = mappedBinding.Invert;
             StatusText = GetDeviceDisplayName(mappedDevice) + " / " + PhysicalAxisNameService.GetDisplayName(physicalAxisIndex);
         }

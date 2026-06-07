@@ -349,28 +349,65 @@ public sealed class ControlsViewModel : ViewModelBase
         ControlGridRowViewModel secondaryRow,
         AxisPairDefinition pairDefinition)
     {
-        var deviceCellsByDeviceKey = new Dictionary<string, ControlGridDeviceCellViewModel>(StringComparer.OrdinalIgnoreCase);
+        var deviceCellsByDeviceKey =
+            new Dictionary<string, ControlGridDeviceCellViewModel>(
+                StringComparer.OrdinalIgnoreCase);
 
         foreach (string deviceKey in primaryRow.DeviceCellsByDeviceKey.Keys.Union(
                      secondaryRow.DeviceCellsByDeviceKey.Keys,
                      StringComparer.OrdinalIgnoreCase))
         {
-            primaryRow.DeviceCellsByDeviceKey.TryGetValue(deviceKey, out ControlGridDeviceCellViewModel? primaryCell);
-            secondaryRow.DeviceCellsByDeviceKey.TryGetValue(deviceKey, out ControlGridDeviceCellViewModel? secondaryCell);
+            primaryRow.DeviceCellsByDeviceKey.TryGetValue(
+                deviceKey,
+                out ControlGridDeviceCellViewModel? primaryCell);
 
-            string primaryText = primaryCell?.HasAxisBinding == true ? primaryCell.DisplayText : "";
-            string secondaryText = secondaryCell?.HasAxisBinding == true ? secondaryCell.DisplayText : "";
+            secondaryRow.DeviceCellsByDeviceKey.TryGetValue(
+                deviceKey,
+                out ControlGridDeviceCellViewModel? secondaryCell);
 
-            deviceCellsByDeviceKey[deviceKey] = new ControlGridDeviceCellViewModel
-            {
-                IsDeviceConnected = primaryCell?.IsDeviceConnected ?? secondaryCell?.IsDeviceConnected ?? true,
+            deviceCellsByDeviceKey[deviceKey] =
+                new ControlGridDeviceCellViewModel
+                {
+                    IsDeviceConnected =
+                        primaryCell?.IsDeviceConnected ??
+                        secondaryCell?.IsDeviceConnected ??
+                        true,
 
-                // This row represents two different axes, so the normal single-axis bar is not shown here.
-                DisplayText = BuildAxisPairDisplayText(primaryText, secondaryText),
-                HasAxisBinding = false,
-                PhysicalAxisIndex = -1,
-                AxisBarValue = 0.5
-            };
+                    // The existing properties represent the primary axis.
+                    DisplayText =
+                        primaryCell?.HasAxisBinding == true
+                            ? primaryCell.DisplayText
+                            : "",
+
+                    HasAxisBinding =
+                        primaryCell?.HasAxisBinding == true,
+
+                    PhysicalAxisIndex =
+                        primaryCell?.PhysicalAxisIndex ?? -1,
+
+                    Invert =
+                        primaryCell?.Invert ?? false,
+
+                    AxisBarValue = 0.5,
+
+                    // The secondary properties represent the second half
+                    // of the combined AxisPair row.
+                    SecondaryDisplayText =
+                        secondaryCell?.HasAxisBinding == true
+                            ? secondaryCell.DisplayText
+                            : "",
+
+                    SecondaryHasAxisBinding =
+                        secondaryCell?.HasAxisBinding == true,
+
+                    SecondaryPhysicalAxisIndex =
+                        secondaryCell?.PhysicalAxisIndex ?? -1,
+
+                    SecondaryInvert =
+                        secondaryCell?.Invert ?? false,
+
+                    SecondaryAxisBarValue = 0.5
+                };
         }
 
         return new ControlGridRowViewModel
@@ -870,26 +907,65 @@ public sealed class ControlsViewModel : ViewModelBase
         DebugDiagnosticsService.Info(
             $"Apply axis pair mapping begin. | ActionId={actionId} | PairId={pairDefinition.PairId} | PrimaryLogicalAxis={pairDefinition.PrimaryLogicalAxisName} | PrimaryDeviceKey={popup.Primary.SelectedDeviceKey ?? "<null>"} | PrimaryPhysicalAxis={FormatPhysicalAxis(popup.Primary.SelectedPhysicalAxisIndex)} | PrimaryCleared={popup.Primary.IsCleared} | SecondaryLogicalAxis={pairDefinition.SecondaryLogicalAxisName} | SecondaryDeviceKey={popup.Secondary.SelectedDeviceKey ?? "<null>"} | SecondaryPhysicalAxis={FormatPhysicalAxis(popup.Secondary.SelectedPhysicalAxisIndex)} | SecondaryCleared={popup.Secondary.IsCleared}");
 
+        string beforeState = BuildAxisBindingDirtyStateSignature();
+
         var changedLogicalAxisNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         ApplyAxisPairEdit(actionId, popup.Primary, changedLogicalAxisNames);
         ApplyAxisPairEdit(actionId, popup.Secondary, changedLogicalAxisNames);
 
-        foreach (string changedLogicalAxisName in changedLogicalAxisNames)
+        string afterState = BuildAxisBindingDirtyStateSignature();
+
+        bool bindingsChanged =
+            !string.Equals(beforeState, afterState, StringComparison.Ordinal);
+
+        if (bindingsChanged)
+        {
+            foreach (string changedLogicalAxisName in changedLogicalAxisNames)
+            {
+                DebugDiagnosticsService.Info(
+                    $"Refreshing axis rows after axis pair assignment. | ActionId={actionId} | LogicalAxis={changedLogicalAxisName}");
+
+                RefreshAxisRows(changedLogicalAxisName);
+            }
+
+            RefreshAxisPairRows(pairDefinition);
+
+            _isDirty = true;
+            OnPropertyChanged(nameof(SummaryText));
+        }
+        else
         {
             DebugDiagnosticsService.Info(
-                $"Refreshing axis rows after axis pair assignment. | ActionId={actionId} | LogicalAxis={changedLogicalAxisName}");
-
-            RefreshAxisRows(changedLogicalAxisName);
+                $"Axis pair assignment unchanged; dirty state not set. | ActionId={actionId} | PairId={pairDefinition.PairId}");
         }
 
-        RefreshAxisPairRows(pairDefinition);
-
-        _isDirty = true;
-        OnPropertyChanged(nameof(SummaryText));
-
         DebugDiagnosticsService.Info(
-            $"Apply axis pair mapping end. | ActionId={actionId} | PairId={pairDefinition.PairId} | ChangedLogicalAxes={string.Join(",", changedLogicalAxisNames)} | IsDirty={_isDirty}");
+            $"Apply axis pair mapping end. | ActionId={actionId} | PairId={pairDefinition.PairId} | ChangedLogicalAxes={string.Join(",", changedLogicalAxisNames)} | BindingsChanged={bindingsChanged} | IsDirty={_isDirty}");
+    }
+
+    private string BuildAxisBindingDirtyStateSignature()
+    {
+        return string.Join(
+            "\n",
+            DeviceColumns
+                .OrderBy(device => device.DurableDeviceKey, StringComparer.OrdinalIgnoreCase)
+                .SelectMany(device =>
+                    device.AxisBindings
+                        .OrderBy(axis => axis.LogicalAxisName, StringComparer.OrdinalIgnoreCase)
+                        .Select(axis => string.Join(
+                            "|",
+                            device.DurableDeviceKey ?? "",
+                            axis.LogicalAxisName ?? "",
+                            axis.PhysicalAxisIndex.HasValue
+                                ? axis.PhysicalAxisIndex.Value.ToString()
+                                : "",
+                            axis.Deadzone ?? "",
+                            axis.Saturation ?? "",
+                            axis.Curve.ToString(),
+                            axis.Invert.ToString(),
+                            axis.IdleDetent.ToString(),
+                            axis.AfterburnerDetent.ToString()))));
     }
 
     private void ApplyAxisPairEdit(
@@ -956,16 +1032,13 @@ public sealed class ControlsViewModel : ViewModelBase
         selectedBinding.PhysicalAxisIndex = axisEdit.SelectedPhysicalAxisIndex.Value;
         selectedBinding.Deadzone = axisEdit.DeadzoneCurve.ToString();
         selectedBinding.Saturation = axisEdit.SaturationCurve.ToString();
+        selectedBinding.Curve = axisEdit.CurveValue;
         selectedBinding.Invert = axisEdit.Invert;
-
-        // Axis pairs are X/Y controls, not throttle detent controls.
-        selectedBinding.IdleDetent = DetentPosition.DefaultIdleDetent;
-        selectedBinding.AfterburnerDetent = DetentPosition.DefaultAfterburnerDetent;
 
         changedLogicalAxisNames.Add(selectedBinding.LogicalAxisName);
 
         DebugDiagnosticsService.Info(
-            $"Applied axis pair assignment to in-memory profile. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(selectedBinding.PhysicalAxisIndex)} | Deadzone={selectedBinding.Deadzone} | Saturation={selectedBinding.Saturation} | Invert={selectedBinding.Invert}");
+            $"Applied axis pair assignment to in-memory profile. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(selectedBinding.PhysicalAxisIndex)} | Deadzone={selectedBinding.Deadzone} | Saturation={selectedBinding.Saturation} | Curve={selectedBinding.Curve} | Invert={selectedBinding.Invert}");
     }
 
 
@@ -1147,34 +1220,62 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (ControlGridRowViewModel row in _allRows.Where(row =>
                      row.IsAxisPairRow &&
                      row.AxisPairDefinition is not null &&
-                     string.Equals(row.AxisPairDefinition.PairId, pairDefinition.PairId, StringComparison.OrdinalIgnoreCase)))
+                     string.Equals(
+                         row.AxisPairDefinition.PairId,
+                         pairDefinition.PairId,
+                         StringComparison.OrdinalIgnoreCase)))
         {
             foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
             {
-                if (!row.DeviceCellsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out ControlGridDeviceCellViewModel? cell))
+                if (!row.DeviceCellsByDeviceKey.TryGetValue(
+                        deviceProfile.DurableDeviceKey,
+                        out ControlGridDeviceCellViewModel? cell))
+                {
                     continue;
+                }
 
-                DeviceAxisBinding? primaryBinding = deviceProfile.AxisBindings.FirstOrDefault(axis =>
-                    string.Equals(axis.LogicalAxisName, pairDefinition.PrimaryLogicalAxisName, StringComparison.OrdinalIgnoreCase));
+                DeviceAxisBinding? primaryBinding =
+                    deviceProfile.AxisBindings.FirstOrDefault(axis =>
+                        string.Equals(
+                            axis.LogicalAxisName,
+                            pairDefinition.PrimaryLogicalAxisName,
+                            StringComparison.OrdinalIgnoreCase));
 
-                DeviceAxisBinding? secondaryBinding = deviceProfile.AxisBindings.FirstOrDefault(axis =>
-                    string.Equals(axis.LogicalAxisName, pairDefinition.SecondaryLogicalAxisName, StringComparison.OrdinalIgnoreCase));
+                DeviceAxisBinding? secondaryBinding =
+                    deviceProfile.AxisBindings.FirstOrDefault(axis =>
+                        string.Equals(
+                            axis.LogicalAxisName,
+                            pairDefinition.SecondaryLogicalAxisName,
+                            StringComparison.OrdinalIgnoreCase));
 
-                string primaryText = primaryBinding?.PhysicalAxisIndex is int primaryPhysicalAxisIndex
-                    ? PhysicalAxisNameService.GetDisplayName(primaryPhysicalAxisIndex)
-                    : "";
+                bool hasPrimaryBinding =
+                    primaryBinding?.PhysicalAxisIndex.HasValue == true;
 
-                string secondaryText = secondaryBinding?.PhysicalAxisIndex is int secondaryPhysicalAxisIndex
-                    ? PhysicalAxisNameService.GetDisplayName(secondaryPhysicalAxisIndex)
-                    : "";
+                bool hasSecondaryBinding =
+                    secondaryBinding?.PhysicalAxisIndex.HasValue == true;
 
-                cell.DisplayText = BuildAxisPairDisplayText(primaryText, secondaryText);
-                cell.HasAxisBinding = false;
-                cell.PhysicalAxisIndex = -1;
+                cell.HasAxisBinding = hasPrimaryBinding;
+                cell.PhysicalAxisIndex =
+                    primaryBinding?.PhysicalAxisIndex ?? -1;
+                cell.DisplayText =
+                    primaryBinding?.PhysicalAxisIndex is int primaryAxisIndex
+                        ? PhysicalAxisNameService.GetDisplayName(primaryAxisIndex)
+                        : "";
+                cell.Invert = primaryBinding?.Invert ?? false;
                 cell.AxisBarValue = 0.5;
 
+                cell.SecondaryHasAxisBinding = hasSecondaryBinding;
+                cell.SecondaryPhysicalAxisIndex =
+                    secondaryBinding?.PhysicalAxisIndex ?? -1;
+                cell.SecondaryDisplayText =
+                    secondaryBinding?.PhysicalAxisIndex is int secondaryAxisIndex
+                        ? PhysicalAxisNameService.GetDisplayName(secondaryAxisIndex)
+                        : "";
+                cell.SecondaryInvert = secondaryBinding?.Invert ?? false;
+                cell.SecondaryAxisBarValue = 0.5;
+
                 DebugDiagnosticsService.Info(
-                    $"Axis pair row refreshed. | PairId={pairDefinition.PairId} | PrimaryLogicalAxis={pairDefinition.PrimaryLogicalAxisName} | SecondaryLogicalAxis={pairDefinition.SecondaryLogicalAxisName} | Device={GetDeviceDisplayName(deviceProfile)} | DeviceKey={deviceProfile.DurableDeviceKey} | DisplayText={cell.DisplayText}");
+                    $"Axis pair row refreshed. | PairId={pairDefinition.PairId} | PrimaryLogicalAxis={pairDefinition.PrimaryLogicalAxisName} | PrimaryAxis={cell.DisplayText} | SecondaryLogicalAxis={pairDefinition.SecondaryLogicalAxisName} | SecondaryAxis={cell.SecondaryDisplayText} | Device={GetDeviceDisplayName(deviceProfile)} | DeviceKey={deviceProfile.DurableDeviceKey}");
             }
         }
     }

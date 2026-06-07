@@ -5,16 +5,46 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Assign Axis Pair"
-        Width="965"
-        Height="625"
-        MinWidth="965"
-        MinHeight="625"
+        Width="1200"
+        Height="760"
+        MinWidth="1200"
+        MinHeight="760"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+        <Style x:Key="AxisPairPercentageSliderStyle"
+               TargetType="Slider">
+            <Setter Property="Minimum"
+                    Value="0"/>
+            <Setter Property="Maximum"
+                    Value="3"/>
+            <Setter Property="TickFrequency"
+                    Value="1"/>
+            <Setter Property="IsSnapToTickEnabled"
+                    Value="True"/>
+            <Setter Property="IsMoveToPointEnabled"
+                    Value="True"/>
+            <Setter Property="AutoToolTipPlacement"
+                    Value="None"/>
+            <Setter Property="Height"
+                    Value="24"/>
+            <Setter Property="VerticalAlignment"
+                    Value="Center"/>
+        </Style>
+
+        <Style x:Key="AxisPairPercentageTextStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource AppMutedForegroundBrush}"/>
+            <Setter Property="FontSize"
+                    Value="11"/>
+            <Setter Property="HorizontalAlignment"
+                    Value="Center"/>
+        </Style>
     </Window.Resources>
 
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -30,418 +60,559 @@
                        Style="{StaticResource DialogTitleTextBlockStyle}"
                        Margin="0,0,0,14"/>
 
-            <Border Grid.Row="1"
-                    Style="{StaticResource DashboardCardStyle}"
-                    Padding="16">
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="500"/>
+                    <ColumnDefinition Width="18"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="460"/>
-                        <ColumnDefinition Width="24"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <!-- Large combined live X/Y display. -->
+                <Border Grid.Column="0"
+                        Style="{StaticResource DashboardCardStyle}"
+                        Padding="18">
 
-                    <!-- Left side: live X/Y graph for the physical control. -->
-                    <Grid Grid.Column="0">
+                    <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0"
+                                   Text="Stick Position"
+                                   Style="{StaticResource DialogSectionLabelStyle}"
+                                   Foreground="{DynamicResource AppAccentBrush}"
+                                   HorizontalAlignment="Center"
+                                   FontSize="18"
+                                   Margin="0,0,0,8"/>
 
                         <Canvas x:Name="AxisPairPlotCanvas"
-                                Grid.Row="0"
-                                Height="380"
-                                Margin="0"
+                                Grid.Row="1"
+                                MinHeight="470"
                                 ClipToBounds="False"
-                                SizeChanged="AxisPairPlotCanvas_SizeChanged">
+                                SizeChanged="AxisPairPlotCanvas_SizeChanged"/>
 
-                            <!-- Design-time placeholder only.
-                                 Runtime graph drawing happens in AxisPairAssignWindow.xaml.cs.
-                                 The code-behind clears AxisPairPlotCanvas.Children before drawing. -->
-                            <Grid Width="430"
-                                  Height="360"
-                                  Canvas.Left="15"
-                                  Canvas.Top="10"
-                                  Visibility="Collapsed"
-                                  d:Visibility="Visible">
+                        <StackPanel Grid.Row="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,12,0,0">
 
+                            <Ellipse Width="12"
+                                     Height="12"
+                                     Fill="{DynamicResource AppForegroundBrush}"
+                                     Stroke="{DynamicResource AppAccentBrush}"
+                                     StrokeThickness="1.2"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,7,0"/>
+
+                            <TextBlock Text="Actual position"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,28,0"/>
+
+                            <Grid Width="18"
+                                  Height="18"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,7,0">
+                                <Rectangle Width="4"
+                                           Height="18"
+                                           Fill="{DynamicResource AppAccentBrush}"
+                                           HorizontalAlignment="Center"/>
+                                <Rectangle Width="18"
+                                           Height="4"
+                                           Fill="{DynamicResource AppAccentBrush}"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <TextBlock Text="In-game position"
+                                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Separate Pitch and Roll controls. -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="14"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Pitch. -->
+                    <Border Grid.Row="0"
+                            Style="{StaticResource DashboardCardStyle}"
+                            Padding="18">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="22"/>
+                                <ColumnDefinition Width="250"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Grid.Column="0">
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="28"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="28"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                </Grid.ColumnDefinitions>
 
                                 <TextBlock Grid.Row="0"
-                                           Grid.Column="1"
-                                           Text="Up"
+                                           Text="{Binding Primary.TitleText}"
+                                           Style="{StaticResource DialogSectionLabelStyle}"
                                            Foreground="{DynamicResource AppAccentBrush}"
                                            FontSize="18"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                                           Margin="0,0,0,10"/>
 
-                                <TextBlock Grid.Row="1"
-                                           Grid.Column="0"
-                                           Text="Left"
-                                           Foreground="{DynamicResource AppAccentBrush}"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                                <Grid Grid.Row="1"
+                                      Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Row="1"
-                                           Grid.Column="2"
-                                           Text="Right"
-                                           Foreground="{DynamicResource AppAccentBrush}"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Assigned axis:"
+                                               Style="{StaticResource DialogFieldLabelStyle}"
+                                               Margin="0,0,12,0"/>
 
-                                <TextBlock Grid.Row="2"
-                                           Grid.Column="1"
-                                           Text="Down"
-                                           Foreground="{DynamicResource AppAccentBrush}"
-                                           FontSize="18"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Primary.StatusText}"
+                                               Style="{StaticResource DialogAssignmentValueStyle}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
 
-                                <Canvas Grid.Row="1"
-                                        Grid.Column="1"
-                                        Width="300"
-                                        Height="300"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-
-                                    <Border Width="300"
-                                            Height="300"
-                                            Background="{DynamicResource AppSurfaceAltBrush}"
-                                            BorderBrush="{DynamicResource AppAccentBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="5"/>
-
-                                    <Line X1="75" Y1="0" X2="75" Y2="300"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="0.7"
-                                          Opacity="0.35"/>
-
-                                    <Line X1="225" Y1="0" X2="225" Y2="300"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="0.7"
-                                          Opacity="0.35"/>
-
-                                    <Line X1="0" Y1="75" X2="300" Y2="75"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="0.7"
-                                          Opacity="0.35"/>
-
-                                    <Line X1="0" Y1="225" X2="300" Y2="225"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="0.7"
-                                          Opacity="0.35"/>
-
-                                    <Line X1="150" Y1="0" X2="150" Y2="300"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="1.2"
-                                          Opacity="0.85"/>
-
-                                    <Line X1="0" Y1="150" X2="300" Y2="150"
-                                          Stroke="{DynamicResource AppMutedForegroundBrush}"
-                                          StrokeThickness="1.2"
-                                          Opacity="0.85"/>
-
-                                    <Ellipse Width="54"
-                                             Height="54"
-                                             Canvas.Left="123"
-                                             Canvas.Top="123"
-                                             Fill="{DynamicResource AppMutedForegroundBrush}"
-                                             Stroke="{DynamicResource AppAccentBrush}"
-                                             StrokeThickness="1.2"
-                                             Opacity="0.35"/>
-
-                                    <Line X1="142" Y1="150" X2="158" Y2="150"
-                                          Stroke="{DynamicResource AppAccentBrush}"
-                                          StrokeThickness="1.8"/>
-
-                                    <Line X1="150" Y1="142" X2="150" Y2="158"
-                                          Stroke="{DynamicResource AppAccentBrush}"
-                                          StrokeThickness="1.8"/>
-                                </Canvas>
-                            </Grid>
-                        </Canvas>
-
-                        <Border Grid.Row="2"
-                                Margin="0,6,0,0"
-                                Padding="0,6,0,0">
-
-                            <StackPanel Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center">
-
-                                <Ellipse Width="11"
-                                         Height="11"
-                                         Stroke="{DynamicResource AppAccentBrush}"
-                                         StrokeThickness="1.2"
-                                         Fill="{DynamicResource AppForegroundBrush}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,7,0"/>
-
-                                <TextBlock Text="Actual position"
-                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,24,0"/>
-
-                                <TextBlock Text="+"
-                                           Foreground="{DynamicResource AppAccentBrush}"
-                                           FontSize="22"
-                                           FontWeight="Bold"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,7,0"/>
-
-                                <TextBlock Text="In-game position"
-                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,24,0"/>
-
-                                <Ellipse Width="18"
-                                         Height="18"
-                                         Fill="{DynamicResource AppMutedForegroundBrush}"
-                                         Opacity="0.70"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,7,0"/>
-
-                                <TextBlock Text="Deadzone"
-                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <Border Grid.Column="1"
-                            Width="1"
-                            Background="{DynamicResource AppBorderBrush}"/>
-
-                    <!-- Right side: two logical BMS axes edited as one axis pair. -->
-                    <Grid Grid.Column="2"
-                          Margin="18,0,0,0">
-
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="22"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Primary axis section -->
-                        <Grid Grid.Row="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <TextBlock Grid.Row="0"
-                                       Text="{Binding Primary.TitleText}"
-                                       Style="{StaticResource DialogSectionLabelStyle}"
-                                       FontSize="18"
-                                       Margin="0,0,0,6"/>
-
-                            <StackPanel Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        Margin="0,0,0,10">
-
-                                <TextBlock Text="Assigned axis:"
-                                           Style="{StaticResource DialogFieldLabelStyle}"
-                                           Margin="0,0,8,0"/>
-
-                                <TextBlock Text="{Binding Primary.StatusText}"
-                                           Style="{StaticResource DialogAssignmentValueStyle}"/>
-                            </StackPanel>
-
-                            <Grid Grid.Row="2"
-                                  Margin="0,0,0,10">
-
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Button Grid.Column="0"
+                                <Button Grid.Row="2"
                                         Content="{Binding Primary.MapButtonText}"
-                                        d:Content="Map Pitch"
-                                        Height="32"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Command="{Binding MapPrimaryCommand}"/>
-                            </Grid>
+                                        Width="146"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding MapPrimaryCommand}"
+                                        Margin="0,0,0,12"/>
 
-                            <TextBlock Grid.Row="3"
-                                       Text="{Binding Primary.ConflictText}"
-                                       Visibility="{Binding Primary.HasAxisConflict, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                       Style="{StaticResource DialogWarningTextBlockStyle}"
-                                       Margin="0,8,0,0"/>
-
-                            <Grid Grid.Row="4"
-                                  Margin="0,12,0,0">
-
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-
-                                <CheckBox Grid.Row="0"
+                                <CheckBox Grid.Row="3"
                                           Content="Invert"
                                           IsChecked="{Binding Primary.Invert, Mode=TwoWay}"
-                                          HorizontalAlignment="Left"
                                           Foreground="{DynamicResource AppForegroundBrush}"
                                           FontWeight="Bold"
+                                          HorizontalAlignment="Left"
                                           Margin="0,0,0,12"/>
 
-                                <StackPanel Grid.Row="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Left">
+                                <Grid Grid.Row="4"
+      Margin="0,0,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Width="116"
-                                       Margin="0,0,18,0">
-                                        <TextBlock Text="Deadzone"
-                                            Style="{StaticResource DialogOptionLabelStyle}"/>
+                                    <!-- Pitch deadzone. -->
+                                    <Grid Grid.Row="0"
+          Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
 
-                                        <ComboBox Width="116"
-                                          ItemsSource="{Binding AxisCurveOptions}"
-                                          SelectedItem="{Binding Primary.DeadzoneCurve, Mode=TwoWay}"/>
-                                    </StackPanel>
+                                        <TextBlock Grid.Column="0"
+                   Text="Deadzone"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
 
-                                    <StackPanel Width="116">
-                                        <TextBlock Text="Saturation"
-                                            Style="{StaticResource DialogOptionLabelStyle}"/>
+                                        <Slider Grid.Column="1"
+                Style="{StaticResource AxisPairPercentageSliderStyle}"
+                Margin="8,0,10,0"
+                Value="{Binding Primary.DeadzoneStep,
+                                Mode=TwoWay,
+                                UpdateSourceTrigger=PropertyChanged}"/>
 
-                                        <ComboBox Width="116"
-                                          ItemsSource="{Binding AxisCurveOptions}"
-                                          SelectedItem="{Binding Primary.SaturationCurve, Mode=TwoWay}"/>
-                                    </StackPanel>
-                                </StackPanel>
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Primary.DeadzonePercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Pitch saturation. -->
+                                    <Grid Grid.Row="1"
+          Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                   Text="Saturation"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
+
+                                        <Slider Grid.Column="1"
+                Style="{StaticResource AxisPairPercentageSliderStyle}"
+                Margin="8,0,10,0"
+                Value="{Binding Primary.SaturationStep,
+                                Mode=TwoWay,
+                                UpdateSourceTrigger=PropertyChanged}"/>
+
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Primary.SaturationPercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Pitch curve. -->
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                   Text="Curve"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
+
+                                        <Slider Grid.Column="1"
+        Style="{StaticResource AxisPairPercentageSliderStyle}"
+        Minimum="0"
+        Maximum="4"
+        TickFrequency="1"
+        IsSnapToTickEnabled="True"
+        Margin="8,0,10,0"
+        Value="{Binding Primary.CurveStep,
+                        Mode=TwoWay,
+                        UpdateSourceTrigger=PropertyChanged}"/>
+
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Primary.CurvePercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+
+                                <TextBlock Grid.Row="5"
+                                           Text="{Binding Primary.ConflictText}"
+                                           Visibility="{Binding Primary.HasAxisConflict,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}"
+                                           Style="{StaticResource DialogWarningTextBlockStyle}"
+                                           Margin="0,10,0,0"/>
+                            </Grid>
+
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="100%"
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,0,0,3"/>
+
+                                <Canvas x:Name="PrimaryResponsePlotCanvas"
+        Grid.Row="1"
+        Width="210"
+        Height="210"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        SizeChanged="ResponsePlotCanvas_SizeChanged"/>
+
+                                <Grid Grid.Row="2"
+                                      Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="-100%"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="Input"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="100%"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               HorizontalAlignment="Right"/>
+                                </Grid>
                             </Grid>
                         </Grid>
+                    </Border>
 
-                        <!-- Secondary axis section -->
-                        <Grid Grid.Row="2">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                    <!-- Roll. -->
+                    <Border Grid.Row="2"
+                            Style="{StaticResource DashboardCardStyle}"
+                            Padding="18">
 
-                            <TextBlock Grid.Row="0"
-                                       Text="{Binding Secondary.TitleText}"
-                                       Style="{StaticResource DialogSectionLabelStyle}"
-                                       FontSize="18"
-                                       Margin="0,0,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="22"/>
+                                <ColumnDefinition Width="250"/>
+                            </Grid.ColumnDefinitions>
 
-                            <StackPanel Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        Margin="0,0,0,10">
-
-                                <TextBlock Text="Assigned axis:"
-                                           Style="{StaticResource DialogFieldLabelStyle}"
-                                           Margin="0,0,8,0"/>
-
-                                <TextBlock Text="{Binding Secondary.StatusText}"
-                                           Style="{StaticResource DialogAssignmentValueStyle}"/>
-                            </StackPanel>
-
-                            <Grid Grid.Row="2"
-                                  Margin="0,0,0,10">
-
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <Button Grid.Column="0"
-                                        Content="{Binding Secondary.MapButtonText}"
-                                        d:Content="Map Roll"
-                                        Height="32"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Command="{Binding MapSecondaryCommand}"/>
-                            </Grid>
-
-                            <TextBlock Grid.Row="3"
-                                       Text="{Binding Secondary.ConflictText}"
-                                       Visibility="{Binding Secondary.HasAxisConflict, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                       Style="{StaticResource DialogWarningTextBlockStyle}"
-                                       Margin="0,8,0,0"/>
-
-                            <Grid Grid.Row="4"
-                                  Margin="0,12,0,0">
-
+                            <Grid Grid.Column="0">
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <CheckBox Grid.Row="0"
+                                <TextBlock Grid.Row="0"
+                                           Text="{Binding Secondary.TitleText}"
+                                           Style="{StaticResource DialogSectionLabelStyle}"
+                                           Foreground="{DynamicResource AppAccentBrush}"
+                                           FontSize="18"
+                                           Margin="0,0,0,10"/>
+
+                                <Grid Grid.Row="1"
+                                      Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="Assigned axis:"
+                                               Style="{StaticResource DialogFieldLabelStyle}"
+                                               Margin="0,0,12,0"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Secondary.StatusText}"
+                                               Style="{StaticResource DialogAssignmentValueStyle}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+
+                                <Button Grid.Row="2"
+                                        Content="{Binding Secondary.MapButtonText}"
+                                        Width="146"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding MapSecondaryCommand}"
+                                        Margin="0,0,0,12"/>
+
+                                <CheckBox Grid.Row="3"
                                           Content="Invert"
                                           IsChecked="{Binding Secondary.Invert, Mode=TwoWay}"
-                                          HorizontalAlignment="Left"
                                           Foreground="{DynamicResource AppForegroundBrush}"
                                           FontWeight="Bold"
+                                          HorizontalAlignment="Left"
                                           Margin="0,0,0,12"/>
 
-                                <StackPanel Grid.Row="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Left">
+                                <Grid Grid.Row="4"
+      Margin="0,0,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Width="116"
-                                        Margin="0,0,18,0">
-                                        <TextBlock Text="Deadzone"
-                                             Style="{StaticResource DialogOptionLabelStyle}"/>
+                                    <!-- Roll deadzone. -->
+                                    <Grid Grid.Row="0"
+          Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
 
-                                        <ComboBox Width="116"
-                                          ItemsSource="{Binding AxisCurveOptions}"
-                                          SelectedItem="{Binding Secondary.DeadzoneCurve, Mode=TwoWay}"/>
-                                    </StackPanel>
+                                        <TextBlock Grid.Column="0"
+                   Text="Deadzone"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
 
-                                    <StackPanel Width="116">
-                                        <TextBlock Text="Saturation"
-                                            Style="{StaticResource DialogOptionLabelStyle}"/>
+                                        <Slider Grid.Column="1"
+                Style="{StaticResource AxisPairPercentageSliderStyle}"
+                Margin="8,0,10,0"
+                Value="{Binding Secondary.DeadzoneStep,
+                                Mode=TwoWay,
+                                UpdateSourceTrigger=PropertyChanged}"/>
 
-                                        <ComboBox Width="116"
-                                          ItemsSource="{Binding AxisCurveOptions}"
-                                          SelectedItem="{Binding Secondary.SaturationCurve, Mode=TwoWay}"/>
-                                    </StackPanel>
-                                </StackPanel>
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Secondary.DeadzonePercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Roll saturation. -->
+                                    <Grid Grid.Row="1"
+          Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                   Text="Saturation"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
+
+                                        <Slider Grid.Column="1"
+                Style="{StaticResource AxisPairPercentageSliderStyle}"
+                Margin="8,0,10,0"
+                Value="{Binding Secondary.SaturationStep,
+                                Mode=TwoWay,
+                                UpdateSourceTrigger=PropertyChanged}"/>
+
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Secondary.SaturationPercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Roll curve. -->
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="82"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="52"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                   Text="Curve"
+                   Style="{StaticResource DialogOptionLabelStyle}"
+                   VerticalAlignment="Center"/>
+
+                                        <Slider Grid.Column="1"
+        Style="{StaticResource AxisPairPercentageSliderStyle}"
+        Minimum="0"
+        Maximum="4"
+        TickFrequency="1"
+        IsSnapToTickEnabled="True"
+        Margin="8,0,10,0"
+        Value="{Binding Secondary.CurveStep,
+                        Mode=TwoWay,
+                        UpdateSourceTrigger=PropertyChanged}"/>
+
+                                        <Border Grid.Column="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                Padding="5,2"
+                CornerRadius="2"
+                VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Secondary.CurvePercentageText}"
+                       Foreground="{DynamicResource AppForegroundBrush}"
+                       HorizontalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+                                </Grid>
+
+                                <TextBlock Grid.Row="5"
+                                           Text="{Binding Secondary.ConflictText}"
+                                           Visibility="{Binding Secondary.HasAxisConflict,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}"
+                                           Style="{StaticResource DialogWarningTextBlockStyle}"
+                                           Margin="0,10,0,0"/>
+                            </Grid>
+
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="100%"
+                                           Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                           HorizontalAlignment="Left"
+                                           Margin="0,0,0,3"/>
+
+                                <Canvas x:Name="SecondaryResponsePlotCanvas"
+        Grid.Row="1"
+        Width="210"
+        Height="210"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        SizeChanged="ResponsePlotCanvas_SizeChanged"/>
+
+                                <Grid Grid.Row="2"
+                                      Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="-100%"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="Input"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"/>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="100%"
+                                               Foreground="{DynamicResource AppMutedForegroundBrush}"
+                                               HorizontalAlignment="Right"/>
+                                </Grid>
                             </Grid>
                         </Grid>
-                    </Grid>
+                    </Border>
                 </Grid>
-            </Border>
+            </Grid>
 
             <StackPanel Grid.Row="2"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,16,0,0">
 
-                <Button Content="Clear"
+                <Button Content="Clear Both"
                         Width="110"
-                        Margin="0,0,8,0"
-                        Command="{Binding ClearBothCommand}"/>
+                        Command="{Binding ClearBothCommand}"
+                        Margin="0,0,8,0"/>
 
                 <Button Content="Cancel"
                         Width="96"
-                        Margin="0,0,8,0"
                         IsCancel="True"
-                        Command="{Binding CancelCommand}"/>
+                        Command="{Binding CancelCommand}"
+                        Margin="0,0,8,0"/>
 
                 <Button Content="Save"
                         Width="96"
