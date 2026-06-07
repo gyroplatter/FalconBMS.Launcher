@@ -80,12 +80,12 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0"
-                                   Text="Stick Position"
-                                   Style="{StaticResource DialogSectionLabelStyle}"
-                                   Foreground="{DynamicResource AppAccentBrush}"
-                                   HorizontalAlignment="Center"
-                                   FontSize="18"
-                                   Margin="0,0,0,8"/>
+                           Text="{Binding PairDefinition.PlotTitle}"
+                           Style="{StaticResource DialogSectionLabelStyle}"
+                           Foreground="{DynamicResource AppAccentBrush}"
+                           HorizontalAlignment="Center"
+                           FontSize="18"
+                           Margin="0,0,0,8"/>
 
                         <Canvas x:Name="AxisPairPlotCanvas"
                                 Grid.Row="1"

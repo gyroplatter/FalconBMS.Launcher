@@ -168,10 +168,15 @@ public partial class AxisPairAssignWindow : Window
         if (DataContext is not AxisPairAssignViewModel viewModel)
             return;
 
+        double currentRawValue =
+            viewModel.PairDefinition.PrimaryControlsVerticalAxis
+                ? viewModel.RawY
+                : viewModel.RawX;
+
         DrawResponsePlot(
             PrimaryResponsePlotCanvas,
             viewModel.Primary,
-            viewModel.RawY);
+            currentRawValue);
     }
 
     private void DrawSecondaryResponsePlot()
@@ -179,10 +184,15 @@ public partial class AxisPairAssignWindow : Window
         if (DataContext is not AxisPairAssignViewModel viewModel)
             return;
 
+        double currentRawValue =
+            viewModel.PairDefinition.PrimaryControlsVerticalAxis
+                ? viewModel.RawX
+                : viewModel.RawY;
+
         DrawResponsePlot(
             SecondaryResponsePlotCanvas,
             viewModel.Secondary,
-            viewModel.RawX);
+            currentRawValue);
     }
 
     private void DrawAxisPairPlot()
@@ -251,41 +261,24 @@ public partial class AxisPairAssignWindow : Window
 
         if (viewModel.IsMappingPrimary)
         {
-            double bandWidth = size * 0.16;
-
-            var primaryBand = new Rectangle
-            {
-                Width = bandWidth,
-                Height = size,
-                Fill = CloneBrushWithOpacity(accentBrush, 0.18)
-            };
-
-            Canvas.SetLeft(
-                primaryBand,
-                left + (size - bandWidth) / 2.0);
-
-            Canvas.SetTop(primaryBand, top);
-            AxisPairPlotCanvas.Children.Add(primaryBand);
+            DrawMappingBand(
+                left,
+                top,
+                size,
+                controlsVerticalAxis:
+                    viewModel.PairDefinition.PrimaryControlsVerticalAxis,
+                accentBrush);
         }
 
         if (viewModel.IsMappingSecondary)
         {
-            double bandHeight = size * 0.16;
-
-            var secondaryBand = new Rectangle
-            {
-                Width = size,
-                Height = bandHeight,
-                Fill = CloneBrushWithOpacity(accentBrush, 0.18)
-            };
-
-            Canvas.SetLeft(secondaryBand, left);
-
-            Canvas.SetTop(
-                secondaryBand,
-                top + (size - bandHeight) / 2.0);
-
-            AxisPairPlotCanvas.Children.Add(secondaryBand);
+            DrawMappingBand(
+                left,
+                top,
+                size,
+                controlsVerticalAxis:
+                    !viewModel.PairDefinition.PrimaryControlsVerticalAxis,
+                accentBrush);
         }
 
         for (int i = 1; i < 8; i++)
@@ -332,7 +325,7 @@ public partial class AxisPairAssignWindow : Window
 
         AddLabel(
             AxisPairPlotCanvas,
-            "Up",
+            viewModel.PairDefinition.TopDirectionLabel,
             centerX,
             top - 27,
             accentBrush,
@@ -341,7 +334,7 @@ public partial class AxisPairAssignWindow : Window
 
         AddLabel(
             AxisPairPlotCanvas,
-            "Down",
+            viewModel.PairDefinition.BottomDirectionLabel,
             centerX,
             bottom + 7,
             accentBrush,
@@ -350,7 +343,7 @@ public partial class AxisPairAssignWindow : Window
 
         AddLabel(
             AxisPairPlotCanvas,
-            "Left",
+            viewModel.PairDefinition.LeftDirectionLabel,
             left - 32,
             centerY - 11,
             accentBrush,
@@ -359,7 +352,7 @@ public partial class AxisPairAssignWindow : Window
 
         AddLabel(
             AxisPairPlotCanvas,
-            "Right",
+            viewModel.PairDefinition.RightDirectionLabel,
             right + 32,
             centerY - 11,
             accentBrush,
@@ -423,6 +416,60 @@ public partial class AxisPairAssignWindow : Window
             outputPoint.Y + 9,
             accentBrush,
             3.0);
+    }
+
+    private void DrawMappingBand(
+    double left,
+    double top,
+    double size,
+    bool controlsVerticalAxis,
+    Brush accentBrush)
+    {
+        if (controlsVerticalAxis)
+        {
+            double bandWidth = size * 0.16;
+
+            var verticalBand = new Rectangle
+            {
+                Width = bandWidth,
+                Height = size,
+                Fill = CloneBrushWithOpacity(
+                    accentBrush,
+                    0.18)
+            };
+
+            Canvas.SetLeft(
+                verticalBand,
+                left + (size - bandWidth) / 2.0);
+
+            Canvas.SetTop(
+                verticalBand,
+                top);
+
+            AxisPairPlotCanvas.Children.Add(verticalBand);
+            return;
+        }
+
+        double bandHeight = size * 0.16;
+
+        var horizontalBand = new Rectangle
+        {
+            Width = size,
+            Height = bandHeight,
+            Fill = CloneBrushWithOpacity(
+                accentBrush,
+                0.18)
+        };
+
+        Canvas.SetLeft(
+            horizontalBand,
+            left);
+
+        Canvas.SetTop(
+            horizontalBand,
+            top + (size - bandHeight) / 2.0);
+
+        AxisPairPlotCanvas.Children.Add(horizontalBand);
     }
 
     private void DrawResponsePlot(

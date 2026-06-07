@@ -6,32 +6,72 @@ using System.Linq;
 namespace FalconBMS.Launcher.Services.Controls;
 
 /// <summary>
-/// Central list of logical BMS axis pairs that should appear as one physical X/Y control in the UI.
-/// This keeps the Controls table display decision out of STOCK/XML/JSON loading.
+/// Defines which individual logical axes represent one physical X/Y control.
+///
+/// AxisDefinitionService remains the source of truth for each individual axis.
+/// This service only defines the relationship between the two axes.
 /// </summary>
 public static class AxisPairDefinitionService
 {
     private static readonly AxisPairDefinition[] Definitions =
     {
-        new()
-        {
-            PairId = "FlightStick",
-            DisplayName = "STICK: Pitch & Roll",
-            PrimaryLogicalAxisName = "Pitch",
-            SecondaryLogicalAxisName = "Roll",
-            PrimaryTitle = "Pitch axis",
-            SecondaryTitle = "Roll axis",
-            PrimaryMapButtonText = "Map Pitch",
-            SecondaryMapButtonText = "Map Roll"
-        }
+        CreatePair(
+            pairId: "FlightStick",
+            displayName: "STICK: Pitch & Roll",
+            plotTitle: "Stick Position",
+            horizontalLogicalAxisName: "Roll",
+            verticalLogicalAxisName: "Pitch"),
+
+        CreatePair(
+            pairId: "ThrottleCursor",
+            displayName: "TQS: Cursor X & Y",
+            plotTitle: "Cursor Position",
+            horizontalLogicalAxisName: "Cursor_X",
+            verticalLogicalAxisName: "Cursor_Y")
     };
 
-    public static IReadOnlyList<AxisPairDefinition> All => Definitions;
+    public static IReadOnlyList<AxisPairDefinition> All =>
+        Definitions;
 
-    public static AxisPairDefinition? FindByLogicalAxisNames(string primaryLogicalAxisName, string secondaryLogicalAxisName)
+    public static AxisPairDefinition? FindByLogicalAxisNames(
+        string primaryLogicalAxisName,
+        string secondaryLogicalAxisName)
     {
         return Definitions.FirstOrDefault(definition =>
-            string.Equals(definition.PrimaryLogicalAxisName, primaryLogicalAxisName, StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(definition.SecondaryLogicalAxisName, secondaryLogicalAxisName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(
+                definition.PrimaryLogicalAxisName,
+                primaryLogicalAxisName,
+                StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(
+                definition.SecondaryLogicalAxisName,
+                secondaryLogicalAxisName,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static AxisPairDefinition CreatePair(
+        string pairId,
+        string displayName,
+        string plotTitle,
+        string horizontalLogicalAxisName,
+        string verticalLogicalAxisName)
+    {
+        DeviceAxisDefinition horizontalAxis =
+            AxisDefinitionService.Find(horizontalLogicalAxisName)
+            ?? throw new InvalidOperationException(
+                $"Axis pair '{pairId}' references unknown horizontal axis " +
+                $"'{horizontalLogicalAxisName}'.");
+
+        DeviceAxisDefinition verticalAxis =
+            AxisDefinitionService.Find(verticalLogicalAxisName)
+            ?? throw new InvalidOperationException(
+                $"Axis pair '{pairId}' references unknown vertical axis " +
+                $"'{verticalLogicalAxisName}'.");
+
+        return new AxisPairDefinition(
+            pairId,
+            displayName,
+            plotTitle,
+            horizontalAxis,
+            verticalAxis);
     }
 }
