@@ -222,86 +222,256 @@ public partial class ControlsView : UserControl
         return panel;
     }
 
-    private static DataTemplate CreateDeviceCellTemplate(string durableDeviceKey)
+    private static DataTemplate CreateDeviceCellTemplate(
+        string durableDeviceKey)
     {
         var template = new DataTemplate();
 
-        var gridFactory = new FrameworkElementFactory(typeof(Grid));
+        var gridFactory =
+            new FrameworkElementFactory(typeof(Grid));
+
         gridFactory.SetBinding(
             FrameworkElement.DataContextProperty,
-            new Binding($"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
+            new Binding(
+                $"{nameof(ControlGridRowViewModel.DeviceCellsByDeviceKey)}[{durableDeviceKey}]"));
 
-        gridFactory.SetResourceReference(FrameworkElement.StyleProperty, "ControlsTableDeviceCellGridStyle");
+        gridFactory.SetResourceReference(
+            FrameworkElement.StyleProperty,
+            "ControlsTableDeviceCellGridStyle");
 
-        var axisBarStyle = new Style(typeof(AxisBar));
-        axisBarStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
+        var panelFactory =
+            new FrameworkElementFactory(typeof(StackPanel));
 
-        var showAxisWhenMappedTrigger = new DataTrigger
+        panelFactory.SetValue(
+            StackPanel.OrientationProperty,
+            Orientation.Vertical);
+
+        /*
+         * Primary axis bar
+         *
+         * For normal axis rows, this is the only visible bar.
+         * For AxisPair rows, this represents Pitch.
+         */
+        var primaryAxisBarStyle = new Style(typeof(AxisBar));
+
+        primaryAxisBarStyle.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Collapsed));
+
+        var showPrimaryAxisTrigger = new DataTrigger
         {
-            Binding = new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
+            Binding = new Binding(
+                nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
             Value = true
         };
-        showAxisWhenMappedTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
-        axisBarStyle.Triggers.Add(showAxisWhenMappedTrigger);
 
-        var axisBarFactory = new FrameworkElementFactory(typeof(AxisBar));
-        axisBarFactory.SetValue(FrameworkElement.HeightProperty, 14.0);
-        axisBarFactory.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 1, 4, 1));
-        axisBarFactory.SetValue(FrameworkElement.StyleProperty, axisBarStyle);
+        showPrimaryAxisTrigger.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Visible));
 
-        axisBarFactory.SetBinding(AxisBar.ValueProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AxisBarValue))
+        primaryAxisBarStyle.Triggers.Add(showPrimaryAxisTrigger);
+
+        var primaryAxisBarFactory =
+            new FrameworkElementFactory(typeof(AxisBar));
+
+        primaryAxisBarFactory.SetValue(
+            FrameworkElement.HeightProperty,
+            14.0);
+
+        primaryAxisBarFactory.SetValue(
+            FrameworkElement.MarginProperty,
+            new Thickness(4, 1, 4, 1));
+
+        primaryAxisBarFactory.SetValue(
+            FrameworkElement.StyleProperty,
+            primaryAxisBarStyle);
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.ValueProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.AxisBarValue))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.IsActiveProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.HasAxisBinding))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.TextProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.DisplayText))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.ShowDetentsProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.ShowDetents))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.IdleDetentFractionProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.IdleDetentFraction))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        primaryAxisBarFactory.SetBinding(
+            AxisBar.AfterburnerDetentFractionProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.AfterburnerDetentFraction))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        /*
+         * Secondary AxisPair bar
+         *
+         * This remains collapsed for every normal table row.
+         * For the Pitch/Roll row, this represents Roll.
+         */
+        var secondaryAxisBarStyle = new Style(typeof(AxisBar));
+
+        secondaryAxisBarStyle.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Collapsed));
+
+        var showSecondaryAxisTrigger = new DataTrigger
         {
-            Mode = BindingMode.OneWay
-        });
+            Binding = new Binding(
+                nameof(ControlGridDeviceCellViewModel.SecondaryHasAxisBinding)),
+            Value = true
+        };
 
-        axisBarFactory.SetBinding(AxisBar.IsActiveProperty, new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding))
-        {
-            Mode = BindingMode.OneWay
-        });
+        showSecondaryAxisTrigger.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Visible));
 
-        axisBarFactory.SetBinding(AxisBar.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText))
-        {
-            Mode = BindingMode.OneWay
-        });
+        secondaryAxisBarStyle.Triggers.Add(showSecondaryAxisTrigger);
 
-        axisBarFactory.SetBinding(AxisBar.ShowDetentsProperty, new Binding(nameof(ControlGridDeviceCellViewModel.ShowDetents))
-        {
-            Mode = BindingMode.OneWay
-        });
+        var secondaryAxisBarFactory =
+            new FrameworkElementFactory(typeof(AxisBar));
 
-        axisBarFactory.SetBinding(AxisBar.IdleDetentFractionProperty, new Binding(nameof(ControlGridDeviceCellViewModel.IdleDetentFraction))
-        {
-            Mode = BindingMode.OneWay
-        });
+        secondaryAxisBarFactory.SetValue(
+            FrameworkElement.HeightProperty,
+            14.0);
 
-        axisBarFactory.SetBinding(AxisBar.AfterburnerDetentFractionProperty, new Binding(nameof(ControlGridDeviceCellViewModel.AfterburnerDetentFraction))
-        {
-            Mode = BindingMode.OneWay
-        });
+        secondaryAxisBarFactory.SetValue(
+            FrameworkElement.MarginProperty,
+            new Thickness(4, 1, 4, 1));
 
+        secondaryAxisBarFactory.SetValue(
+            FrameworkElement.StyleProperty,
+            secondaryAxisBarStyle);
+
+        secondaryAxisBarFactory.SetBinding(
+            AxisBar.ValueProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.SecondaryAxisBarValue))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        secondaryAxisBarFactory.SetBinding(
+            AxisBar.IsActiveProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.SecondaryHasAxisBinding))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        secondaryAxisBarFactory.SetBinding(
+            AxisBar.TextProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.SecondaryDisplayText))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        /*
+         * Normal text for buttons, keys, POVs, and completely unmapped cells.
+         */
         var textStyle = new Style(typeof(TextBlock));
-        textStyle.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Visible));
 
-        var hideTextWhenAxisTrigger = new DataTrigger
+        textStyle.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Visible));
+
+        var hideTextForPrimaryAxisTrigger = new DataTrigger
         {
-            Binding = new Binding(nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
+            Binding = new Binding(
+                nameof(ControlGridDeviceCellViewModel.HasAxisBinding)),
             Value = true
         };
-        hideTextWhenAxisTrigger.Setters.Add(new Setter(UIElement.VisibilityProperty, Visibility.Collapsed));
-        textStyle.Triggers.Add(hideTextWhenAxisTrigger);
 
-        var textFactory = new FrameworkElementFactory(typeof(TextBlock));
-        textFactory.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 0, 4, 0));
-        textFactory.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-        textFactory.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
-        textFactory.SetBinding(TextBlock.TextProperty, new Binding(nameof(ControlGridDeviceCellViewModel.DisplayText))
+        hideTextForPrimaryAxisTrigger.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Collapsed));
+
+        textStyle.Triggers.Add(hideTextForPrimaryAxisTrigger);
+
+        var hideTextForSecondaryAxisTrigger = new DataTrigger
         {
-            Mode = BindingMode.OneWay
-        });
-        textFactory.SetValue(FrameworkElement.StyleProperty, textStyle);
+            Binding = new Binding(
+                nameof(ControlGridDeviceCellViewModel.SecondaryHasAxisBinding)),
+            Value = true
+        };
 
-        gridFactory.AppendChild(axisBarFactory);
-        gridFactory.AppendChild(textFactory);
+        hideTextForSecondaryAxisTrigger.Setters.Add(
+            new Setter(
+                UIElement.VisibilityProperty,
+                Visibility.Collapsed));
+
+        textStyle.Triggers.Add(hideTextForSecondaryAxisTrigger);
+
+        var textFactory =
+            new FrameworkElementFactory(typeof(TextBlock));
+
+        textFactory.SetValue(
+            FrameworkElement.MarginProperty,
+            new Thickness(4, 0, 4, 0));
+
+        textFactory.SetValue(
+            FrameworkElement.VerticalAlignmentProperty,
+            VerticalAlignment.Center);
+
+        textFactory.SetValue(
+            TextBlock.TextTrimmingProperty,
+            TextTrimming.CharacterEllipsis);
+
+        textFactory.SetBinding(
+            TextBlock.TextProperty,
+            new Binding(
+                nameof(ControlGridDeviceCellViewModel.DisplayText))
+            {
+                Mode = BindingMode.OneWay
+            });
+
+        textFactory.SetValue(
+            FrameworkElement.StyleProperty,
+            textStyle);
+
+        panelFactory.AppendChild(primaryAxisBarFactory);
+        panelFactory.AppendChild(secondaryAxisBarFactory);
+        panelFactory.AppendChild(textFactory);
+
+        gridFactory.AppendChild(panelFactory);
 
         template.VisualTree = gridFactory;
         return template;
@@ -316,6 +486,42 @@ public partial class ControlsView : UserControl
 
         if (selectedRow is null)
             return;
+
+        if (selectedRow.IsAxisPairRow)
+        {
+            if (selectedRow.AxisPairDefinition is null)
+                return;
+
+            StopKeyboardSearchCapture();
+
+            Window? ownerWindow = Window.GetWindow(this);
+
+            var axisPairWindow = new AxisPairAssignWindow
+            {
+                Owner = ownerWindow
+            };
+
+            string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
+
+            // The owner should normally be the main launcher window, but use IntPtr.Zero as a safe fallback
+            // so nullable analysis and unusual design/runtime states do not break the axis-pair popup flow.
+            IntPtr hwnd = ownerWindow is not null
+                ? new WindowInteropHelper(ownerWindow).Handle
+                : IntPtr.Zero;
+
+            axisPairWindow.DataContext = new AxisPairAssignViewModel(
+                selectedRow.AxisPairDefinition,
+                viewModel.DeviceColumns,
+                clickedDeviceKey,
+                hwnd,
+                viewModel.ApplyAxisPairMappingFromPopup,
+                () => axisPairWindow.Close());
+
+            axisPairWindow.ShowDialog();
+
+            StartKeyboardSearchCapture();
+            return;
+        }
 
         if (selectedRow.IsAxisRow)
         {
@@ -669,9 +875,14 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns.Where(device => device.IsConnected && device.AxisCount > 0))
+        foreach (DeviceBindingProfile deviceProfile in
+                 viewModel.DeviceColumns.Where(device =>
+                     device.IsConnected &&
+                     device.AxisCount > 0))
         {
-            JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
+            JoystickSession? session =
+                EnsureJoystickOpened(deviceProfile, hwnd);
+
             if (session is null)
                 continue;
 
@@ -679,28 +890,76 @@ public partial class ControlsView : UserControl
 
             try
             {
-                axisValues = DirectInputManager.ReadAxisVector(session.ReadState());
+                axisValues =
+                    DirectInputManager.ReadAxisVector(
+                        session.ReadState());
             }
             catch
             {
                 continue;
             }
 
-            foreach (ControlGridRowViewModel row in viewModel.Rows.Where(row => row.IsAxisRow))
+            foreach (ControlGridRowViewModel row in
+                     viewModel.Rows.Where(row =>
+                         row.IsAxisRow ||
+                         row.IsAxisPairRow))
             {
-                if (!row.DeviceCellsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out ControlGridDeviceCellViewModel? cell))
+                if (!row.DeviceCellsByDeviceKey.TryGetValue(
+                        deviceProfile.DurableDeviceKey,
+                        out ControlGridDeviceCellViewModel? cell))
+                {
                     continue;
+                }
+
+                if (row.IsAxisPairRow)
+                {
+                    AxisPairDefinition? pairDefinition =
+                        row.AxisPairDefinition;
+
+                    if (pairDefinition is null)
+                        continue;
+
+                    if (cell.HasAxisBinding &&
+                        cell.PhysicalAxisIndex >= 0 &&
+                        cell.PhysicalAxisIndex < axisValues.Length)
+                    {
+                        cell.AxisBarValue =
+                            AxisAssignViewModel.NormalizeAxisValue(
+                                axisValues[cell.PhysicalAxisIndex],
+                                pairDefinition.PrimaryLogicalAxisName,
+                                cell.Invert);
+                    }
+
+                    if (cell.SecondaryHasAxisBinding &&
+                        cell.SecondaryPhysicalAxisIndex >= 0 &&
+                        cell.SecondaryPhysicalAxisIndex <
+                        axisValues.Length)
+                    {
+                        cell.SecondaryAxisBarValue =
+                            AxisAssignViewModel.NormalizeAxisValue(
+                                axisValues[
+                                    cell.SecondaryPhysicalAxisIndex],
+                                pairDefinition.SecondaryLogicalAxisName,
+                                cell.SecondaryInvert);
+                    }
+
+                    continue;
+                }
 
                 if (!cell.HasAxisBinding)
                     continue;
 
-                if (cell.PhysicalAxisIndex < 0 || cell.PhysicalAxisIndex >= axisValues.Length)
+                if (cell.PhysicalAxisIndex < 0 ||
+                    cell.PhysicalAxisIndex >= axisValues.Length)
+                {
                     continue;
+                }
 
-                cell.AxisBarValue = AxisAssignViewModel.NormalizeAxisValue(
-                    axisValues[cell.PhysicalAxisIndex],
-                    row.AxisLogicalAxisName,
-                    cell.Invert);
+                cell.AxisBarValue =
+                    AxisAssignViewModel.NormalizeAxisValue(
+                        axisValues[cell.PhysicalAxisIndex],
+                        row.AxisLogicalAxisName,
+                        cell.Invert);
             }
         }
     }

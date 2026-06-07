@@ -314,11 +314,20 @@ public sealed class DeviceJsonReaderService
                 PhysicalAxisIndex = axis?.PhysicalAxisIndex,
                 Saturation = axis?.Saturation ?? "None",
                 Deadzone = axis?.Deadzone ?? "None",
+                Curve = NormalizeAxisCurve(axis?.Curve),
                 Invert = axis?.Invert.GetValueOrDefault() ?? false,
                 AfterburnerDetent = axis?.AfterburnerDetent,
                 IdleDetent = axis?.IdleDetent
             });
         }
+    }
+
+    private static int NormalizeAxisCurve(int? curve)
+    {
+        if (!curve.HasValue || curve.Value < 1)
+            return 1;
+
+        return curve.Value;
     }
 
     private static void ApplyAircraftProfiles(
@@ -677,6 +686,9 @@ public sealed class DeviceJsonReaderService
 
         [DataMember(Name = "deadzone")]
         public string? Deadzone { get; set; }
+
+        [DataMember(Name = "curve")]
+        public int? Curve { get; set; }
 
         [DataMember(Name = "invert")]
         public bool? Invert { get; set; }
