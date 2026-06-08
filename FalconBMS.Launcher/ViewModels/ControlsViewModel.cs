@@ -1093,72 +1093,186 @@ public sealed class ControlsViewModel : ViewModelBase
         AxisPairAssignViewModel.AxisEditViewModel axisEdit,
         HashSet<string> changedLogicalAxisNames)
     {
-        string logicalAxisName = axisEdit.LogicalAxisName;
-        changedLogicalAxisNames.Add(logicalAxisName);
+        string logicalAxisName =
+            axisEdit.LogicalAxisName;
+
+        changedLogicalAxisNames.Add(
+            logicalAxisName);
 
         // A logical BMS axis should resolve to one physical device axis total.
-        // Clear this logical axis from every device before applying the edited assignment.
-        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        // Clear this logical axis from every device before applying the edited
+        // assignment.
+        foreach (DeviceBindingProfile deviceProfile in
+                 DeviceColumns)
         {
-            foreach (DeviceAxisBinding binding in deviceProfile.AxisBindings.Where(binding =>
-                         string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
+            foreach (DeviceAxisBinding binding in
+                     deviceProfile.AxisBindings.Where(
+                         binding =>
+                             string.Equals(
+                                 binding.LogicalAxisName,
+                                 logicalAxisName,
+                                 StringComparison.OrdinalIgnoreCase)))
             {
                 if (binding.PhysicalAxisIndex.HasValue)
                 {
                     DebugDiagnosticsService.Info(
-                        $"Clearing previous axis pair logical axis assignment. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(deviceProfile)} | DeviceKey={deviceProfile.DurableDeviceKey} | PreviousPhysicalAxis={FormatPhysicalAxis(binding.PhysicalAxisIndex)}");
+                        $"Clearing previous axis pair logical axis assignment. | " +
+                        $"ActionId={actionId} | " +
+                        $"LogicalAxis={logicalAxisName} | " +
+                        $"Device={GetDeviceDisplayName(deviceProfile)} | " +
+                        $"DeviceKey={deviceProfile.DurableDeviceKey} | " +
+                        $"PreviousPhysicalAxis={FormatPhysicalAxis(binding.PhysicalAxisIndex)}");
 
-                    changedLogicalAxisNames.Add(binding.LogicalAxisName);
+                    changedLogicalAxisNames.Add(
+                        binding.LogicalAxisName);
                 }
 
                 binding.PhysicalAxisIndex = null;
+
+                // Clear means the entire logical-axis record returns to its
+                // default state, not only that its physical assignment is removed.
+                if (axisEdit.IsCleared)
+                {
+                    binding.Deadzone =
+                        AxCurve.None.ToString();
+
+                    binding.Saturation =
+                        AxCurve.None.ToString();
+
+                    binding.Curve = 1;
+                    binding.Invert = false;
+                    binding.IdleDetent = null;
+                    binding.AfterburnerDetent = null;
+
+                    changedLogicalAxisNames.Add(
+                        binding.LogicalAxisName);
+
+                    DebugDiagnosticsService.Info(
+                        $"Reset cleared axis pair tuning values. | " +
+                        $"ActionId={actionId} | " +
+                        $"LogicalAxis={logicalAxisName} | " +
+                        $"Device={GetDeviceDisplayName(deviceProfile)} | " +
+                        $"DeviceKey={deviceProfile.DurableDeviceKey} | " +
+                        $"Deadzone={binding.Deadzone} | " +
+                        $"Saturation={binding.Saturation} | " +
+                        $"Curve={binding.Curve} | " +
+                        $"Invert={binding.Invert}");
+                }
             }
         }
 
-        if (axisEdit.IsCleared || string.IsNullOrWhiteSpace(axisEdit.SelectedDeviceKey) || !axisEdit.SelectedPhysicalAxisIndex.HasValue)
+        if (axisEdit.IsCleared)
         {
             DebugDiagnosticsService.Info(
-                $"Axis pair edit has no selected physical axis to apply. | ActionId={actionId} | LogicalAxis={logicalAxisName} | IsCleared={axisEdit.IsCleared} | SelectedDeviceKey={axisEdit.SelectedDeviceKey ?? "<null>"} | SelectedPhysicalAxis={FormatPhysicalAxis(axisEdit.SelectedPhysicalAxisIndex)}");
+                $"Axis pair edit cleared. | " +
+                $"ActionId={actionId} | " +
+                $"LogicalAxis={logicalAxisName}");
+
             return;
         }
 
-        DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
-            string.Equals(device.DurableDeviceKey, axisEdit.SelectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+        if (string.IsNullOrWhiteSpace(
+                axisEdit.SelectedDeviceKey) ||
+            !axisEdit.SelectedPhysicalAxisIndex.HasValue)
+        {
+            DebugDiagnosticsService.Info(
+                $"Axis pair edit has no selected physical axis to apply. | " +
+                $"ActionId={actionId} | " +
+                $"LogicalAxis={logicalAxisName} | " +
+                $"IsCleared={axisEdit.IsCleared} | " +
+                $"SelectedDeviceKey={axisEdit.SelectedDeviceKey ?? "<null>"} | " +
+                $"SelectedPhysicalAxis={FormatPhysicalAxis(axisEdit.SelectedPhysicalAxisIndex)}");
+
+            return;
+        }
+
+        DeviceBindingProfile? selectedDevice =
+            DeviceColumns.FirstOrDefault(
+                device =>
+                    string.Equals(
+                        device.DurableDeviceKey,
+                        axisEdit.SelectedDeviceKey,
+                        StringComparison.OrdinalIgnoreCase));
 
         if (selectedDevice is null)
         {
             DebugDiagnosticsService.Warn(
-                $"Apply axis pair mapping skipped; selected device key was not found. | ActionId={actionId} | LogicalAxis={logicalAxisName} | MissingDeviceKey={axisEdit.SelectedDeviceKey}");
+                $"Apply axis pair mapping skipped; selected device key was not found. | " +
+                $"ActionId={actionId} | " +
+                $"LogicalAxis={logicalAxisName} | " +
+                $"MissingDeviceKey={axisEdit.SelectedDeviceKey}");
+
             return;
         }
 
-        foreach (DeviceAxisBinding conflict in selectedDevice.AxisBindings.Where(binding =>
-                     binding.PhysicalAxisIndex == axisEdit.SelectedPhysicalAxisIndex.Value &&
-                     !string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
+        foreach (DeviceAxisBinding conflict in
+                 selectedDevice.AxisBindings.Where(
+                     binding =>
+                         binding.PhysicalAxisIndex ==
+                         axisEdit.SelectedPhysicalAxisIndex.Value &&
+                         !string.Equals(
+                             binding.LogicalAxisName,
+                             logicalAxisName,
+                             StringComparison.OrdinalIgnoreCase)))
         {
-            // Same device + same physical axis cannot be assigned to multiple logical BMS axes.
-            // The axis pair popup uses the same overwrite behavior as the single-axis popup.
+            // Same device + same physical axis cannot be assigned to multiple
+            // logical BMS axes. The axis pair popup uses the same overwrite
+            // behavior as the single-axis popup.
             DebugDiagnosticsService.Warn(
-                $"Removing conflicting axis pair assignment. | ActionId={actionId} | NewLogicalAxis={logicalAxisName} | PreviousLogicalAxis={conflict.LogicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(conflict.PhysicalAxisIndex)}");
+                $"Removing conflicting axis pair assignment. | " +
+                $"ActionId={actionId} | " +
+                $"NewLogicalAxis={logicalAxisName} | " +
+                $"PreviousLogicalAxis={conflict.LogicalAxisName} | " +
+                $"Device={GetDeviceDisplayName(selectedDevice)} | " +
+                $"DeviceKey={selectedDevice.DurableDeviceKey} | " +
+                $"PhysicalAxis={FormatPhysicalAxis(conflict.PhysicalAxisIndex)}");
 
-            changedLogicalAxisNames.Add(conflict.LogicalAxisName);
+            changedLogicalAxisNames.Add(
+                conflict.LogicalAxisName);
+
             conflict.PhysicalAxisIndex = null;
         }
 
-        DeviceAxisBinding selectedBinding = selectedDevice.AxisBindings.FirstOrDefault(binding =>
-            string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase))
-            ?? CreateAxisBinding(selectedDevice, logicalAxisName);
+        DeviceAxisBinding selectedBinding =
+            selectedDevice.AxisBindings.FirstOrDefault(
+                binding =>
+                    string.Equals(
+                        binding.LogicalAxisName,
+                        logicalAxisName,
+                        StringComparison.OrdinalIgnoreCase))
+            ?? CreateAxisBinding(
+                selectedDevice,
+                logicalAxisName);
 
-        selectedBinding.PhysicalAxisIndex = axisEdit.SelectedPhysicalAxisIndex.Value;
-        selectedBinding.Deadzone = axisEdit.DeadzoneCurve.ToString();
-        selectedBinding.Saturation = axisEdit.SaturationCurve.ToString();
-        selectedBinding.Curve = axisEdit.CurveValue;
-        selectedBinding.Invert = axisEdit.Invert;
+        selectedBinding.PhysicalAxisIndex =
+            axisEdit.SelectedPhysicalAxisIndex.Value;
 
-        changedLogicalAxisNames.Add(selectedBinding.LogicalAxisName);
+        selectedBinding.Deadzone =
+            axisEdit.DeadzoneCurve.ToString();
+
+        selectedBinding.Saturation =
+            axisEdit.SaturationCurve.ToString();
+
+        selectedBinding.Curve =
+            axisEdit.CurveValue;
+
+        selectedBinding.Invert =
+            axisEdit.Invert;
+
+        changedLogicalAxisNames.Add(
+            selectedBinding.LogicalAxisName);
 
         DebugDiagnosticsService.Info(
-            $"Applied axis pair assignment to in-memory profile. | ActionId={actionId} | LogicalAxis={logicalAxisName} | Device={GetDeviceDisplayName(selectedDevice)} | DeviceKey={selectedDevice.DurableDeviceKey} | PhysicalAxis={FormatPhysicalAxis(selectedBinding.PhysicalAxisIndex)} | Deadzone={selectedBinding.Deadzone} | Saturation={selectedBinding.Saturation} | Curve={selectedBinding.Curve} | Invert={selectedBinding.Invert}");
+            $"Applied axis pair assignment to in-memory profile. | " +
+            $"ActionId={actionId} | " +
+            $"LogicalAxis={logicalAxisName} | " +
+            $"Device={GetDeviceDisplayName(selectedDevice)} | " +
+            $"DeviceKey={selectedDevice.DurableDeviceKey} | " +
+            $"PhysicalAxis={FormatPhysicalAxis(selectedBinding.PhysicalAxisIndex)} | " +
+            $"Deadzone={selectedBinding.Deadzone} | " +
+            $"Saturation={selectedBinding.Saturation} | " +
+            $"Curve={selectedBinding.Curve} | " +
+            $"Invert={selectedBinding.Invert}");
     }
 
 
