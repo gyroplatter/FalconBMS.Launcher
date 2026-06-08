@@ -6,9 +6,8 @@
         mc:Ignorable="d"
         Title="{Binding PairDefinition.WindowTitle}"
         Width="1200"
-        Height="760"
         MinWidth="1200"
-        MinHeight="760"
+        SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         Background="{DynamicResource AppWindowBackgroundBrush}">
@@ -171,9 +170,8 @@
                 <!-- Separate axes controls -->
                 <Grid Grid.Column="2">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="14"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <!-- Primary Axis -->
@@ -406,11 +404,12 @@
                     </Border>
 
                     <!-- Secondary axis -->
-                    <Border Grid.Row="2"
-                            Style="{StaticResource DashboardCardStyle}"
-                            Padding="18"
-                            Visibility="{Binding HasSecondaryAxis,
-                            Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Border Grid.Row="1"
+                        Style="{StaticResource DashboardCardStyle}"
+                        Padding="18"
+                        Margin="0,14,0,0"
+                        Visibility="{Binding HasSecondaryAxis,
+                        Converter={StaticResource BooleanToVisibilityConverter}}">
 
                         <Grid>
                             <Grid.ColumnDefinitions>
