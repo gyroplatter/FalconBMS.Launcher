@@ -767,6 +767,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private void UpdateAxisConflicts()
     {
+        if (HasPendingPairConflict())
+        {
+            ShowPendingPairConflict();
+            return;
+        }
+
         UpdateAxisConflict(
             Primary);
 
@@ -775,6 +781,58 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             UpdateAxisConflict(
                 Secondary);
         }
+    }
+
+    private bool HasPendingPairConflict()
+    {
+        if (!HasSecondaryAxis)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(
+                Primary.SelectedDeviceKey) ||
+            string.IsNullOrWhiteSpace(
+                Secondary.SelectedDeviceKey))
+        {
+            return false;
+        }
+
+        if (!Primary.SelectedPhysicalAxisIndex.HasValue ||
+            !Secondary.SelectedPhysicalAxisIndex.HasValue)
+        {
+            return false;
+        }
+
+        return
+            string.Equals(
+                Primary.SelectedDeviceKey,
+                Secondary.SelectedDeviceKey,
+                StringComparison.OrdinalIgnoreCase) &&
+            Primary.SelectedPhysicalAxisIndex.Value ==
+            Secondary.SelectedPhysicalAxisIndex.Value;
+    }
+
+    private void ShowPendingPairConflict()
+    {
+        string warningText =
+            $"{Primary.TitleText} and " +
+            $"{Secondary.TitleText} " +
+            "cannot use the same physical axis. " +
+            "Map one of them to a different axis.";
+
+        Primary.ConflictText = warningText;
+        Primary.HasAxisConflict = true;
+
+        Secondary.ConflictText = warningText;
+        Secondary.HasAxisConflict = true;
+
+        DebugDiagnosticsService.Warn(
+            $"Advanced axis pair conflict found. | " +
+            $"ActionId={_actionId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
+            $"PrimaryLogicalAxis={Primary.LogicalAxisName} | " +
+            $"SecondaryLogicalAxis={Secondary.LogicalAxisName} | " +
+            $"DeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | " +
+            $"PhysicalAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)}");
     }
 
     private void UpdateAxisConflict(
@@ -875,38 +933,10 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private bool ValidateBeforeSave()
     {
-        ClearPairValidationWarning();
+        UpdateAxisConflicts();
 
-        if (!HasSecondaryAxis)
+        if (!HasPendingPairConflict())
             return true;
-
-        bool samePhysicalAxis =
-            Primary.SelectedPhysicalAxisIndex.HasValue &&
-            Secondary.SelectedPhysicalAxisIndex.HasValue &&
-            string.Equals(
-                Primary.SelectedDeviceKey,
-                Secondary.SelectedDeviceKey,
-                StringComparison.OrdinalIgnoreCase) &&
-            Primary.SelectedPhysicalAxisIndex.Value ==
-            Secondary.SelectedPhysicalAxisIndex.Value;
-
-        if (!samePhysicalAxis)
-            return true;
-
-        string warningPrefix =
-            $"{Primary.TitleText} and " +
-            $"{Secondary.TitleText} " +
-            "cannot use the same physical axis.";
-
-        string warningText =
-            warningPrefix +
-            " Map one of them to a different axis before saving.";
-
-        Primary.ConflictText = warningText;
-        Primary.HasAxisConflict = true;
-
-        Secondary.ConflictText = warningText;
-        Secondary.HasAxisConflict = true;
 
         DebugDiagnosticsService.Warn(
             $"Advanced axis save blocked because both axes use the same physical input. | " +
