@@ -307,18 +307,29 @@ public sealed class ControlsViewModel : ViewModelBase
         };
     }
 
-    private static List<ControlGridRowViewModel> CombineAxisPairRows(List<ControlGridRowViewModel> axisRows)
+    private static List<ControlGridRowViewModel> CombineAxisPairRows(
+        List<ControlGridRowViewModel> axisRows)
     {
-        var combinedRows = new List<ControlGridRowViewModel>();
-        var consumedRows = new HashSet<ControlGridRowViewModel>();
+        var combinedRows =
+            new List<ControlGridRowViewModel>();
+
+        var consumedRows =
+            new HashSet<ControlGridRowViewModel>();
 
         foreach (ControlGridRowViewModel row in axisRows)
         {
             if (consumedRows.Contains(row))
                 continue;
 
-            AxisPairDefinition? pairDefinition = AxisPairDefinitionService.All.FirstOrDefault(definition =>
-                string.Equals(definition.PrimaryLogicalAxisName, row.AxisLogicalAxisName, StringComparison.OrdinalIgnoreCase));
+            AxisPairDefinition? pairDefinition =
+                AxisPairDefinitionService.All
+                    .FirstOrDefault(
+                        definition =>
+                            definition.HasSecondaryAxis &&
+                            string.Equals(
+                                definition.PrimaryLogicalAxisName,
+                                row.AxisLogicalAxisName,
+                                StringComparison.OrdinalIgnoreCase));
 
             if (pairDefinition is null)
             {
@@ -326,9 +337,14 @@ public sealed class ControlsViewModel : ViewModelBase
                 continue;
             }
 
-            ControlGridRowViewModel? secondaryRow = axisRows.FirstOrDefault(candidate =>
-                !ReferenceEquals(candidate, row) &&
-                string.Equals(candidate.AxisLogicalAxisName, pairDefinition.SecondaryLogicalAxisName, StringComparison.OrdinalIgnoreCase));
+            ControlGridRowViewModel? secondaryRow =
+                axisRows.FirstOrDefault(
+                    candidate =>
+                        !ReferenceEquals(candidate, row) &&
+                        string.Equals(
+                            candidate.AxisLogicalAxisName,
+                            pairDefinition.SecondaryLogicalAxisName,
+                            StringComparison.OrdinalIgnoreCase));
 
             if (secondaryRow is null)
             {
@@ -336,7 +352,12 @@ public sealed class ControlsViewModel : ViewModelBase
                 continue;
             }
 
-            combinedRows.Add(CreateAxisPairRow(row, secondaryRow, pairDefinition));
+            combinedRows.Add(
+                CreateAxisPairRow(
+                    row,
+                    secondaryRow,
+                    pairDefinition));
+
             consumedRows.Add(row);
             consumedRows.Add(secondaryRow);
         }
@@ -940,49 +961,107 @@ public sealed class ControlsViewModel : ViewModelBase
     }
 
 
-    public void ApplyAxisPairMappingFromPopup(AxisPairAssignViewModel popup)
+    public void ApplyAxisPairMappingFromPopup(
+        AxisPairAssignViewModel popup)
     {
-        string actionId = DebugDiagnosticsService.CreateActionId("AXISPAIRAPPLY");
-        AxisPairDefinition pairDefinition = popup.PairDefinition;
+        string actionId =
+            DebugDiagnosticsService.CreateActionId(
+                "AXISPAIRAPPLY");
+
+        AxisPairDefinition pairDefinition =
+            popup.PairDefinition;
 
         DebugDiagnosticsService.Info(
-            $"Apply axis pair mapping begin. | ActionId={actionId} | PairId={pairDefinition.PairId} | PrimaryLogicalAxis={pairDefinition.PrimaryLogicalAxisName} | PrimaryDeviceKey={popup.Primary.SelectedDeviceKey ?? "<null>"} | PrimaryPhysicalAxis={FormatPhysicalAxis(popup.Primary.SelectedPhysicalAxisIndex)} | PrimaryCleared={popup.Primary.IsCleared} | SecondaryLogicalAxis={pairDefinition.SecondaryLogicalAxisName} | SecondaryDeviceKey={popup.Secondary.SelectedDeviceKey ?? "<null>"} | SecondaryPhysicalAxis={FormatPhysicalAxis(popup.Secondary.SelectedPhysicalAxisIndex)} | SecondaryCleared={popup.Secondary.IsCleared}");
+            $"Apply advanced axis mapping begin. | " +
+            $"ActionId={actionId} | " +
+            $"DefinitionId={pairDefinition.PairId} | " +
+            $"HasSecondaryAxis={pairDefinition.HasSecondaryAxis} | " +
+            $"PrimaryLogicalAxis={pairDefinition.PrimaryLogicalAxisName} | " +
+            $"PrimaryDeviceKey={popup.Primary.SelectedDeviceKey ?? "<null>"} | " +
+            $"PrimaryPhysicalAxis={FormatPhysicalAxis(popup.Primary.SelectedPhysicalAxisIndex)} | " +
+            $"PrimaryCleared={popup.Primary.IsCleared}");
 
-        string beforeState = BuildAxisBindingDirtyStateSignature();
+        if (pairDefinition.HasSecondaryAxis)
+        {
+            DebugDiagnosticsService.Info(
+                $"Apply advanced secondary axis mapping. | " +
+                $"ActionId={actionId} | " +
+                $"DefinitionId={pairDefinition.PairId} | " +
+                $"SecondaryLogicalAxis={pairDefinition.SecondaryLogicalAxisName} | " +
+                $"SecondaryDeviceKey={popup.Secondary.SelectedDeviceKey ?? "<null>"} | " +
+                $"SecondaryPhysicalAxis={FormatPhysicalAxis(popup.Secondary.SelectedPhysicalAxisIndex)} | " +
+                $"SecondaryCleared={popup.Secondary.IsCleared}");
+        }
 
-        var changedLogicalAxisNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string beforeState =
+            BuildAxisBindingDirtyStateSignature();
 
-        ApplyAxisPairEdit(actionId, popup.Primary, changedLogicalAxisNames);
-        ApplyAxisPairEdit(actionId, popup.Secondary, changedLogicalAxisNames);
+        var changedLogicalAxisNames =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
 
-        string afterState = BuildAxisBindingDirtyStateSignature();
+        ApplyAxisPairEdit(
+            actionId,
+            popup.Primary,
+            changedLogicalAxisNames);
+
+        if (pairDefinition.HasSecondaryAxis)
+        {
+            ApplyAxisPairEdit(
+                actionId,
+                popup.Secondary,
+                changedLogicalAxisNames);
+        }
+
+        string afterState =
+            BuildAxisBindingDirtyStateSignature();
 
         bool bindingsChanged =
-            !string.Equals(beforeState, afterState, StringComparison.Ordinal);
+            !string.Equals(
+                beforeState,
+                afterState,
+                StringComparison.Ordinal);
 
         if (bindingsChanged)
         {
-            foreach (string changedLogicalAxisName in changedLogicalAxisNames)
+            foreach (string changedLogicalAxisName in
+                     changedLogicalAxisNames)
             {
                 DebugDiagnosticsService.Info(
-                    $"Refreshing axis rows after axis pair assignment. | ActionId={actionId} | LogicalAxis={changedLogicalAxisName}");
+                    $"Refreshing axis rows after advanced axis assignment. | " +
+                    $"ActionId={actionId} | " +
+                    $"LogicalAxis={changedLogicalAxisName}");
 
-                RefreshAxisRows(changedLogicalAxisName);
+                RefreshAxisRows(
+                    changedLogicalAxisName);
             }
 
-            RefreshAxisPairRows(pairDefinition);
+            if (pairDefinition.HasSecondaryAxis)
+            {
+                RefreshAxisPairRows(
+                    pairDefinition);
+            }
 
             _isDirty = true;
-            OnPropertyChanged(nameof(SummaryText));
+
+            OnPropertyChanged(
+                nameof(SummaryText));
         }
         else
         {
             DebugDiagnosticsService.Info(
-                $"Axis pair assignment unchanged; dirty state not set. | ActionId={actionId} | PairId={pairDefinition.PairId}");
+                $"Advanced axis assignment unchanged; dirty state not set. | " +
+                $"ActionId={actionId} | " +
+                $"DefinitionId={pairDefinition.PairId}");
         }
 
         DebugDiagnosticsService.Info(
-            $"Apply axis pair mapping end. | ActionId={actionId} | PairId={pairDefinition.PairId} | ChangedLogicalAxes={string.Join(",", changedLogicalAxisNames)} | BindingsChanged={bindingsChanged} | IsDirty={_isDirty}");
+            $"Apply advanced axis mapping end. | " +
+            $"ActionId={actionId} | " +
+            $"DefinitionId={pairDefinition.PairId} | " +
+            $"ChangedLogicalAxes={string.Join(",", changedLogicalAxisNames)} | " +
+            $"BindingsChanged={bindingsChanged} | " +
+            $"IsDirty={_isDirty}");
     }
 
     private string BuildAxisBindingDirtyStateSignature()

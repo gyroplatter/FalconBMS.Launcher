@@ -11,8 +11,9 @@ using System.Windows.Threading;
 namespace FalconBMS.Launcher.ViewModels;
 
 /// <summary>
-/// Drives the axis-pair assignment popup.
-/// The UI edits one physical X/Y control, but saving still writes two normal BMS axis bindings.
+/// Drives the advanced axis assignment popup.
+/// The UI can edit one physical axis or one physical X/Y control, but saving
+/// still writes normal BMS axis bindings.
 /// </summary>
 public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 {
@@ -61,6 +62,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     }
 
     public AxisPairDefinition PairDefinition { get; }
+
+    public bool HasSecondaryAxis =>
+        PairDefinition.HasSecondaryAxis;
 
     public AxCurve[] AxisCurveOptions { get; } =
     {
@@ -134,7 +138,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     public RelayCommand MapSecondaryCommand { get; }
 
-    public RelayCommand ClearBothCommand { get; }
+    public RelayCommand ClearCommand { get; }
 
     public RelayCommand SaveCommand { get; }
 
@@ -168,20 +172,39 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             initialDeviceKey,
             _deviceProfiles);
 
-        MapPrimaryCommand = new RelayCommand(
-            () => StartCapture(AxisPairCaptureTarget.Primary));
+        MapPrimaryCommand =
+            new RelayCommand(
+                () => StartCapture(
+                    AxisPairCaptureTarget.Primary));
 
-        MapSecondaryCommand = new RelayCommand(
-            () => StartCapture(AxisPairCaptureTarget.Secondary));
+        MapSecondaryCommand =
+            new RelayCommand(
+                () =>
+                {
+                    if (HasSecondaryAxis)
+                    {
+                        StartCapture(
+                            AxisPairCaptureTarget.Secondary);
+                    }
+                });
 
-        ClearBothCommand = new RelayCommand(ClearBothAxes);
-        SaveCommand = new RelayCommand(SaveAndClose);
-        CancelCommand = new RelayCommand(CancelAndClose);
+        ClearCommand =
+            new RelayCommand(
+                ClearAxes);
+
+        SaveCommand =
+            new RelayCommand(
+                SaveAndClose);
+
+        CancelCommand =
+            new RelayCommand(
+                CancelAndClose);
 
         DebugDiagnosticsService.Info(
-            $"Axis pair popup created. | " +
+            $"Advanced axis popup created. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
+            $"HasSecondaryAxis={HasSecondaryAxis} | " +
             $"InitialClickedDeviceKey={initialDeviceKey ?? "<null>"} | " +
             $"PrimaryDeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | " +
             $"PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
@@ -227,6 +250,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private void StartCapture(
         AxisPairCaptureTarget target)
     {
+        if (target == AxisPairCaptureTarget.Secondary &&
+            !HasSecondaryAxis)
+        {
+            return;
+        }
+
         _captureTarget = target;
         _captureStartedUtc = DateTime.UtcNow;
 
@@ -237,9 +266,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             target == AxisPairCaptureTarget.Primary;
 
         IsMappingSecondary =
+            HasSecondaryAxis &&
             target == AxisPairCaptureTarget.Secondary;
 
-        AxisEditViewModel axis = GetAxis(target);
+        AxisEditViewModel axis =
+            GetAxis(target);
 
         axis.StatusText =
             "Awaiting input: move this axis clearly";
@@ -248,27 +279,37 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         axis.HasAxisConflict = false;
 
         DebugDiagnosticsService.Info(
-            $"Axis pair capture armed. | " +
+            $"Advanced axis capture armed. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
             $"Target={target} | " +
             $"LogicalAxis={axis.LogicalAxisName}");
     }
 
-    private void ClearBothAxes()
+    private void ClearAxes()
     {
         DebugDiagnosticsService.Info(
-            $"Axis pair clear both clicked. | " +
+            $"Advanced axis clear clicked. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
+            $"HasSecondaryAxis={HasSecondaryAxis} | " +
             $"PrimaryLogicalAxis={Primary.LogicalAxisName} | " +
             $"PrimaryPreviousDeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | " +
-            $"PrimaryPreviousPhysicalAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
-            $"SecondaryLogicalAxis={Secondary.LogicalAxisName} | " +
-            $"SecondaryPreviousDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
-            $"SecondaryPreviousPhysicalAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
+            $"PrimaryPreviousPhysicalAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)}");
 
-        _captureTarget = AxisPairCaptureTarget.None;
+        if (HasSecondaryAxis)
+        {
+            DebugDiagnosticsService.Info(
+                $"Advanced secondary axis clear. | " +
+                $"ActionId={_actionId} | " +
+                $"DefinitionId={PairDefinition.PairId} | " +
+                $"SecondaryLogicalAxis={Secondary.LogicalAxisName} | " +
+                $"SecondaryPreviousDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
+                $"SecondaryPreviousPhysicalAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
+        }
+
+        _captureTarget =
+            AxisPairCaptureTarget.None;
 
         _baselineByDeviceKey.Clear();
         _stableHitsByCandidate.Clear();
@@ -280,9 +321,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             Primary,
             $"Cleared. Click {Primary.MapButtonText} to assign this axis.");
 
-        ClearAxisEdit(
-            Secondary,
-            $"Cleared. Click {Secondary.MapButtonText} to assign this axis.");
+        if (HasSecondaryAxis)
+        {
+            ClearAxisEdit(
+                Secondary,
+                $"Cleared. Click {Secondary.MapButtonText} to assign this axis.");
+        }
 
         UpdateLiveGraphFromCurrentAssignments();
     }
@@ -395,7 +439,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             updated = true;
         }
 
-        if (TryGetAxisValueForEdit(
+        if (HasSecondaryAxis &&
+            TryGetAxisValueForEdit(
                 Secondary,
                 device,
                 axisValues,
@@ -412,11 +457,15 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         if (updated)
         {
-            DeadzoneRadius = Math.Max(
-                GetDeadzoneRadius(
-                    Primary.DeadzoneCurve),
-                GetDeadzoneRadius(
-                    Secondary.DeadzoneCurve));
+            DeadzoneRadius =
+                HasSecondaryAxis
+                    ? Math.Max(
+                        GetDeadzoneRadius(
+                            Primary.DeadzoneCurve),
+                        GetDeadzoneRadius(
+                            Secondary.DeadzoneCurve))
+                    : GetDeadzoneRadius(
+                        Primary.DeadzoneCurve);
         }
 
         return updated;
@@ -458,16 +507,35 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private void UpdateLiveGraphFromCurrentAssignments()
     {
         if (!Primary.SelectedPhysicalAxisIndex.HasValue)
-            ClearPlotValue(Primary);
+        {
+            ClearPlotValue(
+                Primary);
+        }
 
-        if (!Secondary.SelectedPhysicalAxisIndex.HasValue)
-            ClearPlotValue(Secondary);
+        if (HasSecondaryAxis)
+        {
+            if (!Secondary.SelectedPhysicalAxisIndex.HasValue)
+            {
+                ClearPlotValue(
+                    Secondary);
+            }
 
-        DeadzoneRadius = Math.Max(
+            DeadzoneRadius =
+                Math.Max(
+                    GetDeadzoneRadius(
+                        Primary.DeadzoneCurve),
+                    GetDeadzoneRadius(
+                        Secondary.DeadzoneCurve));
+
+            return;
+        }
+
+        RawY = 0;
+        OutputY = 0;
+
+        DeadzoneRadius =
             GetDeadzoneRadius(
-                Primary.DeadzoneCurve),
-            GetDeadzoneRadius(
-                Secondary.DeadzoneCurve));
+                Primary.DeadzoneCurve);
     }
 
     private void UpdatePlotValue(
@@ -641,9 +709,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         _baselineByDeviceKey.Clear();
 
         DebugDiagnosticsService.Info(
-            $"Axis pair axis captured. | " +
+            $"Advanced axis captured. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
             $"LogicalAxis={targetAxis.LogicalAxisName} | " +
             $"Device={GetDeviceDisplayName(best.Device)} | " +
             $"DeviceKey={best.Device.DurableDeviceKey} | " +
@@ -699,8 +767,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private void UpdateAxisConflicts()
     {
-        UpdateAxisConflict(Primary);
-        UpdateAxisConflict(Secondary);
+        UpdateAxisConflict(
+            Primary);
+
+        if (HasSecondaryAxis)
+        {
+            UpdateAxisConflict(
+                Secondary);
+        }
     }
 
     private void UpdateAxisConflict(
@@ -728,9 +802,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         axis.HasAxisConflict = true;
 
         DebugDiagnosticsService.Warn(
-            $"Axis pair conflict found. | " +
+            $"Advanced axis conflict found. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
             $"LogicalAxis={axis.LogicalAxisName} | " +
             $"SelectedDeviceKey={axis.SelectedDeviceKey ?? "<null>"} | " +
             $"SelectedPhysicalAxis={FormatPhysicalAxis(axis.SelectedPhysicalAxisIndex)} | " +
@@ -773,15 +847,24 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private void SaveAndClose()
     {
         DebugDiagnosticsService.Info(
-            $"Axis pair save clicked. | " +
+            $"Advanced axis save clicked. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
+            $"HasSecondaryAxis={HasSecondaryAxis} | " +
             $"PrimaryDeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | " +
             $"PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
-            $"PrimaryCleared={Primary.IsCleared} | " +
-            $"SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
-            $"SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)} | " +
-            $"SecondaryCleared={Secondary.IsCleared}");
+            $"PrimaryCleared={Primary.IsCleared}");
+
+        if (HasSecondaryAxis)
+        {
+            DebugDiagnosticsService.Info(
+                $"Advanced secondary axis save. | " +
+                $"ActionId={_actionId} | " +
+                $"DefinitionId={PairDefinition.PairId} | " +
+                $"SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
+                $"SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)} | " +
+                $"SecondaryCleared={Secondary.IsCleared}");
+        }
 
         if (!ValidateBeforeSave())
             return;
@@ -793,6 +876,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private bool ValidateBeforeSave()
     {
         ClearPairValidationWarning();
+
+        if (!HasSecondaryAxis)
+            return true;
 
         bool samePhysicalAxis =
             Primary.SelectedPhysicalAxisIndex.HasValue &&
@@ -823,9 +909,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         Secondary.HasAxisConflict = true;
 
         DebugDiagnosticsService.Warn(
-            $"Axis pair save blocked because both axes use the same physical input. | " +
+            $"Advanced axis save blocked because both axes use the same physical input. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
             $"PrimaryLogicalAxis={Primary.LogicalAxisName} | " +
             $"SecondaryLogicalAxis={Secondary.LogicalAxisName} | " +
             $"DeviceKey={Primary.SelectedDeviceKey ?? "<null>"} | " +
@@ -836,6 +922,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private void ClearPairValidationWarning()
     {
+        if (!HasSecondaryAxis)
+            return;
+
         string warningPrefix =
             $"{Primary.TitleText} and " +
             $"{Secondary.TitleText} " +
@@ -863,9 +952,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private void CancelAndClose()
     {
         DebugDiagnosticsService.Info(
-            $"Axis pair assign canceled. | " +
+            $"Advanced axis assign canceled. | " +
             $"ActionId={_actionId} | " +
-            $"PairId={PairDefinition.PairId}");
+            $"DefinitionId={PairDefinition.PairId}");
 
         _closeWindow();
     }

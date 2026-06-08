@@ -1,6 +1,7 @@
 ﻿using FalconBMS.Launcher.Input;
 using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services;
+using FalconBMS.Launcher.Services.Controls;
 using FalconBMS.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -477,45 +478,59 @@ public partial class ControlsView : UserControl
         return template;
     }
 
-    private void ControlsGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    private void ControlsGrid_MouseDoubleClick(
+        object sender,
+        MouseButtonEventArgs e)
     {
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
+        ControlGridRowViewModel? selectedRow =
+            viewModel.SelectedRow;
 
         if (selectedRow is null)
             return;
 
-        if (selectedRow.IsAxisPairRow)
-        {
-            if (selectedRow.AxisPairDefinition is null)
-                return;
+        AxisPairDefinition? advancedAxisDefinition =
+            selectedRow.IsAxisPairRow
+                ? selectedRow.AxisPairDefinition
+                : selectedRow.IsAxisRow
+                    ? AxisPairDefinitionService.FindByLogicalAxisName(
+                        selectedRow.AxisLogicalAxisName)
+                    : null;
 
+        if (advancedAxisDefinition is not null)
+        {
             StopKeyboardSearchCapture();
 
-            Window? ownerWindow = Window.GetWindow(this);
+            Window? ownerWindow =
+                Window.GetWindow(this);
 
-            var axisPairWindow = new AxisPairAssignWindow
-            {
-                Owner = ownerWindow
-            };
+            var axisPairWindow =
+                new AxisPairAssignWindow
+                {
+                    Owner = ownerWindow
+                };
 
-            string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
+            string? clickedDeviceKey =
+                GetClickedDeviceKey(
+                    e.OriginalSource as DependencyObject,
+                    viewModel);
 
-            // The owner should normally be the main launcher window, but use IntPtr.Zero as a safe fallback
-            // so nullable analysis and unusual design/runtime states do not break the axis-pair popup flow.
-            IntPtr hwnd = ownerWindow is not null
-                ? new WindowInteropHelper(ownerWindow).Handle
-                : IntPtr.Zero;
+            IntPtr hwnd =
+                ownerWindow is not null
+                    ? new WindowInteropHelper(
+                        ownerWindow).Handle
+                    : IntPtr.Zero;
 
-            axisPairWindow.DataContext = new AxisPairAssignViewModel(
-                selectedRow.AxisPairDefinition,
-                viewModel.DeviceColumns,
-                clickedDeviceKey,
-                hwnd,
-                viewModel.ApplyAxisPairMappingFromPopup,
-                () => axisPairWindow.Close());
+            axisPairWindow.DataContext =
+                new AxisPairAssignViewModel(
+                    advancedAxisDefinition,
+                    viewModel.DeviceColumns,
+                    clickedDeviceKey,
+                    hwnd,
+                    viewModel.ApplyAxisPairMappingFromPopup,
+                    () => axisPairWindow.Close());
 
             axisPairWindow.ShowDialog();
 
@@ -527,28 +542,34 @@ public partial class ControlsView : UserControl
         {
             StopKeyboardSearchCapture();
 
-            Window? ownerWindow = Window.GetWindow(this);
+            Window? ownerWindow =
+                Window.GetWindow(this);
 
-            var axisWindow = new AxisAssignWindow
-            {
-                Owner = ownerWindow
-            };
+            var axisWindow =
+                new AxisAssignWindow
+                {
+                    Owner = ownerWindow
+                };
 
-            string? clickedDeviceKey = GetClickedDeviceKey(e.OriginalSource as DependencyObject, viewModel);
+            string? clickedDeviceKey =
+                GetClickedDeviceKey(
+                    e.OriginalSource as DependencyObject,
+                    viewModel);
 
-            // The owner should normally be the main launcher window, but use IntPtr.Zero as a safe fallback
-            // so nullable analysis and unusual design/runtime states do not break the axis popup flow.
-            IntPtr hwnd = ownerWindow is not null
-                ? new WindowInteropHelper(ownerWindow).Handle
-                : IntPtr.Zero;
+            IntPtr hwnd =
+                ownerWindow is not null
+                    ? new WindowInteropHelper(
+                        ownerWindow).Handle
+                    : IntPtr.Zero;
 
-            axisWindow.DataContext = new AxisAssignViewModel(
-                selectedRow,
-                viewModel.DeviceColumns,
-                clickedDeviceKey,
-                hwnd,
-                viewModel.ApplyAxisMappingFromPopup,
-                () => axisWindow.Close());
+            axisWindow.DataContext =
+                new AxisAssignViewModel(
+                    selectedRow,
+                    viewModel.DeviceColumns,
+                    clickedDeviceKey,
+                    hwnd,
+                    viewModel.ApplyAxisMappingFromPopup,
+                    () => axisWindow.Close());
 
             axisWindow.ShowDialog();
 
@@ -564,22 +585,27 @@ public partial class ControlsView : UserControl
 
         StopKeyboardSearchCapture();
 
-        var window = new KeyMappingWindow
-        {
-            Owner = Window.GetWindow(this)
-        };
+        var window =
+            new KeyMappingWindow
+            {
+                Owner = Window.GetWindow(this)
+            };
 
         if (viewModel.SelectedProfile is null)
+        {
+            StartKeyboardSearchCapture();
             return;
+        }
 
-        window.DataContext = new KeyMappingWindowViewModel(
-            selectedRow.SourceRow,
-            viewModel.SelectedProfileRows,
-            viewModel.DeviceColumns,
-            viewModel.SelectedProfile.AircraftProfile,
-            viewModel.ApplyKeyboardMappingFromPopup,
-            viewModel.ApplyDeviceButtonMappingFromPopup,
-            () => window.Close());
+        window.DataContext =
+            new KeyMappingWindowViewModel(
+                selectedRow.SourceRow,
+                viewModel.SelectedProfileRows,
+                viewModel.DeviceColumns,
+                viewModel.SelectedProfile.AircraftProfile,
+                viewModel.ApplyKeyboardMappingFromPopup,
+                viewModel.ApplyDeviceButtonMappingFromPopup,
+                () => window.Close());
 
         window.ShowDialog();
 

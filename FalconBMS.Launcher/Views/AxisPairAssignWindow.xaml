@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Assign Axis Pair"
+        Title="{Binding PairDefinition.WindowTitle}"
         Width="1200"
         Height="760"
         MinWidth="1200"
@@ -69,8 +69,29 @@
 
                 <!-- Large combined live X/Y display. -->
                 <Border Grid.Column="0"
-                        Style="{StaticResource DashboardCardStyle}"
-                        Padding="18">
+                    Padding="18">
+
+                    <Border.Style>
+                        <Style TargetType="Border"
+               BasedOn="{StaticResource DashboardCardStyle}">
+
+                            <Setter Property="VerticalAlignment"
+                    Value="Stretch"/>
+
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasSecondaryAxis}"
+                             Value="False">
+
+                                    <Setter Property="VerticalAlignment"
+                            Value="Top"/>
+
+                                    <Setter Property="Height"
+                            Value="{Binding ElementName=PrimaryAxisCard,
+                                            Path=ActualHeight}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
 
                     <Grid>
                         <Grid.RowDefinitions>
@@ -88,10 +109,25 @@
                            Margin="0,0,0,8"/>
 
                         <Canvas x:Name="AxisPairPlotCanvas"
-                                Grid.Row="1"
-                                MinHeight="470"
-                                ClipToBounds="False"
-                                SizeChanged="AxisPairPlotCanvas_SizeChanged"/>
+                            Grid.Row="1"
+                            ClipToBounds="False"
+                            SizeChanged="AxisPairPlotCanvas_SizeChanged">
+
+                            <Canvas.Style>
+                                <Style TargetType="Canvas">
+                                    <Setter Property="MinHeight"
+                    Value="470"/>
+
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasSecondaryAxis}"
+                             Value="False">
+                                            <Setter Property="MinHeight"
+                            Value="0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Canvas.Style>
+                        </Canvas>
 
                         <StackPanel Grid.Row="2"
                                     Orientation="Horizontal"
@@ -132,7 +168,7 @@
                     </Grid>
                 </Border>
 
-                <!-- Separate Pitch and Roll controls. -->
+                <!-- Separate axes controls -->
                 <Grid Grid.Column="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -140,10 +176,11 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Pitch. -->
-                    <Border Grid.Row="0"
-                            Style="{StaticResource DashboardCardStyle}"
-                            Padding="18">
+                    <!-- Primary Axis -->
+                    <Border x:Name="PrimaryAxisCard"
+                        Grid.Row="0"
+                        Style="{StaticResource DashboardCardStyle}"
+                        Padding="18">
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -368,10 +405,12 @@
                         </Grid>
                     </Border>
 
-                    <!-- Roll. -->
+                    <!-- Secondary axis -->
                     <Border Grid.Row="2"
                             Style="{StaticResource DashboardCardStyle}"
-                            Padding="18">
+                            Padding="18"
+                            Visibility="{Binding HasSecondaryAxis,
+                            Converter={StaticResource BooleanToVisibilityConverter}}">
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -603,9 +642,9 @@
                         HorizontalAlignment="Right"
                         Margin="0,16,0,0">
 
-                <Button Content="Clear Both"
+                <Button Content="Clear"
                         Width="110"
-                        Command="{Binding ClearBothCommand}"
+                        Command="{Binding ClearCommand}"
                         Margin="0,0,8,0"/>
 
                 <Button Content="Cancel"

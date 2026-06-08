@@ -3,14 +3,23 @@
 namespace FalconBMS.Launcher.Models;
 
 /// <summary>
-/// Defines two logical BMS axes that represent one physical X/Y control.
+/// Defines one or two logical BMS axes that share the advanced axis assignment
+/// window.
 ///
-/// Individual axis metadata remains owned by AxisDefinitionService.
-/// This definition only describes the relationship between the horizontal
-/// and vertical axes and how the combined control is presented.
+/// Two-axis definitions represent one physical X/Y control, such as:
+/// - Pitch and Roll
+/// - Cursor X and Cursor Y
+///
+/// Single-axis definitions use the same window and response graph, but only
+/// display the primary axis editor and a one-dimensional position plot.
 /// </summary>
 public sealed class AxisPairDefinition
 {
+    private readonly DeviceAxisDefinition? _secondaryAxis;
+
+    /// <summary>
+    /// Creates a two-axis X/Y definition.
+    /// </summary>
     public AxisPairDefinition(
         string pairId,
         string displayName,
@@ -21,8 +30,48 @@ public sealed class AxisPairDefinition
         PairId = pairId;
         DisplayName = displayName;
         PlotTitle = plotTitle;
+
         HorizontalAxis = horizontalAxis;
         VerticalAxis = verticalAxis;
+
+        PrimaryAxis =
+            horizontalAxis.MappingIndex <= verticalAxis.MappingIndex
+                ? horizontalAxis
+                : verticalAxis;
+
+        _secondaryAxis =
+            ReferenceEquals(PrimaryAxis, horizontalAxis)
+                ? verticalAxis
+                : horizontalAxis;
+
+        PrimaryControlsVerticalAxis =
+            ReferenceEquals(
+                PrimaryAxis,
+                VerticalAxis);
+    }
+
+    /// <summary>
+    /// Creates a single-axis definition that uses the advanced axis assignment
+    /// window without displaying a secondary axis section.
+    /// </summary>
+    public AxisPairDefinition(
+        string pairId,
+        string displayName,
+        string plotTitle,
+        DeviceAxisDefinition primaryAxis)
+    {
+        PairId = pairId;
+        DisplayName = displayName;
+        PlotTitle = plotTitle;
+
+        PrimaryAxis = primaryAxis;
+
+        // A single-axis definition uses the horizontal live-position plot.
+        HorizontalAxis = primaryAxis;
+        VerticalAxis = primaryAxis;
+
+        _secondaryAxis = null;
+        PrimaryControlsVerticalAxis = false;
     }
 
     public string PairId { get; }
@@ -31,49 +80,48 @@ public sealed class AxisPairDefinition
 
     public string PlotTitle { get; }
 
+    public string WindowTitle =>
+        HasSecondaryAxis
+            ? "Assign Axis Pair"
+            : "Assign " + DisplayName + " Axis";
+
     public DeviceAxisDefinition HorizontalAxis { get; }
 
     public DeviceAxisDefinition VerticalAxis { get; }
 
-    /// <summary>
-    /// The first axis shown in the existing AxisPair window.
-    ///
-    /// AxisDefinitionService mapping order determines the display order.
-    /// This preserves Pitch before Roll and Cursor X before Cursor Y.
-    /// </summary>
-    public DeviceAxisDefinition PrimaryAxis =>
-        HorizontalAxis.MappingIndex <= VerticalAxis.MappingIndex
-            ? HorizontalAxis
-            : VerticalAxis;
+    public DeviceAxisDefinition PrimaryAxis { get; }
 
-    /// <summary>
-    /// The second axis shown in the existing AxisPair window.
-    /// </summary>
     public DeviceAxisDefinition SecondaryAxis =>
-        ReferenceEquals(PrimaryAxis, HorizontalAxis)
-            ? VerticalAxis
-            : HorizontalAxis;
+        _secondaryAxis
+        ?? throw new InvalidOperationException(
+            $"Axis definition '{PairId}' does not have a secondary axis.");
+
+    public bool HasSecondaryAxis =>
+        _secondaryAxis is not null;
 
     public string PrimaryLogicalAxisName =>
         PrimaryAxis.LogicalAxisName;
 
     public string SecondaryLogicalAxisName =>
-        SecondaryAxis.LogicalAxisName;
+        _secondaryAxis?.LogicalAxisName ?? "";
 
     public string PrimaryTitle =>
         PrimaryAxis.DisplayName + " axis";
 
     public string SecondaryTitle =>
-        SecondaryAxis.DisplayName + " axis";
+        _secondaryAxis is null
+            ? ""
+            : _secondaryAxis.DisplayName + " axis";
 
     public string PrimaryMapButtonText =>
         "Map " + PrimaryAxis.DisplayName;
 
     public string SecondaryMapButtonText =>
-        "Map " + SecondaryAxis.DisplayName;
+        _secondaryAxis is null
+            ? ""
+            : "Map " + _secondaryAxis.DisplayName;
 
-    public bool PrimaryControlsVerticalAxis =>
-        ReferenceEquals(PrimaryAxis, VerticalAxis);
+    public bool PrimaryControlsVerticalAxis { get; }
 
     public string LeftDirectionLabel =>
         HorizontalAxis.LeftLabel;
@@ -82,8 +130,12 @@ public sealed class AxisPairDefinition
         HorizontalAxis.RightLabel;
 
     public string BottomDirectionLabel =>
-        VerticalAxis.LeftLabel;
+        HasSecondaryAxis
+            ? VerticalAxis.LeftLabel
+            : "";
 
     public string TopDirectionLabel =>
-        VerticalAxis.RightLabel;
+        HasSecondaryAxis
+            ? VerticalAxis.RightLabel
+            : "";
 }

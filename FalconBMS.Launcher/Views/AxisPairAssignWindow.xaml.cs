@@ -160,7 +160,16 @@ public partial class AxisPairAssignWindow : Window
     private void DrawResponsePlots()
     {
         DrawPrimaryResponsePlot();
-        DrawSecondaryResponsePlot();
+
+        if (DataContext is AxisPairAssignViewModel viewModel &&
+            viewModel.HasSecondaryAxis)
+        {
+            DrawSecondaryResponsePlot();
+        }
+        else
+        {
+            SecondaryResponsePlotCanvas?.Children.Clear();
+        }
     }
 
     private void DrawPrimaryResponsePlot()
@@ -181,8 +190,12 @@ public partial class AxisPairAssignWindow : Window
 
     private void DrawSecondaryResponsePlot()
     {
-        if (DataContext is not AxisPairAssignViewModel viewModel)
+        if (DataContext is not AxisPairAssignViewModel viewModel ||
+            !viewModel.HasSecondaryAxis)
+        {
+            SecondaryResponsePlotCanvas?.Children.Clear();
             return;
+        }
 
         double currentRawValue =
             viewModel.PairDefinition.PrimaryControlsVerticalAxis
@@ -205,59 +218,107 @@ public partial class AxisPairAssignWindow : Window
         if (DataContext is not AxisPairAssignViewModel viewModel)
             return;
 
-        double actualWidth = AxisPairPlotCanvas.ActualWidth;
-        double actualHeight = AxisPairPlotCanvas.ActualHeight;
+        if (!viewModel.HasSecondaryAxis)
+        {
+            DrawSingleAxisPlot(
+                viewModel);
 
-        if (actualWidth <= 0 || actualHeight <= 0)
             return;
+        }
+
+        double actualWidth =
+            AxisPairPlotCanvas.ActualWidth;
+
+        double actualHeight =
+            AxisPairPlotCanvas.ActualHeight;
+
+        if (actualWidth <= 0 ||
+            actualHeight <= 0)
+        {
+            return;
+        }
 
         double horizontalLabelSpace = 48;
         double verticalLabelSpace = 38;
 
-        double availableWidth = Math.Max(
-            0,
-            actualWidth - horizontalLabelSpace * 2);
+        double availableWidth =
+            Math.Max(
+                0,
+                actualWidth -
+                horizontalLabelSpace * 2);
 
-        double availableHeight = Math.Max(
-            0,
-            actualHeight - verticalLabelSpace * 2);
+        double availableHeight =
+            Math.Max(
+                0,
+                actualHeight -
+                verticalLabelSpace * 2);
 
-        double size = Math.Max(
-            10,
-            Math.Min(availableWidth, availableHeight));
+        double size =
+            Math.Max(
+                10,
+                Math.Min(
+                    availableWidth,
+                    availableHeight));
 
-        double left = (actualWidth - size) / 2.0;
-        double top = (actualHeight - size) / 2.0;
-        double right = left + size;
-        double bottom = top + size;
-        double centerX = left + size / 2.0;
-        double centerY = top + size / 2.0;
+        double left =
+            (actualWidth - size) / 2.0;
 
-        Brush mutedBrush = FindBrush(
-            "AppMutedForegroundBrush",
-            Brushes.LightGray);
+        double top =
+            (actualHeight - size) / 2.0;
 
-        Brush accentBrush = FindBrush(
-            "AppAccentBrush",
-            Brushes.CornflowerBlue);
+        double right =
+            left + size;
 
-        Brush plotBackgroundBrush = FindBrush(
-            "AppSurfaceAltBrush",
-            Brushes.Transparent);
+        double bottom =
+            top + size;
 
-        var border = new Border
-        {
-            Width = size,
-            Height = size,
-            Background = plotBackgroundBrush,
-            BorderBrush = CloneBrushWithOpacity(accentBrush, 0.65),
-            BorderThickness = new Thickness(1.2),
-            CornerRadius = new CornerRadius(5)
-        };
+        double centerX =
+            left + size / 2.0;
 
-        Canvas.SetLeft(border, left);
-        Canvas.SetTop(border, top);
-        AxisPairPlotCanvas.Children.Add(border);
+        double centerY =
+            top + size / 2.0;
+
+        Brush mutedBrush =
+            FindBrush(
+                "AppMutedForegroundBrush",
+                Brushes.LightGray);
+
+        Brush accentBrush =
+            FindBrush(
+                "AppAccentBrush",
+                Brushes.CornflowerBlue);
+
+        Brush plotBackgroundBrush =
+            FindBrush(
+                "AppSurfaceAltBrush",
+                Brushes.Transparent);
+
+        var border =
+            new Border
+            {
+                Width = size,
+                Height = size,
+                Background = plotBackgroundBrush,
+                BorderBrush =
+                    CloneBrushWithOpacity(
+                        accentBrush,
+                        0.65),
+                BorderThickness =
+                    new Thickness(1.2),
+                CornerRadius =
+                    new CornerRadius(5)
+            };
+
+        Canvas.SetLeft(
+            border,
+            left);
+
+        Canvas.SetTop(
+            border,
+            top);
+
+        AxisPairPlotCanvas.Children.Add(
+            border);
 
         if (viewModel.IsMappingPrimary)
         {
@@ -281,10 +342,15 @@ public partial class AxisPairAssignWindow : Window
                 accentBrush);
         }
 
-        for (int i = 1; i < 8; i++)
+        for (int i = 1;
+             i < 8;
+             i++)
         {
-            double x = left + size * i / 8.0;
-            double y = top + size * i / 8.0;
+            double x =
+                left + size * i / 8.0;
+
+            double y =
+                top + size * i / 8.0;
 
             AddLine(
                 AxisPairPlotCanvas,
@@ -292,7 +358,9 @@ public partial class AxisPairAssignWindow : Window
                 top,
                 x,
                 bottom,
-                CloneBrushWithOpacity(mutedBrush, 0.24),
+                CloneBrushWithOpacity(
+                    mutedBrush,
+                    0.24),
                 0.7);
 
             AddLine(
@@ -301,7 +369,9 @@ public partial class AxisPairAssignWindow : Window
                 y,
                 right,
                 y,
-                CloneBrushWithOpacity(mutedBrush, 0.24),
+                CloneBrushWithOpacity(
+                    mutedBrush,
+                    0.24),
                 0.7);
         }
 
@@ -311,7 +381,9 @@ public partial class AxisPairAssignWindow : Window
             top,
             centerX,
             bottom,
-            CloneBrushWithOpacity(mutedBrush, 0.85),
+            CloneBrushWithOpacity(
+                mutedBrush,
+                0.85),
             1.2);
 
         AddLine(
@@ -320,7 +392,9 @@ public partial class AxisPairAssignWindow : Window
             centerY,
             right,
             centerY,
-            CloneBrushWithOpacity(mutedBrush, 0.85),
+            CloneBrushWithOpacity(
+                mutedBrush,
+                0.85),
             1.2);
 
         AddLabel(
@@ -359,19 +433,21 @@ public partial class AxisPairAssignWindow : Window
             18,
             FontWeights.Bold);
 
-        Point rawPoint = GetPlotPoint(
-            left,
-            top,
-            size,
-            viewModel.RawX,
-            viewModel.RawY);
+        Point rawPoint =
+            GetPlotPoint(
+                left,
+                top,
+                size,
+                viewModel.RawX,
+                viewModel.RawY);
 
-        Point outputPoint = GetPlotPoint(
-            left,
-            top,
-            size,
-            viewModel.OutputX,
-            viewModel.OutputY);
+        Point outputPoint =
+            GetPlotPoint(
+                left,
+                top,
+                size,
+                viewModel.OutputX,
+                viewModel.OutputY);
 
         AddLine(
             AxisPairPlotCanvas,
@@ -379,25 +455,39 @@ public partial class AxisPairAssignWindow : Window
             rawPoint.Y,
             outputPoint.X,
             outputPoint.Y,
-            CloneBrushWithOpacity(mutedBrush, 0.65),
+            CloneBrushWithOpacity(
+                mutedBrush,
+                0.65),
             1.0);
 
-        Brush actualPositionBrush = FindBrush(
-            "AppForegroundBrush",
-            Brushes.White);
+        Brush actualPositionBrush =
+            FindBrush(
+                "AppForegroundBrush",
+                Brushes.White);
 
-        var rawMarker = new Ellipse
-        {
-            Width = 13,
-            Height = 13,
-            Fill = actualPositionBrush,
-            Stroke = CloneBrushWithOpacity(accentBrush, 0.85),
-            StrokeThickness = 1.2
-        };
+        var rawMarker =
+            new Ellipse
+            {
+                Width = 13,
+                Height = 13,
+                Fill = actualPositionBrush,
+                Stroke =
+                    CloneBrushWithOpacity(
+                        accentBrush,
+                        0.85),
+                StrokeThickness = 1.2
+            };
 
-        Canvas.SetLeft(rawMarker, rawPoint.X - 6.5);
-        Canvas.SetTop(rawMarker, rawPoint.Y - 6.5);
-        AxisPairPlotCanvas.Children.Add(rawMarker);
+        Canvas.SetLeft(
+            rawMarker,
+            rawPoint.X - 6.5);
+
+        Canvas.SetTop(
+            rawMarker,
+            rawPoint.Y - 6.5);
+
+        AxisPairPlotCanvas.Children.Add(
+            rawMarker);
 
         AddLine(
             AxisPairPlotCanvas,
@@ -414,6 +504,249 @@ public partial class AxisPairAssignWindow : Window
             outputPoint.Y - 9,
             outputPoint.X,
             outputPoint.Y + 9,
+            accentBrush,
+            3.0);
+    }
+
+    private void DrawSingleAxisPlot(
+    AxisPairAssignViewModel viewModel)
+    {
+        double actualWidth =
+            AxisPairPlotCanvas.ActualWidth;
+
+        double actualHeight =
+            AxisPairPlotCanvas.ActualHeight;
+
+        if (actualWidth <= 0 ||
+            actualHeight <= 0)
+        {
+            return;
+        }
+
+        const double horizontalLabelSpace = 52;
+        const double barHeight = 62;
+
+        double availableWidth =
+            Math.Max(
+                10,
+                actualWidth -
+                horizontalLabelSpace * 2);
+
+        double barWidth =
+            Math.Min(
+                350,
+                availableWidth);
+
+        double left =
+            (actualWidth - barWidth) / 2.0;
+
+        double top =
+            (actualHeight - barHeight) / 2.0;
+
+        double right =
+            left + barWidth;
+
+        double bottom =
+            top + barHeight;
+
+        double centerX =
+            left + barWidth / 2.0;
+
+        double centerY =
+            top + barHeight / 2.0;
+
+        Brush mutedBrush =
+            FindBrush(
+                "AppMutedForegroundBrush",
+                Brushes.LightGray);
+
+        Brush accentBrush =
+            FindBrush(
+                "AppAccentBrush",
+                Brushes.CornflowerBlue);
+
+        Brush plotBackgroundBrush =
+            FindBrush(
+                "AppSurfaceAltBrush",
+                Brushes.Transparent);
+
+        Brush actualPositionBrush =
+            FindBrush(
+                "AppForegroundBrush",
+                Brushes.White);
+
+        var border =
+            new Border
+            {
+                Width = barWidth,
+                Height = barHeight,
+                Background = plotBackgroundBrush,
+                BorderBrush =
+                    CloneBrushWithOpacity(
+                        accentBrush,
+                        0.65),
+                BorderThickness =
+                    new Thickness(1.2),
+                CornerRadius =
+                    new CornerRadius(5)
+            };
+
+        Canvas.SetLeft(
+            border,
+            left);
+
+        Canvas.SetTop(
+            border,
+            top);
+
+        AxisPairPlotCanvas.Children.Add(
+            border);
+
+        if (viewModel.IsMappingPrimary)
+        {
+            var mappingBand =
+                new Rectangle
+                {
+                    Width = barWidth,
+                    Height = barHeight,
+                    Fill =
+                        CloneBrushWithOpacity(
+                            accentBrush,
+                            0.10)
+                };
+
+            Canvas.SetLeft(
+                mappingBand,
+                left);
+
+            Canvas.SetTop(
+                mappingBand,
+                top);
+
+            AxisPairPlotCanvas.Children.Add(
+                mappingBand);
+        }
+
+        for (int i = 1;
+             i < 8;
+             i++)
+        {
+            double x =
+                left + barWidth * i / 8.0;
+
+            AddLine(
+                AxisPairPlotCanvas,
+                x,
+                top,
+                x,
+                bottom,
+                CloneBrushWithOpacity(
+                    mutedBrush,
+                    0.24),
+                0.7);
+        }
+
+        AddLine(
+            AxisPairPlotCanvas,
+            centerX,
+            top,
+            centerX,
+            bottom,
+            CloneBrushWithOpacity(
+                mutedBrush,
+                0.85),
+            1.2);
+
+        AddLabel(
+            AxisPairPlotCanvas,
+            viewModel.PairDefinition.LeftDirectionLabel,
+            left - 34,
+            centerY - 11,
+            accentBrush,
+            18,
+            FontWeights.Bold);
+
+        AddLabel(
+            AxisPairPlotCanvas,
+            viewModel.PairDefinition.RightDirectionLabel,
+            right + 34,
+            centerY - 11,
+            accentBrush,
+            18,
+            FontWeights.Bold);
+
+        double rawX =
+            left +
+            ((Math.Max(
+                -1.0,
+                Math.Min(
+                    1.0,
+                    viewModel.RawX)) +
+              1.0) /
+             2.0) *
+            barWidth;
+
+        double outputX =
+            left +
+            ((Math.Max(
+                -1.0,
+                Math.Min(
+                    1.0,
+                    viewModel.OutputX)) +
+              1.0) /
+             2.0) *
+            barWidth;
+
+        AddLine(
+            AxisPairPlotCanvas,
+            rawX,
+            centerY,
+            outputX,
+            centerY,
+            CloneBrushWithOpacity(
+                mutedBrush,
+                0.65),
+            1.0);
+
+        var rawMarker =
+            new Ellipse
+            {
+                Width = 13,
+                Height = 13,
+                Fill = actualPositionBrush,
+                Stroke =
+                    CloneBrushWithOpacity(
+                        accentBrush,
+                        0.85),
+                StrokeThickness = 1.2
+            };
+
+        Canvas.SetLeft(
+            rawMarker,
+            rawX - 6.5);
+
+        Canvas.SetTop(
+            rawMarker,
+            centerY - 6.5);
+
+        AxisPairPlotCanvas.Children.Add(
+            rawMarker);
+
+        AddLine(
+            AxisPairPlotCanvas,
+            outputX - 9,
+            centerY,
+            outputX + 9,
+            centerY,
+            accentBrush,
+            3.0);
+
+        AddLine(
+            AxisPairPlotCanvas,
+            outputX,
+            centerY - 9,
+            outputX,
+            centerY + 9,
             accentBrush,
             3.0);
     }
