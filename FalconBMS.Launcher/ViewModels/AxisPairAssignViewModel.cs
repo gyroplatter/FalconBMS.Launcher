@@ -194,9 +194,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         SaveCommand =
             new RelayCommand(
-                SaveAndClose);
-
-        CancelCommand =
+                SaveAndClose,
+                CanSave);
+    CancelCommand =
             new RelayCommand(
                 CancelAndClose);
 
@@ -210,6 +210,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             $"PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
             $"SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
             $"SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
+    }
+
+    private bool CanSave()
+    {
+        return !HasPendingPairConflict();
     }
 
     public void Start()
@@ -328,6 +333,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 $"Cleared. Click {Secondary.MapButtonText} to assign this axis.");
         }
 
+        UpdateAxisConflicts();
         UpdateLiveGraphFromCurrentAssignments();
     }
 
@@ -770,6 +776,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         if (HasPendingPairConflict())
         {
             ShowPendingPairConflict();
+            SaveCommand.RaiseCanExecuteChanged();
             return;
         }
 
@@ -781,6 +788,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             UpdateAxisConflict(
                 Secondary);
         }
+
+        SaveCommand.RaiseCanExecuteChanged();
     }
 
     private bool HasPendingPairConflict()
