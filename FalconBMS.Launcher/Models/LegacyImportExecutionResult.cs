@@ -20,5 +20,10 @@ public sealed class LegacyImportExecutionResult
 
     public List<string> Warnings { get; } = new();
 
+    public List<LegacyImportSkippedItem> SkippedItems { get; } = new();
+
+    public bool HasSkippedItems =>
+        SkippedItems.Count > 0;
+
     public string ErrorMessage { get; init; } = "";
 }

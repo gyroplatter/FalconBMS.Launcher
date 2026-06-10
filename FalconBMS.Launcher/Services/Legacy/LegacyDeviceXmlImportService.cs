@@ -30,7 +30,8 @@ public sealed class LegacyDeviceXmlImportService
     public IReadOnlyList<LegacyDeviceXmlFile> FindLegacyXmlFiles(
         string configDirectory)
     {
-        var results = new List<LegacyDeviceXmlFile>();
+        var results =
+            new List<LegacyDeviceXmlFile>();
 
         if (!Directory.Exists(configDirectory))
             return results;
@@ -40,10 +41,12 @@ public sealed class LegacyDeviceXmlImportService
                      "Setup.v100.*.xml",
                      SearchOption.TopDirectoryOnly))
         {
-            string fileName = Path.GetFileName(path);
+            string fileName =
+                Path.GetFileName(path);
 
             Match match =
-                LegacyXmlFileRegex.Match(fileName);
+                LegacyXmlFileRegex.Match(
+                    fileName);
 
             if (!match.Success)
                 continue;
@@ -52,19 +55,23 @@ public sealed class LegacyDeviceXmlImportService
                 match.Groups["instanceGuid"].Value,
                 out Guid instanceGuid);
 
-            results.Add(new LegacyDeviceXmlFile
-            {
-                DeviceName =
-                    match.Groups["name"].Value.Trim(),
-                InstanceGuid = instanceGuid,
-                Path = path
-            });
+            results.Add(
+                new LegacyDeviceXmlFile
+                {
+                    DeviceName =
+                        match.Groups["name"].Value.Trim(),
+                    InstanceGuid =
+                        instanceGuid,
+                    Path =
+                        path
+                });
         }
 
         return results;
     }
 
-    public bool CanReadXml(string path)
+    public bool CanReadXml(
+        string path)
     {
         try
         {
@@ -79,7 +86,8 @@ public sealed class LegacyDeviceXmlImportService
 
     public DeviceBindingProfile BuildConnectedProfile(
         StockDeviceSetupMatch match,
-        string? legacyXmlPath)
+        string? legacyXmlPath,
+        ICollection<LegacyImportSkippedItem> skippedItems)
     {
         if (!string.IsNullOrWhiteSpace(legacyXmlPath) &&
             File.Exists(legacyXmlPath) &&
@@ -90,7 +98,9 @@ public sealed class LegacyDeviceXmlImportService
                     match,
                     legacyXmlPath);
 
-            ApplyXml(profile);
+            ApplyXml(
+                profile,
+                skippedItems);
 
             return profile;
         }
@@ -105,54 +115,78 @@ public sealed class LegacyDeviceXmlImportService
         LegacySortedDevice sortedDevice,
         string? stockXmlPath,
         int discoveryIndex,
-        int? duplicateSequenceNumber)
+        int? duplicateSequenceNumber,
+        ICollection<LegacyImportSkippedItem> skippedItems)
     {
         string vendorIdHex =
-            GetVendorIdHex(sortedDevice.ProductGuid);
+            GetVendorIdHex(
+                sortedDevice.ProductGuid);
 
         string productIdHex =
-            GetProductIdHex(sortedDevice.ProductGuid);
+            GetProductIdHex(
+                sortedDevice.ProductGuid);
 
         DeviceXmlCapabilities capabilities =
-            ReadCapabilities(legacyXml.Path);
+            ReadCapabilities(
+                legacyXml.Path);
 
         string sourceXmlPath =
             CanReadXml(legacyXml.Path)
                 ? legacyXml.Path
                 : stockXmlPath ?? "";
 
-        var profile = new DeviceBindingProfile
-        {
-            DiscoveryIndex = discoveryIndex,
-            InstanceGuid = Guid.Empty,
-            LastSeenInstanceGuid =
-                legacyXml.InstanceGuid == Guid.Empty
-                    ? null
-                    : legacyXml.InstanceGuid,
-            IsConnected = false,
-            ProductGuid = sortedDevice.ProductGuid,
-            InstanceName = sortedDevice.ProductName,
-            ProductName = sortedDevice.ProductName,
-            VendorIdHex = vendorIdHex,
-            ProductIdHex = productIdHex,
-            DuplicatePidVidSequenceNumber =
-                duplicateSequenceNumber,
-            AxisCount = capabilities.AxisCount,
-            ButtonCount = capabilities.ButtonCount,
-            PovCount = capabilities.PovCount,
-            CapabilitiesReadSuccessfully = true,
-            Source = string.IsNullOrWhiteSpace(sourceXmlPath)
-                ? DeviceBindingSource.Empty
-                : DeviceBindingSource.StockXml,
-            StockXmlPath = string.IsNullOrWhiteSpace(sourceXmlPath)
-                ? null
-                : sourceXmlPath
-        };
+        var profile =
+            new DeviceBindingProfile
+            {
+                DiscoveryIndex =
+                    discoveryIndex,
+                InstanceGuid =
+                    Guid.Empty,
+                LastSeenInstanceGuid =
+                    legacyXml.InstanceGuid == Guid.Empty
+                        ? null
+                        : legacyXml.InstanceGuid,
+                IsConnected =
+                    false,
+                ProductGuid =
+                    sortedDevice.ProductGuid,
+                InstanceName =
+                    sortedDevice.ProductName,
+                ProductName =
+                    sortedDevice.ProductName,
+                VendorIdHex =
+                    vendorIdHex,
+                ProductIdHex =
+                    productIdHex,
+                DuplicatePidVidSequenceNumber =
+                    duplicateSequenceNumber,
+                AxisCount =
+                    capabilities.AxisCount,
+                ButtonCount =
+                    capabilities.ButtonCount,
+                PovCount =
+                    capabilities.PovCount,
+                CapabilitiesReadSuccessfully =
+                    true,
+                Source =
+                    string.IsNullOrWhiteSpace(sourceXmlPath)
+                        ? DeviceBindingSource.Empty
+                        : DeviceBindingSource.StockXml,
+                StockXmlPath =
+                    string.IsNullOrWhiteSpace(sourceXmlPath)
+                        ? null
+                        : sourceXmlPath
+            };
 
-        AddModelContainers(profile);
+        AddModelContainers(
+            profile);
 
         if (!string.IsNullOrWhiteSpace(sourceXmlPath))
-            ApplyXml(profile);
+        {
+            ApplyXml(
+                profile,
+                skippedItems);
+        }
 
         return profile;
     }
@@ -205,31 +239,48 @@ public sealed class LegacyDeviceXmlImportService
         StockDeviceSetupMatch match,
         string xmlPath)
     {
-        InputDeviceInfo device = match.Device;
+        InputDeviceInfo device =
+            match.Device;
 
-        var profile = new DeviceBindingProfile
-        {
-            DiscoveryIndex = device.DiscoveryIndex,
-            InstanceGuid = device.InstanceGuid,
-            LastSeenInstanceGuid = device.InstanceGuid,
-            IsConnected = true,
-            ProductGuid = device.ProductGuid,
-            InstanceName = device.InstanceName,
-            ProductName = device.ProductName,
-            VendorIdHex = device.VendorIdHex,
-            ProductIdHex = device.ProductIdHex,
-            DuplicatePidVidSequenceNumber =
-                device.DuplicatePidVidSequenceNumber,
-            AxisCount = device.Capabilities.AxisCount,
-            ButtonCount = device.Capabilities.ButtonCount,
-            PovCount = device.Capabilities.PovCount,
-            CapabilitiesReadSuccessfully =
-                device.Capabilities.WasReadSuccessfully,
-            Source = DeviceBindingSource.StockXml,
-            StockXmlPath = xmlPath
-        };
+        var profile =
+            new DeviceBindingProfile
+            {
+                DiscoveryIndex =
+                    device.DiscoveryIndex,
+                InstanceGuid =
+                    device.InstanceGuid,
+                LastSeenInstanceGuid =
+                    device.InstanceGuid,
+                IsConnected =
+                    true,
+                ProductGuid =
+                    device.ProductGuid,
+                InstanceName =
+                    device.InstanceName,
+                ProductName =
+                    device.ProductName,
+                VendorIdHex =
+                    device.VendorIdHex,
+                ProductIdHex =
+                    device.ProductIdHex,
+                DuplicatePidVidSequenceNumber =
+                    device.DuplicatePidVidSequenceNumber,
+                AxisCount =
+                    device.Capabilities.AxisCount,
+                ButtonCount =
+                    device.Capabilities.ButtonCount,
+                PovCount =
+                    device.Capabilities.PovCount,
+                CapabilitiesReadSuccessfully =
+                    device.Capabilities.WasReadSuccessfully,
+                Source =
+                    DeviceBindingSource.StockXml,
+                StockXmlPath =
+                    xmlPath
+            };
 
-        AddModelContainers(profile);
+        AddModelContainers(
+            profile);
 
         return profile;
     }
@@ -245,7 +296,8 @@ public sealed class LegacyDeviceXmlImportService
                 {
                     LogicalAxisName =
                         definition.LogicalAxisName,
-                    PhysicalAxisIndex = null
+                    PhysicalAxisIndex =
+                        null
                 });
         }
 
@@ -263,11 +315,18 @@ public sealed class LegacyDeviceXmlImportService
     }
 
     private void ApplyXml(
-        DeviceBindingProfile profile)
+        DeviceBindingProfile profile,
+        ICollection<LegacyImportSkippedItem> skippedItems)
     {
-        _axisParser.ApplyAxes(profile);
-        _buttonParser.ApplyButtons(profile);
-        _povParser.ApplyPovs(profile);
+        _axisParser.ApplyAxes(
+            profile,
+            skippedItems);
+
+        _buttonParser.ApplyButtons(
+            profile);
+
+        _povParser.ApplyPovs(
+            profile);
     }
 
     private static DeviceXmlCapabilities ReadCapabilities(
@@ -276,7 +335,8 @@ public sealed class LegacyDeviceXmlImportService
         try
         {
             XDocument document =
-                XDocument.Load(xmlPath);
+                XDocument.Load(
+                    xmlPath);
 
             int axisCount =
                 document.Root?
@@ -298,9 +358,12 @@ public sealed class LegacyDeviceXmlImportService
 
             return new DeviceXmlCapabilities
             {
-                AxisCount = axisCount,
-                ButtonCount = buttonCount,
-                PovCount = povCount
+                AxisCount =
+                    axisCount,
+                ButtonCount =
+                    buttonCount,
+                PovCount =
+                    povCount
             };
         }
         catch
@@ -320,7 +383,8 @@ public sealed class LegacyDeviceXmlImportService
                 .Elements(childName)
                 .Count() ?? 0;
 
-        foreach (string profileName in new[]
+        foreach (string profileName in
+                 new[]
                  {
                      "profileDefaultF16",
                      "profileF15ABCD"
@@ -333,7 +397,10 @@ public sealed class LegacyDeviceXmlImportService
                     .Elements(childName)
                     .Count() ?? 0;
 
-            largest = Math.Max(largest, count);
+            largest =
+                Math.Max(
+                    largest,
+                    count);
         }
 
         return largest;
@@ -343,15 +410,19 @@ public sealed class LegacyDeviceXmlImportService
         string stockXmlPath)
     {
         string fileName =
-            Path.GetFileNameWithoutExtension(stockXmlPath);
+            Path.GetFileNameWithoutExtension(
+                stockXmlPath);
 
-        const string prefix = "Setup.v100.";
+        const string prefix =
+            "Setup.v100.";
 
         if (fileName.StartsWith(
                 prefix,
                 StringComparison.OrdinalIgnoreCase))
         {
-            fileName = fileName.Substring(prefix.Length);
+            fileName =
+                fileName.Substring(
+                    prefix.Length);
         }
 
         int stockMarker =
@@ -360,7 +431,12 @@ public sealed class LegacyDeviceXmlImportService
                 StringComparison.OrdinalIgnoreCase);
 
         if (stockMarker >= 0)
-            fileName = fileName.Substring(0, stockMarker);
+        {
+            fileName =
+                fileName.Substring(
+                    0,
+                    stockMarker);
+        }
 
         return fileName.Trim();
     }
@@ -373,12 +449,23 @@ public sealed class LegacyDeviceXmlImportService
 
         string normalized =
             value.Trim()
-                .Replace("H.O.T.A.S.", "HOTAS")
-                .Replace("Flight Controller", "")
-                .Replace("USB", "");
+                .Replace(
+                    "H.O.T.A.S.",
+                    "HOTAS")
+                .Replace(
+                    "Flight Controller",
+                    "")
+                .Replace(
+                    "USB",
+                    "");
 
         while (normalized.Contains("  "))
-            normalized = normalized.Replace("  ", " ");
+        {
+            normalized =
+                normalized.Replace(
+                    "  ",
+                    " ");
+        }
 
         return normalized.Trim();
     }
@@ -386,11 +473,14 @@ public sealed class LegacyDeviceXmlImportService
     private static string GetVendorIdHex(
         Guid productGuid)
     {
+        byte[] bytes =
+            productGuid.ToByteArray();
+
         uint data1 =
-            unchecked((uint)productGuid.ToByteArray()[0]) |
-            ((uint)productGuid.ToByteArray()[1] << 8) |
-            ((uint)productGuid.ToByteArray()[2] << 16) |
-            ((uint)productGuid.ToByteArray()[3] << 24);
+            unchecked((uint)bytes[0]) |
+            ((uint)bytes[1] << 8) |
+            ((uint)bytes[2] << 16) |
+            ((uint)bytes[3] << 24);
 
         return (data1 & 0xFFFF)
             .ToString("X4");
@@ -399,11 +489,14 @@ public sealed class LegacyDeviceXmlImportService
     private static string GetProductIdHex(
         Guid productGuid)
     {
+        byte[] bytes =
+            productGuid.ToByteArray();
+
         uint data1 =
-            unchecked((uint)productGuid.ToByteArray()[0]) |
-            ((uint)productGuid.ToByteArray()[1] << 8) |
-            ((uint)productGuid.ToByteArray()[2] << 16) |
-            ((uint)productGuid.ToByteArray()[3] << 24);
+            unchecked((uint)bytes[0]) |
+            ((uint)bytes[1] << 8) |
+            ((uint)bytes[2] << 16) |
+            ((uint)bytes[3] << 24);
 
         return ((data1 >> 16) & 0xFFFF)
             .ToString("X4");

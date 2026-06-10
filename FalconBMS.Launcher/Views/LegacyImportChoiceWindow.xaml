@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Import Existing Controls"
         Width="560"
-        Height="310"
+        Height="360"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterOwner"
@@ -13,6 +13,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -20,23 +21,30 @@
         <TextBlock Grid.Row="0"
                    FontSize="22"
                    FontWeight="SemiBold"
-                   Text="Existing Alternative Launcher Settings Found"/>
+                   Text="Welcome to the new BMS Launcher"/>
 
         <TextBlock Grid.Row="1"
                    Margin="0,18,0,0"
                    FontSize="14"
                    TextWrapping="Wrap"
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="This new Launcher found control files created by the old Alternative Launcher."/>
+                   Text="This all new Launcher let's you edit your controls devices more easily. It also stores those controls in a different file format that is not compatible with older versions."/>
 
         <TextBlock Grid.Row="2"
+                   Margin="0,24,0,0"
+                   FontSize="14"
+                   TextWrapping="Wrap"
+                   Style="{StaticResource SubheadingTextBlockStyle}"
+                   Text="Control files created by the previous Launcher were found."/>
+
+        <TextBlock Grid.Row="3"
                    Margin="0,12,0,0"
                    FontSize="14"
                    TextWrapping="Wrap" 
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="You can import those controls into this new Launcher, or start with a fresh configuration. If starting fresh, your old control files will be overwritten. "/>
+                   Text="You can import those controls into the new Launcher, or start with a fresh control setup. With either choice, the new Launcher will replace the old control files."/>
 
-        <StackPanel Grid.Row="3"
+        <StackPanel Grid.Row="4"
                     Margin="0,24,0,0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">

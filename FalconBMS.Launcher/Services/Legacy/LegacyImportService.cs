@@ -133,7 +133,8 @@ public sealed class LegacyImportService
         try
         {
             IReadOnlyList<KeyCatalog> catalogs =
-                _keyCatalogService.LoadForInstall(baseDir);
+                _keyCatalogService.LoadForInstall(
+                    baseDir);
 
             if (catalogs.Count == 0)
             {
@@ -142,9 +143,11 @@ public sealed class LegacyImportService
             }
 
             BindingModel bindingModel =
-                _bindingModelBuilder.Build(catalogs);
+                _bindingModelBuilder.Build(
+                    catalogs);
 
-            int keyboardAssignmentsImported = 0;
+            int keyboardAssignmentsImported =
+                0;
 
             var missingCallbacks =
                 new HashSet<string>(
@@ -182,37 +185,43 @@ public sealed class LegacyImportService
                     f15Result.MissingCallbacks);
             }
 
-            IReadOnlyList<StockDeviceSetupMatch>
-                connectedMatches =
-                    _deviceDiscovery
-                        .DiscoverAndMatchStockXml(baseDir);
+            IReadOnlyList<StockDeviceSetupMatch> connectedMatches =
+                _deviceDiscovery
+                    .DiscoverAndMatchStockXml(
+                        baseDir);
 
-            IReadOnlyList<LegacyDeviceXmlFile>
-                legacyXmlFiles =
-                    _deviceXmlImporter
-                        .FindLegacyXmlFiles(
-                            scanResult.ConfigDirectory);
+            IReadOnlyList<LegacyDeviceXmlFile> legacyXmlFiles =
+                _deviceXmlImporter
+                    .FindLegacyXmlFiles(
+                        scanResult.ConfigDirectory);
 
-            IReadOnlyList<LegacySortedDevice>
-                sortedDevices =
-                    !string.IsNullOrWhiteSpace(
+            IReadOnlyList<LegacySortedDevice> sortedDevices =
+                !string.IsNullOrWhiteSpace(
+                    scanResult.DeviceSortingPath)
+                    ? _deviceSortingImporter.Read(
                         scanResult.DeviceSortingPath)
-                        ? _deviceSortingImporter.Read(
-                            scanResult.DeviceSortingPath)
-                        : Array.Empty<LegacySortedDevice>();
+                    : Array.Empty<LegacySortedDevice>();
 
-            int legacyDeviceCount = 0;
-            int stockFallbackCount = 0;
+            int legacyDeviceCount =
+                0;
+
+            int stockFallbackCount =
+                0;
+
+            var skippedItems =
+                new List<LegacyImportSkippedItem>();
 
             List<DeviceBindingProfile> deviceProfiles =
                 BuildDeviceProfiles(
                     connectedMatches,
                     legacyXmlFiles,
                     sortedDevices,
+                    skippedItems,
                     ref legacyDeviceCount,
                     ref stockFallbackCount);
 
             bindingModel.DeviceProfiles.Clear();
+
             bindingModel.DeviceProfiles.AddRange(
                 deviceProfiles);
 
@@ -238,7 +247,8 @@ public sealed class LegacyImportService
             var result =
                 new LegacyImportExecutionResult
                 {
-                    Succeeded = true,
+                    Succeeded =
+                        true,
                     ImportedBindingModel =
                         bindingModel,
                     ExportRttTextures =
@@ -253,6 +263,24 @@ public sealed class LegacyImportService
                     MissingCallbacksSkipped =
                         missingCallbacks.Count
                 };
+
+            result.SkippedItems.AddRange(
+                skippedItems);
+
+            foreach (string callbackName in
+                     missingCallbacks.OrderBy(name => name))
+            {
+                result.SkippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            "Keyboard controls",
+                        ControlName =
+                            callbackName,
+                        Reason =
+                            "This control is not available in the current BMS key files."
+                    });
+            }
 
             if (missingCallbacks.Count > 0)
             {
@@ -269,7 +297,8 @@ public sealed class LegacyImportService
                 ex,
                 "Legacy control import failed.");
 
-            return Failure(ex.Message);
+            return Failure(
+                ex.Message);
         }
     }
 
@@ -277,6 +306,7 @@ public sealed class LegacyImportService
         IReadOnlyList<StockDeviceSetupMatch> connectedMatches,
         IReadOnlyList<LegacyDeviceXmlFile> legacyXmlFiles,
         IReadOnlyList<LegacySortedDevice> sortedDevices,
+        ICollection<LegacyImportSkippedItem> skippedItems,
         ref int legacyDeviceCount,
         ref int stockFallbackCount)
     {
@@ -287,7 +317,8 @@ public sealed class LegacyImportService
             new HashSet<string>(
                 StringComparer.OrdinalIgnoreCase);
 
-        foreach (StockDeviceSetupMatch match in connectedMatches)
+        foreach (StockDeviceSetupMatch match in
+                 connectedMatches)
         {
             LegacyDeviceXmlFile? legacyXml =
                 FindBestLegacyXml(
@@ -311,16 +342,45 @@ public sealed class LegacyImportService
                     match,
                     readableLegacyXml
                         ? legacyXml!.Path
-                        : null);
+                        : null,
+                    skippedItems);
 
             if (readableLegacyXml)
+            {
                 legacyDeviceCount++;
-            else if (
-                legacyXml is not null &&
-                match.HasStockXml)
+            }
+            else if (legacyXml is not null &&
+                     match.HasStockXml)
+            {
                 stockFallbackCount++;
 
-            profiles.Add(profile);
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            match.Device.ProductName,
+                        ControlName =
+                            "Device profile",
+                        Reason =
+                            "The existing device file could not be read. The stock profile was used instead."
+                    });
+            }
+            else if (legacyXml is not null)
+            {
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            match.Device.ProductName,
+                        ControlName =
+                            "Device profile",
+                        Reason =
+                            "The existing device file could not be read and no stock profile was available."
+                    });
+            }
+
+            profiles.Add(
+                profile);
         }
 
         int nextOfflineDiscoveryIndex =
@@ -342,6 +402,17 @@ public sealed class LegacyImportService
                 DebugDiagnosticsService.Warn(
                     $"Legacy offline device skipped because it was not found in DeviceSorting.txt | Device=\"{legacyXml.DeviceName}\"");
 
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            legacyXml.DeviceName,
+                        ControlName =
+                            "Device profile",
+                        Reason =
+                            "This disconnected device could not be identified and was not imported."
+                    });
+
                 continue;
             }
 
@@ -355,13 +426,39 @@ public sealed class LegacyImportService
                     legacyXml.Path);
 
             if (!legacyXmlReadable &&
-                string.IsNullOrWhiteSpace(
-                    stockXmlPath))
+                string.IsNullOrWhiteSpace(stockXmlPath))
             {
                 DebugDiagnosticsService.Warn(
                     $"Legacy offline device skipped because neither its legacy XML nor a stock XML could be read | Device=\"{legacyXml.DeviceName}\"");
 
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            legacyXml.DeviceName,
+                        ControlName =
+                            "Device profile",
+                        Reason =
+                            "The existing device file could not be read and no stock profile was available."
+                    });
+
                 continue;
+            }
+
+            if (!legacyXmlReadable)
+            {
+                stockFallbackCount++;
+
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            legacyXml.DeviceName,
+                        ControlName =
+                            "Device profile",
+                        Reason =
+                            "The existing device file could not be read. The stock profile was used instead."
+                    });
             }
 
             int? duplicateSequenceNumber =
@@ -375,14 +472,14 @@ public sealed class LegacyImportService
                     sortedDevice,
                     stockXmlPath,
                     nextOfflineDiscoveryIndex++,
-                    duplicateSequenceNumber);
+                    duplicateSequenceNumber,
+                    skippedItems);
 
-            profiles.Add(offlineProfile);
+            profiles.Add(
+                offlineProfile);
 
             if (legacyXmlReadable)
                 legacyDeviceCount++;
-            else
-                stockFallbackCount++;
         }
 
         return profiles
@@ -390,7 +487,8 @@ public sealed class LegacyImportService
                 GetLegacyOrder(
                     profile,
                     sortedDevices))
-            .ThenBy(profile => profile.DiscoveryIndex)
+            .ThenBy(profile =>
+                profile.DiscoveryIndex)
             .ToList();
     }
 

@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -13,28 +14,54 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class DeviceStockXmlAxisParserService
 {
+    public void ApplyAxes(
+        DeviceBindingProfile profile)
+    {
+        ApplyAxes(
+            profile,
+            new List<LegacyImportSkippedItem>());
+    }
 
-    public void ApplyAxes(DeviceBindingProfile profile)
+    public void ApplyAxes(
+        DeviceBindingProfile profile,
+        ICollection<LegacyImportSkippedItem> skippedItems)
     {
         if (profile.Source != DeviceBindingSource.StockXml)
             return;
 
-        if (string.IsNullOrWhiteSpace(profile.StockXmlPath) || !File.Exists(profile.StockXmlPath))
+        if (string.IsNullOrWhiteSpace(profile.StockXmlPath) ||
+            !File.Exists(profile.StockXmlPath))
+        {
             return;
+        }
 
-        string actionId = DebugDiagnosticsService.CreateActionId("XMLAXIS");
+        string actionId =
+            DebugDiagnosticsService.CreateActionId(
+                "XMLAXIS");
 
         DebugDiagnosticsService.Info(
             $"Stock XML axis parse begin | Device=\"{profile.ProductName}\" | File=\"{Path.GetFileName(profile.StockXmlPath)}\" | ActionId={actionId}");
 
         try
         {
-            XDocument document = XDocument.Load(profile.StockXmlPath);
+            XDocument document =
+                XDocument.Load(
+                    profile.StockXmlPath);
 
-            ApplyAxisAssignments(profile, document, actionId);
-            ApplyThrottleDetents(profile, document, actionId);
+            ApplyAxisAssignments(
+                profile,
+                document,
+                actionId,
+                skippedItems);
 
-            int assignedAxes = profile.AxisBindings.Count(axis => axis.PhysicalAxisIndex.HasValue);
+            ApplyThrottleDetents(
+                profile,
+                document,
+                actionId);
+
+            int assignedAxes =
+                profile.AxisBindings.Count(axis =>
+                    axis.PhysicalAxisIndex.HasValue);
 
             DebugDiagnosticsService.Info(
                 $"Stock XML axis parse complete | Device=\"{profile.ProductName}\" | AssignedAxes={assignedAxes} | TotalLogicalAxes={profile.AxisBindings.Count} | ActionId={actionId}");
@@ -47,108 +74,246 @@ public sealed class DeviceStockXmlAxisParserService
         }
     }
 
-    private void ApplyAxisAssignments(DeviceBindingProfile profile, XDocument document, string actionId)
+    private static void ApplyAxisAssignments(
+        DeviceBindingProfile profile,
+        XDocument document,
+        string actionId,
+        ICollection<LegacyImportSkippedItem> skippedItems)
     {
-        XElement? axisRoot = document.Root?.Element("axis");
+        XElement? axisRoot =
+            document.Root?.Element("axis");
+
         if (axisRoot is null)
             return;
 
-        var axisElements = axisRoot.Elements("AxAssgn").ToList();
+        var axisElements =
+            axisRoot
+                .Elements("AxAssgn")
+                .ToList();
 
-        for (int physicalAxisIndex = 0; physicalAxisIndex < axisElements.Count; physicalAxisIndex++)
+        for (
+            int physicalAxisIndex = 0;
+            physicalAxisIndex < axisElements.Count;
+            physicalAxisIndex++)
         {
-            XElement axisElement = axisElements[physicalAxisIndex];
+            XElement axisElement =
+                axisElements[physicalAxisIndex];
 
-            string logicalAxisName = AxisDefinitionService.NormalizeLogicalAxisName(ReadString(axisElement, "AxisName"));
+            string logicalAxisName =
+                AxisDefinitionService.NormalizeLogicalAxisName(
+                    ReadString(
+                        axisElement,
+                        "AxisName"));
+
             if (string.IsNullOrWhiteSpace(logicalAxisName))
                 continue;
 
-            DeviceAxisDefinition? definition = AxisDefinitionService.Find(logicalAxisName);
+            DeviceAxisDefinition? definition =
+                AxisDefinitionService.Find(
+                    logicalAxisName);
+
             if (definition is null)
             {
                 DebugDiagnosticsService.Warn(
                     $"Stock XML axis skipped: unknown logical axis | Device=\"{profile.ProductName}\" | AxisName=\"{logicalAxisName}\" | PhysicalAxis={physicalAxisIndex} | ActionId={actionId}");
+
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            profile.ProductName,
+                        ControlName =
+                            GetFriendlyAxisName(
+                                logicalAxisName),
+                        Reason =
+                            "This control is not available in the new Launcher."
+                    });
+
                 continue;
             }
 
-            DeviceAxisBinding? binding = profile.AxisBindings.FirstOrDefault(axis =>
-                string.Equals(axis.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase));
+            DeviceAxisBinding? binding =
+                profile.AxisBindings.FirstOrDefault(axis =>
+                    string.Equals(
+                        axis.LogicalAxisName,
+                        logicalAxisName,
+                        StringComparison.OrdinalIgnoreCase));
 
             if (binding is null)
             {
                 DebugDiagnosticsService.Warn(
                     $"Stock XML axis skipped: logical axis not present in profile | Device=\"{profile.ProductName}\" | AxisName=\"{logicalAxisName}\" | PhysicalAxis={physicalAxisIndex} | ActionId={actionId}");
+
+                skippedItems.Add(
+                    new LegacyImportSkippedItem
+                    {
+                        SourceName =
+                            profile.ProductName,
+                        ControlName =
+                            GetFriendlyAxisName(
+                                logicalAxisName),
+                        Reason =
+                            "This control could not be matched to the new Launcher."
+                    });
+
                 continue;
             }
 
-            binding.PhysicalAxisIndex = physicalAxisIndex;
+            binding.PhysicalAxisIndex =
+                physicalAxisIndex;
 
             if (definition.SupportsSaturation)
-                binding.Saturation = ReadString(axisElement, "Saturation", "None");
+            {
+                binding.Saturation =
+                    ReadString(
+                        axisElement,
+                        "Saturation",
+                        "None");
+            }
 
             if (definition.SupportsDeadzone)
-                binding.Deadzone = ReadString(axisElement, "Deadzone", "None");
+            {
+                binding.Deadzone =
+                    ReadString(
+                        axisElement,
+                        "Deadzone",
+                        "None");
+            }
             else
+            {
                 binding.Deadzone = "None";
+            }
 
             if (definition.SupportsInvert)
-                binding.Invert = ReadBool(axisElement, "Invert");
+            {
+                binding.Invert =
+                    ReadBool(
+                        axisElement,
+                        "Invert");
+            }
 
             DebugDiagnosticsService.Info(
                 $"Stock XML axis mapped | Device=\"{profile.ProductName}\" | AxisName=\"{logicalAxisName}\" | PhysicalAxis={physicalAxisIndex} | Saturation={binding.Saturation} | Deadzone={binding.Deadzone} | Invert={binding.Invert} | ActionId={actionId}");
         }
     }
 
-    private void ApplyThrottleDetents(DeviceBindingProfile profile, XDocument document, string actionId)
+    private static void ApplyThrottleDetents(
+        DeviceBindingProfile profile,
+        XDocument document,
+        string actionId)
     {
-        XElement? detentRoot = document.Root?.Element("detentPosition");
+        XElement? detentRoot =
+            document.Root?.Element(
+                "detentPosition");
+
         if (detentRoot is null)
             return;
 
-        DeviceAxisDefinition? throttleDefinition = AxisDefinitionService.Find("Throttle");
+        DeviceAxisDefinition? throttleDefinition =
+            AxisDefinitionService.Find(
+                "Throttle");
+
         if (throttleDefinition is null)
             return;
 
-        DeviceAxisBinding? throttleBinding = profile.AxisBindings.FirstOrDefault(axis =>
-            string.Equals(axis.LogicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase));
+        DeviceAxisBinding? throttleBinding =
+            profile.AxisBindings.FirstOrDefault(axis =>
+                string.Equals(
+                    axis.LogicalAxisName,
+                    "Throttle",
+                    StringComparison.OrdinalIgnoreCase));
 
         if (throttleBinding is null)
             return;
 
         if (throttleDefinition.SupportsAfterburnerDetent)
-            throttleBinding.AfterburnerDetent = ReadNullableInt(detentRoot, "AB");
+        {
+            throttleBinding.AfterburnerDetent =
+                ReadNullableInt(
+                    detentRoot,
+                    "AB");
+        }
 
         if (throttleDefinition.SupportsIdleDetent)
-            throttleBinding.IdleDetent = ReadNullableInt(detentRoot, "IDLE");
+        {
+            throttleBinding.IdleDetent =
+                ReadNullableInt(
+                    detentRoot,
+                    "IDLE");
+        }
 
         DebugDiagnosticsService.Info(
             $"Stock XML throttle detents parsed | Device=\"{profile.ProductName}\" | AB={FormatNullable(throttleBinding.AfterburnerDetent)} | IDLE={FormatNullable(throttleBinding.IdleDetent)} | ActionId={actionId}");
     }
 
-    private static string ReadString(XElement parent, string elementName, string fallback = "")
+    private static string GetFriendlyAxisName(
+        string logicalAxisName)
     {
-        return parent.Element(elementName)?.Value?.Trim() ?? fallback;
+        if (string.Equals(
+                logicalAxisName,
+                "Intercom",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return "Audio Intercom Volume";
+        }
+
+        return logicalAxisName.Replace(
+            "_",
+            " ");
     }
 
-    private static bool ReadBool(XElement parent, string elementName)
+    private static string ReadString(
+        XElement parent,
+        string elementName,
+        string fallback = "")
     {
-        string value = ReadString(parent, elementName);
-
-        return bool.TryParse(value, out bool result) && result;
+        return parent
+                   .Element(elementName)?
+                   .Value?
+                   .Trim() ??
+               fallback;
     }
 
-    private static int? ReadNullableInt(XElement parent, string elementName)
+    private static bool ReadBool(
+        XElement parent,
+        string elementName)
     {
-        string value = ReadString(parent, elementName);
+        string value =
+            ReadString(
+                parent,
+                elementName);
 
-        if (int.TryParse(value, out int result))
+        return
+            bool.TryParse(
+                value,
+                out bool result) &&
+            result;
+    }
+
+    private static int? ReadNullableInt(
+        XElement parent,
+        string elementName)
+    {
+        string value =
+            ReadString(
+                parent,
+                elementName);
+
+        if (int.TryParse(
+                value,
+                out int result))
+        {
             return result;
+        }
 
         return null;
     }
 
-    private static string FormatNullable(int? value)
+    private static string FormatNullable(
+        int? value)
     {
-        return value.HasValue ? value.Value.ToString() : "";
+        return value.HasValue
+            ? value.Value.ToString()
+            : "";
     }
 }

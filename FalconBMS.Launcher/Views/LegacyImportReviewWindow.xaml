@@ -21,13 +21,13 @@
         <TextBlock Grid.Row="0"
                    FontSize="22"
                    FontWeight="SemiBold"
-                   Text="Existing Controls Found"/>
+                   Text="Existing Controls"/>
 
         <TextBlock Grid.Row="1"
                    Margin="0,10,0,18"
                    TextWrapping="Wrap" 
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="Your control files from the old Alternative Launcher are listed below. Continue to convert these into the new Launcher's JSON format."/>
+                   Text="The old Launcher control files listed below will be imported into the new Launcher."/>
 
         <ScrollViewer Grid.Row="2"
                       VerticalScrollBarVisibility="Auto">

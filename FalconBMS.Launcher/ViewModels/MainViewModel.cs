@@ -528,21 +528,11 @@ public sealed class MainViewModel : ViewModelBase
     private static void ShowLegacyImportCompleteMessage(
         LegacyImportExecutionResult importResult)
     {
-        string message =
-            "Your existing Alternative Launcher controls were imported successfully.";
+        var completeWindow =
+            new LegacyImportCompleteWindow(
+                importResult);
 
-        if (importResult.DevicesUsingStockFallback > 0 ||
-            importResult.MissingCallbacksSkipped > 0)
-        {
-            message +=
-                "\n\nSome items could not be imported exactly and were handled using the warnings shown before import.";
-        }
-
-        MessageBox.Show(
-            message,
-            "Import Complete",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        completeWindow.ShowDialog();
     }
 
     private static void MarkLegacyImportPromptHandled()
