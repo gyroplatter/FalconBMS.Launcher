@@ -298,5 +298,17 @@ namespace FalconBMS.Launcher.Properties {
                 this["ControlsDeviceColumnOrder"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool LegacyImportPromptHandled {
+            get {
+                return ((bool)(this["LegacyImportPromptHandled"]));
+            }
+            set {
+                this["LegacyImportPromptHandled"] = value;
+            }
+        }
     }
 }

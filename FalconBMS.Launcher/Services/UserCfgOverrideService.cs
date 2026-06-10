@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -17,6 +18,33 @@ public sealed class UserCfgOverrideService
     private const string OverrideMarker = "// LAUNCHER OVERRIDES BEGIN HERE - DO NOT EDIT OR ADD BELOW THIS LINE";
     private const string VrOverrideComment = "// SETUP OVERRIDE";
     private const string VrOverrideMarker = "// VR OVERRIDES BEGIN HERE - EDITS MUST BE MADE IN 'Falcon BMS VR.cfg' - DO NOT EDIT THIS DIRECTLY";
+
+    private const string UserHeaderBlock =
+        "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\r\n" +
+        "// Add custom configuration overrides here. These settings will take precedence over Falcon BMS.cfg. // \r\n" +
+        "// Do not edit Falcon BMS.cfg directly, use this file for all user-specific changes. // \r\n" +
+        "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+
+    private const string OldUserHeaderBlock =
+        "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\r\n" +
+        "// User can place here his or her specific configurations lines that will superseed the main ones located in the Falcon BMS.cfg file //\r\n" +
+        "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+
+    private static readonly HashSet<string> LauncherOwnedSettingNames =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "g_nAxisExp_AXIS_CURSOR_Y",
+            "g_nAxisExp_AXIS_CURSOR_X",
+            "g_nAxisExp_AXIS_ROLL",
+            "g_nAxisExp_AXIS_PITCH",
+            "g_nAxisExp_AXIS_YAW",
+            "g_bExportRTTTextures"
+        };
+
+    private static readonly Regex SetLineRegex = new(
+        @"^\s*set\s+(?<name>[^\s]+)(?:\s+.*)?$",
+        RegexOptions.Compiled |
+        RegexOptions.IgnoreCase);
 
     public void SaveOverrides(
         string baseDir,
@@ -31,26 +59,54 @@ public sealed class UserCfgOverrideService
 
         string userCfgPath = Path.Combine(configDir, "Falcon BMS User.cfg");
         string vrCfgPath = Path.Combine(configDir, "Falcon BMS VR.cfg");
-        string preservedPrefix = LoadTextAboveLauncherOverrides(userCfgPath);
+
+        string preservedPrefix =
+            LoadTextAboveLauncherOverrides(userCfgPath);
 
         int deviceCount = deviceProfiles.Count;
         int pinkyMagnitude = deviceCount * 128;
 
-        int rollSlot = FindDeviceSlotForLogicalAxis(deviceProfiles, "Roll");
-        int throttleSlot = FindDeviceSlotForLogicalAxis(deviceProfiles, "Throttle");
+        int rollSlot =
+            FindDeviceSlotForLogicalAxis(
+                deviceProfiles,
+                "Roll");
+
+        int throttleSlot =
+            FindDeviceSlotForLogicalAxis(
+                deviceProfiles,
+                "Throttle");
 
         if (rollSlot < 0 || rollSlot >= deviceCount)
             rollSlot = 0;
 
-        bool sameDeviceOrNoThrottle = throttleSlot < 0 || throttleSlot >= deviceCount || throttleSlot == rollSlot;
+        bool sameDeviceOrNoThrottle =
+            throttleSlot < 0 ||
+            throttleSlot >= deviceCount ||
+            throttleSlot == rollSlot;
 
         int pov1DeviceId = rollSlot + 2;
-        int pov2DeviceId = sameDeviceOrNoThrottle ? rollSlot + 2 : throttleSlot + 2;
-        int pov2Id = sameDeviceOrNoThrottle ? 1 : 0;
 
-        List<string> vrOverrideLines = LoadVrOverrideLines(vrCfgPath, vrEnabled);
+        int pov2DeviceId =
+            sameDeviceOrNoThrottle
+                ? rollSlot + 2
+                : throttleSlot + 2;
 
-        using var sw = new StreamWriter(userCfgPath, append: false, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        int pov2Id =
+            sameDeviceOrNoThrottle
+                ? 1
+                : 0;
+
+        List<string> vrOverrideLines =
+            LoadVrOverrideLines(
+                vrCfgPath,
+                vrEnabled);
+
+        using var sw = new StreamWriter(
+            userCfgPath,
+            append: false,
+            new UTF8Encoding(
+                encoderShouldEmitUTF8Identifier: false));
+
         sw.NewLine = "\r\n";
 
         if (!string.IsNullOrEmpty(preservedPrefix))
@@ -60,21 +116,34 @@ public sealed class UserCfgOverrideService
         sw.WriteLine();
         sw.WriteLine(OverrideMarker);
 
-        sw.WriteLine($"set g_nButtonsPerDevice 128 {OverrideComment}");
-        sw.WriteLine($"set g_nHotasPinkyShiftMagnitude {pinkyMagnitude} {OverrideComment}");
-        sw.WriteLine($"set g_nNumOfPOVs 2 {OverrideComment}");
-        sw.WriteLine($"set g_nPOV1DeviceID {pov1DeviceId} {OverrideComment}");
-        sw.WriteLine($"set g_nPOV1ID 0 {OverrideComment}");
-        sw.WriteLine($"set g_nPOV2DeviceID {pov2DeviceId} {OverrideComment}");
-        sw.WriteLine($"set g_nPOV2ID {pov2Id} {OverrideComment}");
+        sw.WriteLine(
+            $"set g_nButtonsPerDevice 128 {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nHotasPinkyShiftMagnitude {pinkyMagnitude} {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nNumOfPOVs 2 {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nPOV1DeviceID {pov1DeviceId} {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nPOV1ID 0 {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nPOV2DeviceID {pov2DeviceId} {OverrideComment}");
+
+        sw.WriteLine(
+            $"set g_nPOV2ID {pov2Id} {OverrideComment}");
 
         LegacyAxisCurveUserCfgWriterService.WriteOverrides(
             sw,
             deviceProfiles,
             OverrideComment);
 
-        if (exportRttTextures)
-            sw.WriteLine($"set g_bExportRTTTextures 1 {OverrideComment}");
+        sw.WriteLine(
+            $"set g_bExportRTTTextures {(exportRttTextures ? 1 : 0)} {OverrideComment}");
 
         if (vrOverrideLines.Count > 0)
         {
@@ -92,9 +161,13 @@ public sealed class UserCfgOverrideService
     {
         for (int i = 0; i < deviceProfiles.Count; i++)
         {
-            bool hasAxis = deviceProfiles[i].AxisBindings.Any(axis =>
-                string.Equals(axis.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase) &&
-                axis.PhysicalAxisIndex.HasValue);
+            bool hasAxis =
+                deviceProfiles[i].AxisBindings.Any(axis =>
+                    string.Equals(
+                        axis.LogicalAxisName,
+                        logicalAxisName,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    axis.PhysicalAxisIndex.HasValue);
 
             if (hasAxis)
                 return i;
@@ -103,54 +176,94 @@ public sealed class UserCfgOverrideService
         return -1;
     }
 
-    // New header message
-    private const string UserHeaderBlock =
-    "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\r\n" +
-    "// Add custom configuration overrides here. These settings will take precedence over Falcon BMS.cfg. // \r\n" +
-    "// Do not edit Falcon BMS.cfg directly, use this file for all user-specific changes. // \r\n" +
-    "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
-
-    // Legacy header from original launcher (used for migration/cleanup)
-    private const string OldUserHeaderBlock =
-    "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////\r\n" +
-    "// User can place here his or her specific configurations lines that will superseed the main ones located in the Falcon BMS.cfg file //\r\n" +
-    "///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
-
-    private static string LoadTextAboveLauncherOverrides(string userCfgPath)
+    private static string LoadTextAboveLauncherOverrides(
+        string userCfgPath)
     {
         if (!File.Exists(userCfgPath))
-        {
-            // First run - just return header
             return UserHeaderBlock;
-        }
 
-        string text = File.ReadAllText(userCfgPath);
+        string text =
+            File.ReadAllText(userCfgPath);
 
-        int markerIndex = text.IndexOf(OverrideMarker, StringComparison.Ordinal);
-        string preserved = markerIndex >= 0 ? text[..markerIndex] : text;
+        int markerIndex =
+            text.IndexOf(
+                OverrideMarker,
+                StringComparison.Ordinal);
 
-        preserved = preserved.TrimEnd('\r', '\n');
+        string preserved =
+            markerIndex >= 0
+                ? text[..markerIndex]
+                : text;
 
-        // Remove legacy header if present
-        preserved = RemoveOldHeaderBlock(preserved);
+        preserved =
+            RemoveLauncherOwnedSettings(preserved);
 
-        // Ensure new header exists at top (only once)
-        if (!preserved.StartsWith(UserHeaderBlock, StringComparison.Ordinal))
+        preserved =
+            preserved.TrimEnd('\r', '\n');
+
+        preserved =
+            RemoveOldHeaderBlock(preserved);
+
+        if (!preserved.StartsWith(
+                UserHeaderBlock,
+                StringComparison.Ordinal))
         {
             if (string.IsNullOrWhiteSpace(preserved))
                 return UserHeaderBlock;
 
-            return UserHeaderBlock + "\r\n\r\n" + preserved;
+            return
+                UserHeaderBlock +
+                "\r\n\r\n" +
+                preserved;
         }
 
         return preserved;
     }
 
-    private static string RemoveOldHeaderBlock(string preserved)
+    private static string RemoveLauncherOwnedSettings(
+        string preserved)
     {
-        string trimmed = preserved.TrimStart('\r', '\n');
+        var preservedLines = new List<string>();
 
-        if (trimmed.StartsWith(OldUserHeaderBlock, StringComparison.Ordinal))
+        using var reader =
+            new StringReader(preserved);
+
+        while (true)
+        {
+            string? line = reader.ReadLine();
+
+            if (line is null)
+                break;
+
+            Match match =
+                SetLineRegex.Match(line);
+
+            if (match.Success)
+            {
+                string settingName =
+                    match.Groups["name"].Value;
+
+                if (LauncherOwnedSettingNames.Contains(settingName))
+                    continue;
+            }
+
+            preservedLines.Add(line);
+        }
+
+        return string.Join(
+            "\r\n",
+            preservedLines);
+    }
+
+    private static string RemoveOldHeaderBlock(
+        string preserved)
+    {
+        string trimmed =
+            preserved.TrimStart('\r', '\n');
+
+        if (trimmed.StartsWith(
+                OldUserHeaderBlock,
+                StringComparison.Ordinal))
         {
             return trimmed
                 .Substring(OldUserHeaderBlock.Length)
@@ -160,46 +273,63 @@ public sealed class UserCfgOverrideService
         return preserved;
     }
 
-    private static List<string> LoadVrOverrideLines(string vrCfgPath, bool vrEnabled)
+    private static List<string> LoadVrOverrideLines(
+        string vrCfgPath,
+        bool vrEnabled)
     {
         List<string> lines = new();
 
         if (!vrEnabled || !File.Exists(vrCfgPath))
             return lines;
 
-        using StreamReader reader = new(vrCfgPath, Encoding.UTF8);
+        using StreamReader reader =
+            new(
+                vrCfgPath,
+                Encoding.UTF8);
 
         while (true)
         {
             string? line = reader.ReadLine();
+
             if (line is null)
                 break;
 
             string trimmed = line.Trim();
+
             if (trimmed.Length == 0)
                 continue;
 
-            lines.Add(NormalizeCfgLine(line));
+            lines.Add(
+                NormalizeCfgLine(line));
         }
 
         return lines;
     }
 
-    private static string NormalizeCfgLine(string line)
+    private static string NormalizeCfgLine(
+        string line)
     {
         string trimmed = line.Trim();
 
-        if (!trimmed.StartsWith("set", StringComparison.Ordinal))
+        if (!trimmed.StartsWith(
+                "set",
+                StringComparison.Ordinal))
+        {
             return line;
+        }
 
         line = trimmed;
 
         while (line.Contains("  "))
             line = line.Replace("  ", " ");
 
-        while (line.Contains("\x201C") || line.Contains("\x201D"))
-            line = line.Replace("\x201C", "\x0022")
-                       .Replace("\x201D", "\x0022");
+        while (line.Contains("\x201C") ||
+               line.Contains("\x201D"))
+        {
+            line = line
+                .Replace("\x201C", "\x0022")
+                .Replace("\x201D", "\x0022");
+        }
 
         return line;
     }

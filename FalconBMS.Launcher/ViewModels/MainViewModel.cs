@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services;
+using FalconBMS.Launcher.Services.Legacy;
 using FalconBMS.Launcher.Utils;
 using FalconBMS.Launcher.Views;
 using Microsoft.Win32;
@@ -32,6 +33,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly DeviceDiscoveryService _deviceDiscovery = new();
     private readonly DeviceBindingProfileBuilderService _deviceBindingProfileBuilder = new();
     private readonly DeviceJsonReaderService _deviceJsonReader = new();
+    private readonly LegacyImportService _legacyImport = new();
 
     // Tracks catalog-vs-JSON differences discovered during startup.
     // This is separate from ControlsViewModel.IsDirty because BMS adding or removing
@@ -70,6 +72,9 @@ public sealed class MainViewModel : ViewModelBase
 
                 Properties.Settings.Default.LastInstall = value.RegistryKeyName;
                 Properties.Settings.Default.Save();
+
+                if (!HandleFirstLaunchLegacyImport(value))
+                    return;
 
                 // Build the complete model (catalogs + keyboard JSON + device JSON) before
                 // firing any notification. Subscribers see a fully populated model on the
@@ -420,6 +425,130 @@ public sealed class MainViewModel : ViewModelBase
 
         var last = Properties.Settings.Default.LastInstall;
         SelectedInstall = Installs.FirstOrDefault(i => i.RegistryKeyName == last) ?? Installs[0];
+    }
+
+    private bool HandleFirstLaunchLegacyImport(
+        BmsInstall install)
+    {
+        if (Properties.Settings.Default.LegacyImportPromptHandled)
+            return true;
+
+        if (!_legacyImport.HasLegacyAutoKeyFiles(install.BaseDir))
+        {
+            MarkLegacyImportPromptHandled();
+            return true;
+        }
+
+        while (true)
+        {
+            var choiceWindow =
+                new LegacyImportChoiceWindow();
+
+            bool? choiceResult =
+                choiceWindow.ShowDialog();
+
+            if (choiceResult != true ||
+                !choiceWindow.Choice.HasValue)
+            {
+                Application.Current.Shutdown();
+                return false;
+            }
+
+            if (choiceWindow.Choice.Value ==
+                LegacyImportChoice.StartFresh)
+            {
+                MarkLegacyImportPromptHandled();
+                return true;
+            }
+
+            LegacyImportScanResult scanResult =
+                _legacyImport.Scan(
+                    install.BaseDir);
+
+            var reviewWindow =
+                new LegacyImportReviewWindow(
+                    scanResult);
+
+            bool? reviewResult =
+                reviewWindow.ShowDialog();
+
+            if (reviewResult == true)
+            {
+                LegacyImportExecutionResult importResult =
+                    _legacyImport.Import(
+                        install.BaseDir,
+                        scanResult);
+
+                if (!importResult.Succeeded)
+                {
+                    MessageBox.Show(
+                        importResult.ErrorMessage,
+                        "Import Failed",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+
+                    continue;
+                }
+
+                ApplyImportedLauncherSettings(
+                    importResult);
+
+                MarkLegacyImportPromptHandled();
+
+                ShowLegacyImportCompleteMessage(
+                    importResult);
+
+                return true;
+            }
+
+            if (reviewWindow.BackRequested)
+            {
+                continue;
+            }
+
+            Application.Current.Shutdown();
+            return false;
+        }
+    }
+
+    private void ApplyImportedLauncherSettings(
+        LegacyImportExecutionResult importResult)
+    {
+        _exportRttTextures =
+            importResult.ExportRttTextures;
+
+        Properties.Settings.Default.Misc_bExportRTTTextures =
+            importResult.ExportRttTextures;
+
+        Properties.Settings.Default.Save();
+
+        OnPropertyChanged(nameof(ExportRttTextures));
+    }
+
+    private static void ShowLegacyImportCompleteMessage(
+        LegacyImportExecutionResult importResult)
+    {
+        string message =
+            "Your existing Alternative Launcher controls were imported successfully.";
+
+        if (importResult.DevicesUsingStockFallback > 0 ||
+            importResult.MissingCallbacksSkipped > 0)
+        {
+            message +=
+                "\n\nSome items could not be imported exactly and were handled using the warnings shown before import.";
+        }
+
+        MessageBox.Show(
+            message,
+            "Import Complete",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
+
+    private static void MarkLegacyImportPromptHandled()
+    {
+        Properties.Settings.Default.LegacyImportPromptHandled = true;
+        Properties.Settings.Default.Save();
     }
 
     /// <summary>

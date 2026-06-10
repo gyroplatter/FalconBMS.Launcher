@@ -1,0 +1,58 @@
+﻿<Window x:Class="FalconBMS.Launcher.Views.LegacyImportChoiceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Import Existing Controls"
+        Width="560"
+        Height="310"
+        ResizeMode="NoResize"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackgroundBrush}">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   FontSize="22"
+                   FontWeight="SemiBold"
+                   Text="Existing Alternative Launcher Settings Found"/>
+
+        <TextBlock Grid.Row="1"
+                   Margin="0,18,0,0"
+                   FontSize="14"
+                   TextWrapping="Wrap"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Text="This new Launcher found control files created by the old Alternative Launcher."/>
+
+        <TextBlock Grid.Row="2"
+                   Margin="0,12,0,0"
+                   FontSize="14"
+                   TextWrapping="Wrap" 
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Text="You can import those controls into this new Launcher, or start with a fresh configuration. If starting fresh, your old control files will be overwritten. "/>
+
+        <StackPanel Grid.Row="3"
+                    Margin="0,24,0,0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+
+            <Button Width="180"
+                    Height="34"
+                    Margin="0,0,10,0"
+                    IsDefault="True"
+                    Content="Import Existing Controls"
+                    Click="ImportButton_Click"/>
+
+            <Button Width="150"
+                    Height="34"
+                    Style="{StaticResource TertiaryButtonStyle}" 
+                    Content="Start Fresh"
+                    Click="StartFreshButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
