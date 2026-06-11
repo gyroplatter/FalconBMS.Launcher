@@ -28,7 +28,7 @@
                    Margin="0,10,0,18"
                    TextWrapping="Wrap"
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="Your existing Launcher controls have been imported into the new Launcher."/>
+                   Text="Your existing Launcher controls have been imported into the new Launcher. A backup of your old files has been created in you BMS install folder: /Config/User/Launcher-Import-Backup"/>
 
         <StackPanel x:Name="SkippedControlsPanel"
                     Grid.Row="2"

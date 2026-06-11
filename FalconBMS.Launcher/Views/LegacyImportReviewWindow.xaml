@@ -27,7 +27,7 @@
                    Margin="0,10,0,18"
                    TextWrapping="Wrap" 
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="The old Launcher control files listed below will be imported into the new Launcher."/>
+                   Text="The old Launcher control files listed below will be imported into the new Launcher. A backup will be made of your original control files."/>
 
         <ScrollViewer Grid.Row="2"
                       VerticalScrollBarVisibility="Auto">

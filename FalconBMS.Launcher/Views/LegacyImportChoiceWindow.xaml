@@ -3,15 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Import Existing Controls"
         Width="560"
-        Height="360"
+        Height="300"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
-        WindowStartupLocation="CenterOwner"
+        WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -24,27 +23,20 @@
                    Text="Welcome to the new BMS Launcher"/>
 
         <TextBlock Grid.Row="1"
-                   Margin="0,18,0,0"
-                   FontSize="14"
-                   TextWrapping="Wrap"
-                   Style="{StaticResource BodyTextBlockStyle}"
-                   Text="This all new Launcher let's you edit your controls devices more easily. It also stores those controls in a different file format that is not compatible with older versions."/>
-
-        <TextBlock Grid.Row="2"
                    Margin="0,24,0,0"
                    FontSize="14"
                    TextWrapping="Wrap"
                    Style="{StaticResource SubheadingTextBlockStyle}"
                    Text="Control files created by the previous Launcher were found."/>
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="2"
                    Margin="0,12,0,0"
                    FontSize="14"
                    TextWrapping="Wrap" 
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="You can import those controls into the new Launcher, or start with a fresh control setup. With either choice, the new Launcher will replace the old control files."/>
+                   Text="You can import those controls into the new Launcher, or start from scratch with a fresh setup."/>
 
-        <StackPanel Grid.Row="4"
+        <StackPanel Grid.Row="3"
                     Margin="0,24,0,0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
