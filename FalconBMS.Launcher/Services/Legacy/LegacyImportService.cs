@@ -17,6 +17,9 @@ public sealed class LegacyImportService
     private readonly DeviceDiscoveryService
         _deviceDiscovery = new();
 
+    private readonly LegacyImportBackupService
+        _backupService = new();
+
     private readonly LegacyAutoKeyImportService
         _autoKeyImporter = new();
 
@@ -132,6 +135,18 @@ public sealed class LegacyImportService
     {
         try
         {
+            LegacyImportBackupResult backupResult =
+                _backupService.CreateBackup(
+                    scanResult.ConfigDirectory);
+
+            if (!backupResult.Succeeded)
+            {
+                return Failure(
+                    "The old Launcher control files could not be backed up. " +
+                    "Import was stopped before any changes were made.\n\n" +
+                    backupResult.ErrorMessage);
+            }
+
             IReadOnlyList<KeyCatalog> catalogs =
                 _keyCatalogService.LoadForInstall(
                     baseDir);
@@ -153,12 +168,15 @@ public sealed class LegacyImportService
                 new HashSet<string>(
                     StringComparer.OrdinalIgnoreCase);
 
+            string f16AutoKeyPath =
+                scanResult.F16AutoKeyPath ?? "";
+
             if (!string.IsNullOrWhiteSpace(
-                    scanResult.F16AutoKeyPath))
+                    f16AutoKeyPath))
             {
                 LegacyAutoKeyImportResult f16Result =
                     _autoKeyImporter.Apply(
-                        scanResult.F16AutoKeyPath,
+                        f16AutoKeyPath,
                         "F-16",
                         bindingModel);
 
@@ -169,12 +187,15 @@ public sealed class LegacyImportService
                     f16Result.MissingCallbacks);
             }
 
+            string f15AutoKeyPath =
+                scanResult.F15AutoKeyPath ?? "";
+
             if (!string.IsNullOrWhiteSpace(
-                    scanResult.F15AutoKeyPath))
+                    f15AutoKeyPath))
             {
                 LegacyAutoKeyImportResult f15Result =
                     _autoKeyImporter.Apply(
-                        scanResult.F15AutoKeyPath,
+                        f15AutoKeyPath,
                         "F-15ABCD",
                         bindingModel);
 
@@ -195,11 +216,14 @@ public sealed class LegacyImportService
                     .FindLegacyXmlFiles(
                         scanResult.ConfigDirectory);
 
+            string deviceSortingPath =
+                scanResult.DeviceSortingPath ?? "";
+
             IReadOnlyList<LegacySortedDevice> sortedDevices =
                 !string.IsNullOrWhiteSpace(
-                    scanResult.DeviceSortingPath)
+                    deviceSortingPath)
                     ? _deviceSortingImporter.Read(
-                        scanResult.DeviceSortingPath)
+                        deviceSortingPath)
                     : Array.Empty<LegacySortedDevice>();
 
             int legacyDeviceCount =
@@ -225,11 +249,14 @@ public sealed class LegacyImportService
             bindingModel.DeviceProfiles.AddRange(
                 deviceProfiles);
 
+            string userCfgPath =
+                scanResult.UserCfgPath ?? "";
+
             LegacyUserCfgImportResult userCfgResult =
                 !string.IsNullOrWhiteSpace(
-                    scanResult.UserCfgPath)
+                    userCfgPath)
                     ? _userCfgImporter.Read(
-                        scanResult.UserCfgPath)
+                        userCfgPath)
                     : new LegacyUserCfgImportResult();
 
             _userCfgImporter.ApplyCurves(
@@ -261,7 +288,11 @@ public sealed class LegacyImportService
                     DevicesUsingStockFallback =
                         stockFallbackCount,
                     MissingCallbacksSkipped =
-                        missingCallbacks.Count
+                        missingCallbacks.Count,
+                    BackupDirectory =
+                        backupResult.BackupDirectory,
+                    BackupFilesCopied =
+                        backupResult.FilesCopied
                 };
 
             result.SkippedItems.AddRange(

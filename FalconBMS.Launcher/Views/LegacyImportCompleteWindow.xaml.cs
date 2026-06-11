@@ -14,6 +14,10 @@ public partial class LegacyImportCompleteWindow : Window
     {
         InitializeComponent();
 
+        BackupFolderRun.Text =
+            BuildBackupFolderText(
+                importResult.BackupDirectory);
+
         if (!importResult.HasSkippedItems)
             return;
 
@@ -23,6 +27,35 @@ public partial class LegacyImportCompleteWindow : Window
         SkippedControlsTextBox.Text =
             BuildSkippedControlsText(
                 importResult.SkippedItems);
+    }
+
+    private static string BuildBackupFolderText(
+        string backupDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(backupDirectory))
+            return "User\\Config\\Launcher-Import-Backup";
+
+        string normalizedPath =
+            backupDirectory
+                .Replace(
+                    '/',
+                    '\\');
+
+        const string marker =
+            "\\User\\Config\\";
+
+        int markerIndex =
+            normalizedPath.IndexOf(
+                marker,
+                StringComparison.OrdinalIgnoreCase);
+
+        if (markerIndex >= 0)
+        {
+            return normalizedPath.Substring(
+                markerIndex + 1);
+        }
+
+        return normalizedPath;
     }
 
     private static string BuildSkippedControlsText(
@@ -74,6 +107,7 @@ public partial class LegacyImportCompleteWindow : Window
         object sender,
         RoutedEventArgs e)
     {
-        DialogResult = true;
+        DialogResult =
+            true;
     }
 }

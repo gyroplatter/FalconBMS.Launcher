@@ -37,8 +37,9 @@
                    Style="{StaticResource BodyTextBlockStyle}">
                     A backup of your old Launcher control files has been created in your BMS install folder:
                     <LineBreak/>
-                    \Config\User\Launcher-Import-Backup
-                  </TextBlock>
+                    <Run x:Name="BackupFolderRun"
+                         FontWeight="SemiBold"/>
+                </TextBlock>
 
         <StackPanel x:Name="SkippedControlsPanel"
                     Grid.Row="3"

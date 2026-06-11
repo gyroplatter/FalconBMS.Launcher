@@ -89,14 +89,20 @@ public sealed class LegacyDeviceXmlImportService
         string? legacyXmlPath,
         ICollection<LegacyImportSkippedItem> skippedItems)
     {
-        if (!string.IsNullOrWhiteSpace(legacyXmlPath) &&
-            File.Exists(legacyXmlPath) &&
-            CanReadXml(legacyXmlPath))
+        string legacyXmlPathValue =
+            legacyXmlPath ?? "";
+
+        if (!string.IsNullOrWhiteSpace(
+                legacyXmlPathValue) &&
+            File.Exists(
+                legacyXmlPathValue) &&
+            CanReadXml(
+                legacyXmlPathValue))
         {
             DeviceBindingProfile profile =
                 CreateConnectedProfileShell(
                     match,
-                    legacyXmlPath);
+                    legacyXmlPathValue);
 
             ApplyXml(
                 profile,

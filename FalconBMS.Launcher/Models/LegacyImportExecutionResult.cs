@@ -18,6 +18,10 @@ public sealed class LegacyImportExecutionResult
 
     public int MissingCallbacksSkipped { get; init; }
 
+    public string BackupDirectory { get; init; } = "";
+
+    public int BackupFilesCopied { get; init; }
+
     public List<string> Warnings { get; } = new();
 
     public List<LegacyImportSkippedItem> SkippedItems { get; } = new();
