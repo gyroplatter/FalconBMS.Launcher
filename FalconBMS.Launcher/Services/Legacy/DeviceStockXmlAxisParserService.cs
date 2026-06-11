@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Models.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;

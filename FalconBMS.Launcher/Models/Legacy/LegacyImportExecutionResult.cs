@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace FalconBMS.Launcher.Models;
+namespace FalconBMS.Launcher.Models.Legacy;
 
 public sealed class LegacyImportExecutionResult
 {

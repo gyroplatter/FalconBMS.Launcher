@@ -1,4 +1,4 @@
-﻿namespace FalconBMS.Launcher.Models;
+﻿namespace FalconBMS.Launcher.Models.Legacy;
 
 public sealed class LegacyImportDeviceScanResult
 {

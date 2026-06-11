@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace FalconBMS.Launcher.Models;
+namespace FalconBMS.Launcher.Models.Legacy;
 
 public sealed class LegacyImportScanResult
 {

@@ -1,4 +1,4 @@
-﻿using FalconBMS.Launcher.Models;
+﻿using FalconBMS.Launcher.Models.Legacy;
 using System.Windows;
 
 namespace FalconBMS.Launcher.Views;
