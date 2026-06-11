@@ -2,9 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Review Existing Controls"
-        Width="650"
-        Height="560"
-        MinWidth="650"
+        Width="580"
+        Height="500"
+        MinWidth="580"
         MinHeight="500"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"
@@ -12,6 +12,7 @@
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -24,12 +25,18 @@
                    Text="Existing Controls"/>
 
         <TextBlock Grid.Row="1"
-                   Margin="0,10,0,18"
+                   Margin="0,10,0,10"
                    TextWrapping="Wrap" 
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="The old Launcher control files listed below will be imported into the new Launcher. A backup will be made of your original control files."/>
+                   Text="Your existing control files listed below will be imported into the new Launcher."/>
 
-        <ScrollViewer Grid.Row="2"
+        <TextBlock Grid.Row="2"
+                   Margin="0,0,0,18"
+                   TextWrapping="Wrap" 
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Text="Before importing, the Launcher will create a backup of these old control files."/>
+
+        <ScrollViewer Grid.Row="3"
                       VerticalScrollBarVisibility="Auto">
 
             <StackPanel>
@@ -113,7 +120,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="3"
+        <StackPanel Grid.Row="4"
                     Margin="0,22,0,0"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right">
