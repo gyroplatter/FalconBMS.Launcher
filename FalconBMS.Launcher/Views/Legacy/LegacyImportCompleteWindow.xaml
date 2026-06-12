@@ -39,7 +39,7 @@
                    TextWrapping="Wrap"
                    Style="{StaticResource BodyTextBlockStyle}">
             <Run x:Name="BackupIntroRun"
-                 Text="Before importing your old controls, a backup of your setup was created in your BMS installation folder:"/>
+                 Text="A backup of your original setup was created in your BMS installation folder:"/>
             <LineBreak/>
             <Run x:Name="BackupFolderRun"
                  FontWeight="SemiBold"
