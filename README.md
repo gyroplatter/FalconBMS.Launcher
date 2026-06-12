@@ -11,6 +11,8 @@ This new Launcher serves as a bridge between the current Falcon BMS file system 
 
 On startup, the Launcher builds its working model from current BMS input files and saved Launcher JSON files:
 
+- For first launch, the new Launcher checks the selected Falcon BMS installation for existing v2 Launcher control files. If found, it automatically backs them up to a new folder, imports the old controls into the new JSON-based binding format, and shows a confirmation with the backup location. This check only runs once, and the new Launcher uses the generated JSON binding files going forward.
+
 - The `BMS - Full*.key` files are used to build the current keyboard/control catalog. This means the Launcher starts from the current list of controls provided by the installed BMS version, rather than only loading an older saved copy of the user's bindings.
 
 - Saved JSON files are then applied on top of that current catalog to restore user-managed keyboard and device bindings. This allows new controls added by BMS to appear in the Launcher without requiring the user to delete their existing bindings or rebuild their control setup from scratch.
@@ -18,8 +20,6 @@ On startup, the Launcher builds its working model from current BMS input files a
 - For devices, the Launcher discovers DirectInput hardware, checks for matching JSON binding files, and falls back to stock XML templates or empty device profiles when no JSON exists. This keeps existing user bindings intact while still allowing the Launcher to pick up new or changed control definitions from BMS over time.
 
 On BMS launch or Launcher close, the in-memory model writes updated JSON files first, then generates the legacy compatibility outputs that Falcon BMS and older tools still expect.
-
-Because this new Launcher reasons from its JSON-based binding model, it is not currently possible to import user-edited files directly from the current Alternative Launcher v2 into this new v3 Launcher.
 
 This Launcher is currently only compatible with **Falcon BMS 4.38**.
 
@@ -51,6 +51,7 @@ This project uses the following NuGet packages:
 - XML file loading
 - KEY file loading
 - In-memory model
+- v2 Launcher file import
 - JSON file loading, editing, and saving
 - Falcon BMS User.cfg override handling
 - Callsign/name registry updates
@@ -63,7 +64,7 @@ This project uses the following NuGet packages:
 
 - UI and styling refinements
 - Launcher bypass
-- Control import and export
+- Control export
 - Performance optimizations
 
 ---
@@ -112,21 +113,24 @@ When a Falcon BMS install is loaded, the Launcher builds the binding model in on
 The Launcher does not treat JSON loading as an all-or-nothing step. Keyboard and device bindings are resolved independently, and device JSON is checked per discovered device.
 
 1. Check for a selected Falcon BMS install
-2. Load `BMS - Full*.key` files
-3. Build the current keyboard/control catalog from the FULL key files
-4. Check for existing keyboard JSON files:
+2. Run the first-launch legacy import check:
+   - If v2 Launcher files are found and import has not already been handled, back up v2 files and convert them to JSON
+   - If no legacy files are found, or the import was already handled, skip import and continue normal startup
+3. Load `BMS - Full*.key` files
+4. Build the current keyboard/control catalog from the FULL key files
+5. Check for existing keyboard JSON files:
    - `KeyboardBindings_F-16.json`
    - `KeyboardBindings_F-15ABCD.json`
-5. If keyboard JSON files exist, overlay saved keyboard bindings onto the current catalog
-6. If keyboard JSON files do not exist, keep the current FULL key defaults
-7. Discover DirectInput devices
-8. Match discovered devices to stock `Setup.v100.*.xml` files, using PID/VID fallback when device names differ
-9. For each discovered device, check for an existing device JSON file:
+6. If keyboard JSON files exist, overlay saved keyboard bindings onto the current catalog
+7. If keyboard JSON files do not exist, keep the current FULL key defaults
+8. Discover DirectInput devices
+9. Match discovered devices to stock `Setup.v100.*.xml` files, using PID/VID fallback when device names differ
+10. For each discovered device, check for an existing device JSON file:
    - `DeviceBindings_{Aircraft}_{DurableDeviceKey}_{ProductName}.json`
-10. If device JSON exists, load that device profile from JSON
-11. If device JSON does not exist, build that device profile from matched stock XML
-12. If no stock XML exists for that device, build an empty device profile
-13. Build the complete in-memory binding model
+11. If device JSON exists, load that device profile from JSON
+12. If device JSON does not exist, build that device profile from matched stock XML
+13. If no stock XML exists for that device, build an empty device profile
+14. Build the complete in-memory binding model
 
 
 ### Save and Launch Flow
@@ -171,6 +175,7 @@ Services
    ├── Theme handling
    ├── Device discovery
    ├── DirectInput polling
+   ├── First-launch v2 Launcher file import
    ├── Stock XML matching
    ├── Key catalog loading
    ├── Keyboard JSON reading/writing
@@ -182,7 +187,9 @@ Services
    ├── Debug diagnostics / logging
    └── Legacy compatibility writers
    to
-File Output (User\Config\JSON & User\Config)
+File Output
+   ├── User\Config\JSON
+   └── User\Config
 ```
 
 ---
