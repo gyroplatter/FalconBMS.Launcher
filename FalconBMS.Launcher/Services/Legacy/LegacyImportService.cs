@@ -134,9 +134,12 @@ public sealed class LegacyImportService
         string baseDir,
         LegacyImportScanResult scanResult)
     {
+        LegacyImportBackupResult? backupResult =
+            null;
+
         try
         {
-            LegacyImportBackupResult backupResult =
+            backupResult =
                 _backupService.CreateBackup(
                     scanResult.ConfigDirectory);
 
@@ -155,7 +158,9 @@ public sealed class LegacyImportService
             if (catalogs.Count == 0)
             {
                 return Failure(
-                    "The current BMS Full key files could not be loaded.");
+                    "The current BMS Full key files could not be loaded.",
+                    backupResult.BackupDirectory,
+                    backupResult.FilesCopied);
             }
 
             BindingModel bindingModel =
@@ -330,7 +335,9 @@ public sealed class LegacyImportService
                 "Legacy control import failed.");
 
             return Failure(
-                ex.Message);
+                ex.Message,
+                backupResult?.BackupDirectory ?? "",
+                backupResult?.FilesCopied ?? 0);
         }
     }
 
@@ -584,12 +591,20 @@ public sealed class LegacyImportService
     }
 
     private static LegacyImportExecutionResult Failure(
-        string errorMessage)
+        string errorMessage,
+        string backupDirectory = "",
+        int backupFilesCopied = 0)
     {
         return new LegacyImportExecutionResult
         {
-            Succeeded = false,
-            ErrorMessage = errorMessage
+            Succeeded =
+                false,
+            ErrorMessage =
+                errorMessage,
+            BackupDirectory =
+                backupDirectory,
+            BackupFilesCopied =
+                backupFilesCopied
         };
     }
 

@@ -14,26 +14,70 @@ public partial class LegacyImportCompleteWindow : Window
     {
         InitializeComponent();
 
+        if (!importResult.Succeeded)
+        {
+            ConfigureFailureText(
+                importResult);
+        }
+
         BackupFolderRun.Text =
             BuildBackupFolderText(
                 importResult.BackupDirectory);
 
-        if (!importResult.HasSkippedItems)
-            return;
+        string importMessages =
+            BuildImportMessagesText(
+                importResult);
 
-        SkippedControlsPanel.Visibility =
-            Visibility.Visible;
+        if (string.IsNullOrWhiteSpace(
+                importMessages))
+        {
+            ImportMessagesPanel.Visibility =
+                Visibility.Collapsed;
+        }
+        else
+        {
+            ImportMessagesTextBox.Text =
+                importMessages;
+        }
+    }
 
-        SkippedControlsTextBox.Text =
-            BuildSkippedControlsText(
-                importResult.SkippedItems);
+    private void ConfigureFailureText(
+        LegacyImportExecutionResult importResult)
+    {
+        Title =
+            "Import Failed";
+
+        HeaderTextBlock.Text =
+            "Import could not finish";
+
+        IntroTextBlock.Text =
+            "We found your old Launcher control setup, but the import could not be completed. " +
+            "Please review the message below and restart the Launcher after fixing the issue.";
+
+        BackupIntroRun.Text =
+            "A backup was created before the import stopped here:";
+
+        BackupTextBlock.Visibility =
+            string.IsNullOrWhiteSpace(
+                importResult.BackupDirectory)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+
+        ImportMessagesHeaderTextBlock.Text =
+            "Import Error";
+
+        ContinueButton.Content =
+            "Close";
     }
 
     private static string BuildBackupFolderText(
         string backupDirectory)
     {
-        if (string.IsNullOrWhiteSpace(backupDirectory))
+        if (string.IsNullOrWhiteSpace(
+                backupDirectory))
+        {
             return "User\\Config\\Launcher-Import-Backup";
+        }
 
         string normalizedPath =
             backupDirectory
@@ -56,6 +100,68 @@ public partial class LegacyImportCompleteWindow : Window
         }
 
         return normalizedPath;
+    }
+
+    private static string BuildImportMessagesText(
+        LegacyImportExecutionResult importResult)
+    {
+        var builder =
+            new StringBuilder();
+
+        if (!importResult.Succeeded)
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    importResult.ErrorMessage))
+            {
+                builder.AppendLine(
+                    importResult.ErrorMessage.Trim());
+            }
+            else
+            {
+                builder.AppendLine(
+                    "No detailed error message was reported.");
+            }
+
+            return builder
+                .ToString()
+                .TrimEnd();
+        }
+
+        if (importResult.Warnings.Count == 0 &&
+            !importResult.HasSkippedItems)
+        {
+            return "";
+        }
+
+        if (importResult.Warnings.Count > 0)
+        {
+            builder.AppendLine(
+                "Warnings");
+
+            foreach (string warning in importResult.Warnings)
+            {
+                builder.AppendLine(
+                    $"- {warning}");
+            }
+
+            builder.AppendLine();
+        }
+
+        if (importResult.HasSkippedItems)
+        {
+            builder.AppendLine(
+                "Thes controls were not imported correctly, please remap them manaully:");
+
+            builder.AppendLine();
+
+            builder.Append(
+                BuildSkippedControlsText(
+                    importResult.SkippedItems));
+        }
+
+        return builder
+            .ToString()
+            .TrimEnd();
     }
 
     private static string BuildSkippedControlsText(

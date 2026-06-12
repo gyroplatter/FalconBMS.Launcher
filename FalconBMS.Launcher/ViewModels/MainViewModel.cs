@@ -440,76 +440,34 @@ public sealed class MainViewModel : ViewModelBase
             return true;
         }
 
-        while (true)
+        LegacyImportScanResult scanResult =
+            _legacyImport.Scan(
+                install.BaseDir);
+
+        LegacyImportExecutionResult importResult =
+            _legacyImport.Import(
+                install.BaseDir,
+                scanResult);
+
+        if (!importResult.Succeeded)
         {
-            var choiceWindow =
-                new LegacyImportChoiceWindow();
-
-            bool? choiceResult =
-                choiceWindow.ShowDialog();
-
-            if (choiceResult != true ||
-                !choiceWindow.Choice.HasValue)
-            {
-                Application.Current.Shutdown();
-                return false;
-            }
-
-            if (choiceWindow.Choice.Value ==
-                LegacyImportChoice.StartFresh)
-            {
-                MarkLegacyImportPromptHandled();
-                return true;
-            }
-
-            LegacyImportScanResult scanResult =
-                _legacyImport.Scan(
-                    install.BaseDir);
-
-            var reviewWindow =
-                new LegacyImportReviewWindow(
-                    scanResult);
-
-            bool? reviewResult =
-                reviewWindow.ShowDialog();
-
-            if (reviewResult == true)
-            {
-                LegacyImportExecutionResult importResult =
-                    _legacyImport.Import(
-                        install.BaseDir,
-                        scanResult);
-
-                if (!importResult.Succeeded)
-                {
-                    MessageBox.Show(
-                        importResult.ErrorMessage,
-                        "Import Failed",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-
-                    continue;
-                }
-
-                ApplyImportedLauncherSettings(
-                    importResult);
-
-                MarkLegacyImportPromptHandled();
-
-                ShowLegacyImportCompleteMessage(
-                    importResult);
-
-                return true;
-            }
-
-            if (reviewWindow.BackRequested)
-            {
-                continue;
-            }
+            ShowLegacyImportCompleteMessage(
+                importResult);
 
             Application.Current.Shutdown();
+
             return false;
         }
+
+        ApplyImportedLauncherSettings(
+            importResult);
+
+        MarkLegacyImportPromptHandled();
+
+        ShowLegacyImportCompleteMessage(
+            importResult);
+
+        return true;
     }
 
     private void ApplyImportedLauncherSettings(

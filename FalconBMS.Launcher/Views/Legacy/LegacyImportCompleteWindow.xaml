@@ -1,11 +1,11 @@
 ﻿<Window x:Class="FalconBMS.Launcher.Views.LegacyImportCompleteWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Import Complete"
-        Width="580"
-        Height="430"
-        MinWidth="580"
-        MinHeight="430"
+        Title="Welcome to the New Launcher"
+        Width="640"
+        Height="440"
+        MinWidth="640"
+        MinHeight="440"
         ResizeMode="NoResize"
         ShowInTaskbar="True"
         WindowStartupLocation="CenterScreen"
@@ -20,54 +20,57 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
+        <TextBlock x:Name="HeaderTextBlock"
+                   Grid.Row="0"
                    FontSize="22"
                    FontWeight="SemiBold"
-                   Text="Import Complete"/>
+                   Text="Welcome to the new BMS Launcher"/>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,10,0,10"
+        <TextBlock x:Name="IntroTextBlock"
+                   Grid.Row="1"
+                   Margin="0,14,0,0"
                    TextWrapping="Wrap"
                    Style="{StaticResource BodyTextBlockStyle}"
-                   Text="Your existing Launcher controls have been imported into the new Launcher."/>
+                   Text="Your old Launcher control setup was found and imported into this new Launcher."/>
 
-        <TextBlock Grid.Row="2"
-                   Margin="0,0,0,18"
+        <TextBlock x:Name="BackupTextBlock"
+                   Grid.Row="2"
+                   Margin="0,12,0,0"
                    TextWrapping="Wrap"
                    Style="{StaticResource BodyTextBlockStyle}">
-                    A backup of your old Launcher control files has been created in your BMS install folder:
-                    <LineBreak/>
-                    <Run x:Name="BackupFolderRun"
-                         FontWeight="SemiBold"/>
-                </TextBlock>
+            <Run x:Name="BackupIntroRun"
+                 Text="Before importing your old controls, a backup of your setup was created in your BMS installation folder:"/>
+            <LineBreak/>
+            <Run x:Name="BackupFolderRun"
+                 FontWeight="SemiBold"
+                 Text="User\Config\Launcher-Import-Backup"/>
+        </TextBlock>
 
-        <StackPanel x:Name="SkippedControlsPanel"
+        <StackPanel x:Name="ImportMessagesPanel"
                     Grid.Row="3"
-                    Visibility="Collapsed">
+                    Margin="0,20,0,0">
 
-            <TextBlock FontSize="16"
+            <TextBlock x:Name="ImportMessagesHeaderTextBlock"
+                       FontSize="16"
                        FontWeight="SemiBold"
                        Style="{StaticResource DialogSectionLabelStyle}"
-                       Text="Some controls could not be imported"/>
+                       Text="Import Messages"/>
 
-            <TextBlock Margin="0,0,0,10"
-                       TextWrapping="Wrap"
-                       Style="{StaticResource BodyTextBlockStyle}"
-                       Text="Please remap the controls below manually."/>
-
-            <TextBox x:Name="SkippedControlsTextBox"
-                     Height="150"
+            <TextBox x:Name="ImportMessagesTextBox"
+                     Height="120"
                      Padding="10"
                      IsReadOnly="True"
                      IsReadOnlyCaretVisible="False"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Disabled"/>
+                     HorizontalScrollBarVisibility="Disabled"
+                     Text="Controls that could not be imported"/>
         </StackPanel>
 
-        <Button Grid.Row="4"
-                Width="110"
+        <Button x:Name="ContinueButton"
+                Grid.Row="4"
+                Width="120"
                 Height="34"
                 Margin="0,22,0,0"
                 HorizontalAlignment="Right"
