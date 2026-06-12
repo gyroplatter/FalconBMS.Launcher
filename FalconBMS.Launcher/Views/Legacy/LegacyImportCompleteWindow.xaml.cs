@@ -33,11 +33,23 @@ public partial class LegacyImportCompleteWindow : Window
         {
             ImportMessagesPanel.Visibility =
                 Visibility.Collapsed;
+
+            Height =
+                300;
+
+            MinHeight =
+                300;
         }
         else
         {
             ImportMessagesTextBox.Text =
                 importMessages;
+
+            Height =
+                440;
+
+            MinHeight =
+                440;
         }
     }
 
@@ -150,7 +162,7 @@ public partial class LegacyImportCompleteWindow : Window
         if (importResult.HasSkippedItems)
         {
             builder.AppendLine(
-                "Thes controls were not imported correctly, please remap them manaully:");
+                "These controls were not imported correctly, please remap them manaully:");
 
             builder.AppendLine();
 

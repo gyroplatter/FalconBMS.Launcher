@@ -57,7 +57,7 @@ public sealed class JoystickCalService
         "HUD_Brightness",
         "Reticle_Depression",
         "Camera_Distance",
-        "IntercomVolumeVolume",
+        "intercom",
         "HMS_Brightness",
         "AI_vs_IVC",
         "FLIR_Brightness",

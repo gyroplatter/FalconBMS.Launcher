@@ -644,7 +644,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
                string.Equals(normalizedName, "Toe_Brake", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "Toe_Brake_Right", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "Intercom", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(normalizedName, "IntercomVolumeVolume", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(normalizedName, "intercom", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "COMM_Channel_1", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "COMM_Channel_2", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(normalizedName, "MSL_Volume", StringComparison.OrdinalIgnoreCase) ||

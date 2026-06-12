@@ -63,7 +63,7 @@ public static class AxisDefinitionService
         GenericAxis(16, "COMM_Channel_2",         "Audio Comm Ch2",        "Decrease",     "Increase"),
         GenericAxis(17, "MSL_Volume",             "Missile Volume",        "Decrease",     "Increase"),
         GenericAxis(18, "Threat_Volume",          "Audio Threat Volume",   "Decrease",     "Increase"),
-        GenericAxis(19, "IntercomVolumeVolume",   "Audio Intercom Volume", "Decrease",     "Increase"),
+        GenericAxis(19, "intercom",   "Audio Intercom Volume", "Decrease",     "Increase"),
         GenericAxis(20, "AI_vs_IVC",              "Audio AI vs IVC",       "Decrease",     "Increase"),
 
         GenericAxis(21, "HUD_Brightness",         "HUD Brightness",         "Dark",            "Bright"),
@@ -225,7 +225,7 @@ public static class AxisDefinitionService
         ["MSL_Volume"] = "2.14 AUDIO 1 PANEL",
         ["Threat_Volume"] = "2.14 AUDIO 1 PANEL",
 
-        ["IntercomVolumeVolume"] = "2.13 AUDIO 2 PANEL",
+        ["intercom"] = "2.13 AUDIO 2 PANEL",
         ["ILS_Volume_Knob"] = "2.13 AUDIO 2 PANEL",
 
         ["AI_vs_IVC"] = "2.16 UHF PANEL",
@@ -274,7 +274,7 @@ public static class AxisDefinitionService
         ["COMM_Channel_2"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
         ["MSL_Volume"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
         ["Threat_Volume"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
-        ["IntercomVolumeVolume"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
+        ["intercom"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
         ["AI_vs_IVC"] = "2.08 INTEGRATED COMMUNICATIONS CONTROL PANEL (ICCP)",
 
         ["ILS_Volume_Knob"] = "2.15 ILS/TCN PANEL",
