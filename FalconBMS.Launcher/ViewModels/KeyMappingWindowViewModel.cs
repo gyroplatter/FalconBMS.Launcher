@@ -13,24 +13,29 @@ namespace FalconBMS.Launcher.ViewModels;
 
 public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 {
+    private const string PovInvokeDefault = "Default";
+    private const string PovInvokeShift = "Shift";
+
     private readonly BindingRow _row;
     private readonly List<BindingRow> _profileRows;
     private readonly List<DeviceBindingProfile> _deviceProfiles;
     private readonly string _aircraftProfileName;
     private readonly Action<BindingRow, string, int, string, int> _saveKeyboardBinding;
     private readonly Action<BindingRow, string?, int?, int?> _saveDeviceButtonBinding;
+    private readonly Action<BindingRow, string?, int?, int?, string?> _saveDevicePovBinding;
     private readonly Action _closeWindow;
     private readonly DirectInputManager _di = new();
 
     private KeyboardSession? _keyboard;
     private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
     private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
+    private readonly Dictionary<string, int[]> _previousPovsByDeviceKey = new();
     private DispatcherTimer? _timer;
     private HashSet<DiKey> _previousPressedKeys = new();
 
     // A DirectInput session is opened when the popup opens, so use the first
     // few polling ticks to learn held/latching switch positions before capturing input.
-    // Increase the DxNeutralWarmupPolls to increase this delay, but that also 
+    // Increase the DxNeutralWarmupPolls to increase this delay, but that also
     // can make the window miss the first real DX press.
     private const int DxNeutralWarmupPolls = 6;
     private int _dxNeutralWarmupPollsRemaining;
@@ -41,6 +46,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private int _tempChordModifierFlags;
 
     private readonly List<PendingDxButton> _pendingDxButtons = new();
+    private readonly List<PendingDxPov> _pendingDxPovs = new();
 
     private sealed class PendingDxButton
     {
@@ -49,6 +55,13 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         public int AssignmentIndex { get; set; }
     }
 
+    private sealed class PendingDxPov
+    {
+        public string DeviceKey { get; set; } = "";
+        public int PovIndex { get; set; }
+        public int Direction { get; set; }
+        public string Invoke { get; set; } = PovInvokeDefault;
+    }
 
     public string TitleText { get; }
 
@@ -132,6 +145,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         string aircraftProfileName,
         Action<BindingRow, string, int, string, int> saveKeyboardBinding,
         Action<BindingRow, string?, int?, int?> saveDeviceButtonBinding,
+        Action<BindingRow, string?, int?, int?, string?> saveDevicePovBinding,
         Action closeWindow)
     {
         _row = row;
@@ -140,6 +154,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _aircraftProfileName = aircraftProfileName;
         _saveKeyboardBinding = saveKeyboardBinding;
         _saveDeviceButtonBinding = saveDeviceButtonBinding;
+        _saveDevicePovBinding = saveDevicePovBinding;
         _closeWindow = closeWindow;
 
         TitleText = row.Description;
@@ -159,9 +174,10 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         ClearDxCommand = new RelayCommand(() =>
         {
             _pendingDxButtons.Clear();
+            _pendingDxPovs.Clear();
 
             // After Clear DX, ignore anything currently held so latching switches
-            // do not immediately add themselves back.
+            // or held POV hats do not immediately add themselves back.
             StartDxNeutralWarmup();
 
             UpdateAssignmentPreviewTexts();
@@ -189,6 +205,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 _tempChordModifierFlags);
 
             // Replace this callback's DX list with the current pending list.
+            // Treats DX as button OR POV, so this clear removes both.
             _saveDeviceButtonBinding(_row, null, null, null);
 
             foreach (PendingDxButton pendingDxButton in _pendingDxButtons)
@@ -198,6 +215,16 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                     pendingDxButton.DeviceKey,
                     pendingDxButton.ButtonIndex,
                     pendingDxButton.AssignmentIndex);
+            }
+
+            foreach (PendingDxPov pendingDxPov in _pendingDxPovs)
+            {
+                _saveDevicePovBinding(
+                    _row,
+                    pendingDxPov.DeviceKey,
+                    pendingDxPov.PovIndex,
+                    pendingDxPov.Direction,
+                    pendingDxPov.Invoke);
             }
 
             _closeWindow();
@@ -219,7 +246,9 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _keyboard = null;
         }
 
-        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device => device.IsConnected && device.ButtonCount > 0))
+        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device =>
+                     device.IsConnected &&
+                     (device.ButtonCount > 0 || device.PovCount > 0)))
         {
             try
             {
@@ -265,13 +294,14 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         _joystickSessionsByDeviceKey.Clear();
         _previousButtonsByDeviceKey.Clear();
+        _previousPovsByDeviceKey.Clear();
         _previousPressedKeys.Clear();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
         PollKeyboard();
-        PollJoystickButtons();
+        PollJoystickInputs();
     }
 
     private void PollKeyboard()
@@ -339,6 +369,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private void StartDxNeutralWarmup()
     {
         _previousButtonsByDeviceKey.Clear();
+        _previousPovsByDeviceKey.Clear();
         _dxNeutralWarmupPollsRemaining = DxNeutralWarmupPolls;
     }
 
@@ -361,17 +392,19 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             }
 
             bool[] buttons = state.Buttons ?? Array.Empty<bool>();
+            int[] povs = state.PointOfViewControllers ?? Array.Empty<int>();
 
             // Keep replacing the baseline during warmup. The final warmup poll becomes
             // the neutral state used when real DX capture begins.
             _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+            _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
         }
 
         _dxNeutralWarmupPollsRemaining--;
         return true;
     }
 
-    private void PollJoystickButtons()
+    private void PollJoystickInputs()
     {
         if (IsDxNeutralWarmupActive())
             return;
@@ -390,12 +423,22 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             }
 
             bool[] buttons = state.Buttons ?? Array.Empty<bool>();
+            int[] povs = state.PointOfViewControllers ?? Array.Empty<int>();
 
-            if (!_previousButtonsByDeviceKey.TryGetValue(pair.Key, out bool[]? previousButtons))
+            bool hasPreviousButtons = _previousButtonsByDeviceKey.TryGetValue(pair.Key, out bool[]? previousButtons);
+            bool hasPreviousPovs = _previousPovsByDeviceKey.TryGetValue(pair.Key, out int[]? previousPovs);
+
+            if (!hasPreviousButtons && !hasPreviousPovs)
             {
                 _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+                _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
                 continue;
             }
+
+            previousButtons ??= Array.Empty<bool>();
+            previousPovs ??= Array.Empty<int>();
+
+            bool capturedInput = false;
 
             int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
 
@@ -405,14 +448,38 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                     continue;
 
                 AddPendingDxButton(pair.Key, buttonIndex);
-
-                UpdateAssignmentPreviewTexts();
-                UpdateConflict();
-
+                capturedInput = true;
                 break;
             }
 
+            int povLimit = Math.Min(povs.Length, previousPovs.Length);
+
+            for (int povIndex = 0; !capturedInput && povIndex < povLimit; povIndex++)
+            {
+                int previousDirectionValue = previousPovs[povIndex];
+                int currentDirectionValue = povs[povIndex];
+
+                if (previousDirectionValue == currentDirectionValue)
+                    continue;
+
+                int? direction = NormalizeDirectInputPovDirection(currentDirectionValue);
+
+                if (!direction.HasValue)
+                    continue;
+
+                AddPendingDxPov(pair.Key, povIndex, direction.Value);
+                capturedInput = true;
+                break;
+            }
+
+            if (capturedInput)
+            {
+                UpdateAssignmentPreviewTexts();
+                UpdateConflict();
+            }
+
             _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
+            _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
         }
     }
 
@@ -467,6 +534,35 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
+        foreach (PendingDxPov pendingDxPov in _pendingDxPovs)
+        {
+            DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
+                string.Equals(d.DurableDeviceKey, pendingDxPov.DeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            DeviceAircraftBindingProfile? aircraft = device?.AircraftProfiles.FirstOrDefault(profile =>
+                string.Equals(profile.AircraftProfile, _aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            DevicePovBinding? conflict = aircraft?.PovBindings.FirstOrDefault(binding =>
+                binding.PovIndex == pendingDxPov.PovIndex &&
+                binding.Direction == pendingDxPov.Direction &&
+                string.Equals(NormalizePovInvoke(binding.Invoke), pendingDxPov.Invoke, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(binding.CallbackName, _row.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+            if (conflict is null)
+                continue;
+
+            BindingRow? conflictRow = _profileRows.FirstOrDefault(row =>
+                string.Equals(row.CallbackName, conflict.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+            string deviceName = device?.ProductName
+                ?? device?.InstanceName
+                ?? pendingDxPov.DeviceKey;
+
+            dxConflicts.Add(
+                deviceName + " " + BuildPovDisplayText(pendingDxPov.PovIndex, pendingDxPov.Direction, pendingDxPov.Invoke) +
+                " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
+        }
+
         List<string> distinctDxConflicts = dxConflicts
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -516,8 +612,20 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             parts.Add(deviceName + " " + DeviceButtonBinding.BuildDisplayText(pendingDxButton.ButtonIndex, pendingDxButton.AssignmentIndex));
         }
 
+        foreach (PendingDxPov pendingDxPov in _pendingDxPovs)
+        {
+            DeviceBindingProfile? device = _deviceProfiles.FirstOrDefault(d =>
+                string.Equals(d.DurableDeviceKey, pendingDxPov.DeviceKey, StringComparison.OrdinalIgnoreCase));
+
+            string deviceName = device?.ProductName
+                ?? device?.InstanceName
+                ?? pendingDxPov.DeviceKey;
+
+            parts.Add(deviceName + " " + BuildPovDisplayText(pendingDxPov.PovIndex, pendingDxPov.Direction, pendingDxPov.Invoke));
+        }
+
         return parts.Count == 0
-            ? "Awaiting input: Press any DX button"
+            ? "Awaiting input: Press any DX button or POV"
             : string.Join(" / ", parts);
     }
 
@@ -532,7 +640,8 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
     private void LoadExistingDxBindings(string callbackName)
     {
-        var existingBindings = new List<DeviceButtonBinding>();
+        var existingButtonBindings = new List<DeviceButtonBinding>();
+        var existingPovBindings = new List<DevicePovBinding>();
 
         foreach (DeviceBindingProfile device in _deviceProfiles)
         {
@@ -549,12 +658,24 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             {
                 int assignmentIndex = DeviceButtonBinding.NormalizeAssignmentIndexForCallback(callbackName, binding.AssignmentIndex);
 
-                existingBindings.Add(binding);
+                existingButtonBindings.Add(binding);
                 AddPendingDxButton(device.DurableDeviceKey, binding.ButtonIndex, assignmentIndex);
+            }
+
+            foreach (DevicePovBinding binding in aircraft.PovBindings
+                         .Where(pov => string.Equals(pov.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
+                         .OrderBy(pov => pov.PovIndex)
+                         .ThenBy(pov => pov.Direction)
+                         .ThenBy(pov => pov.Invoke))
+            {
+                string invoke = NormalizePovInvoke(binding.Invoke);
+
+                existingPovBindings.Add(binding);
+                AddPendingDxPov(device.DurableDeviceKey, binding.PovIndex, binding.Direction, invoke);
             }
         }
 
-        if (existingBindings.Count == 0)
+        if (existingButtonBindings.Count == 0 && existingPovBindings.Count == 0)
             return;
 
         if (DeviceButtonBinding.IsDxShiftCallback(callbackName))
@@ -567,10 +688,24 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         // Most rows only have one DX binding. If a row has multiple DX bindings,
         // the preview still shows all of them, and this simply sets the default
         // radio state for the next DX input the user captures.
-        DeviceButtonBinding firstBinding = existingBindings[0];
+        if (existingButtonBindings.Count > 0)
+        {
+            DeviceButtonBinding firstBinding = existingButtonBindings[0];
 
-        IsUnshifted = DeviceButtonBinding.GetShiftState(firstBinding.AssignmentIndex) == DeviceButtonBinding.ShiftStateUnshifted;
-        IsOnPress = DeviceButtonBinding.GetTrigger(firstBinding.AssignmentIndex) == DeviceButtonBinding.TriggerPress;
+            IsUnshifted = DeviceButtonBinding.GetShiftState(firstBinding.AssignmentIndex) == DeviceButtonBinding.ShiftStateUnshifted;
+            IsOnPress = DeviceButtonBinding.GetTrigger(firstBinding.AssignmentIndex) == DeviceButtonBinding.TriggerPress;
+            return;
+        }
+
+        DevicePovBinding firstPovBinding = existingPovBindings[0];
+
+        IsUnshifted = !string.Equals(
+            NormalizePovInvoke(firstPovBinding.Invoke),
+            PovInvokeShift,
+            StringComparison.OrdinalIgnoreCase);
+
+        // POV bindings are directional press-style DX inputs. There is no separate POV release slot.
+        IsOnPress = true;
     }
 
     private void AddPendingDxButton(string deviceKey, int buttonIndex)
@@ -613,6 +748,38 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         });
     }
 
+    private void AddPendingDxPov(string deviceKey, int povIndex, int direction)
+    {
+        string invoke = IsUnshifted || DeviceButtonBinding.IsDxShiftCallback(_row.CallbackName)
+            ? PovInvokeDefault
+            : PovInvokeShift;
+
+        AddPendingDxPov(deviceKey, povIndex, direction, invoke);
+    }
+
+    private void AddPendingDxPov(string deviceKey, int povIndex, int direction, string invoke)
+    {
+        invoke = NormalizePovInvoke(invoke);
+
+        bool alreadyPending = _pendingDxPovs.Any(pov =>
+            string.Equals(pov.DeviceKey, deviceKey, StringComparison.OrdinalIgnoreCase) &&
+            pov.PovIndex == povIndex &&
+            pov.Direction == direction &&
+            string.Equals(pov.Invoke, invoke, StringComparison.OrdinalIgnoreCase));
+
+        if (alreadyPending)
+            return;
+
+        // Keep the list stable and readable in the popup preview
+        _pendingDxPovs.Add(new PendingDxPov
+        {
+            DeviceKey = deviceKey,
+            PovIndex = povIndex,
+            Direction = direction,
+            Invoke = invoke
+        });
+    }
+
     private void ForceBaseDxShiftStateIfNeeded()
     {
         if (!DeviceButtonBinding.IsDxShiftCallback(_row.CallbackName))
@@ -620,6 +787,54 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         IsUnshifted = true;
         IsOnPress = true;
+    }
+
+    private static int? NormalizeDirectInputPovDirection(int povValue)
+    {
+        // DirectInput POV values are hundredths of a degree:
+        // 0=Up, 9000=Right, 18000=Down, 27000=Left, -1=centered.
+        // BMS stock/XML stores POV directions in 8-way slots:
+        // 0=Up, 2=Right, 4=Down, 6=Left, with odd numbers as diagonals.
+        if (povValue < 0)
+            return null;
+
+        int normalizedDegrees = ((povValue / 100) + 360) % 360;
+        int eightWayDirection = (int)Math.Round(normalizedDegrees / 45.0) % 8;
+
+        return eightWayDirection;
+    }
+
+    private static string NormalizePovInvoke(string? invoke)
+    {
+        return string.Equals(invoke, PovInvokeShift, StringComparison.OrdinalIgnoreCase)
+            ? PovInvokeShift
+            : PovInvokeDefault;
+    }
+
+    private static string BuildPovDisplayText(int povIndex, int direction, string invoke)
+    {
+        string text = "POV" + (povIndex + 1) + "." + GetPovDirectionName(direction).ToUpperInvariant();
+
+        if (string.Equals(NormalizePovInvoke(invoke), PovInvokeShift, StringComparison.OrdinalIgnoreCase))
+            text += " SHIFT";
+
+        return text;
+    }
+
+    private static string GetPovDirectionName(int direction)
+    {
+        return direction switch
+        {
+            0 => "Up",
+            1 => "Up-Right",
+            2 => "Right",
+            3 => "Down-Right",
+            4 => "Down",
+            5 => "Down-Left",
+            6 => "Left",
+            7 => "Up-Left",
+            _ => direction.ToString()
+        };
     }
 
     public void Dispose()

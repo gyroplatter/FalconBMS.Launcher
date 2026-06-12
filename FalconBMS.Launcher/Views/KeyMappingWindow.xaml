@@ -94,7 +94,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
-                               Text="DX Button"
+                               Text="DX Input"
                                Style="{StaticResource DialogSectionLabelStyle}"/>
 
                     <Grid Grid.Row="1">

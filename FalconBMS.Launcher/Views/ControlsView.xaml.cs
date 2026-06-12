@@ -605,6 +605,7 @@ public partial class ControlsView : UserControl
                 viewModel.SelectedProfile.AircraftProfile,
                 viewModel.ApplyKeyboardMappingFromPopup,
                 viewModel.ApplyDeviceButtonMappingFromPopup,
+                viewModel.ApplyDevicePovMappingFromPopup,
                 () => window.Close());
 
         window.ShowDialog();

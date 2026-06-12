@@ -786,8 +786,9 @@ public sealed class ControlsViewModel : ViewModelBase
         selectedRow.CallbackName
     };
 
-        // Null device/button means "clear all DX buttons for this callback."
-        // The popup uses this first, then re-adds every pending DX button one at a time.
+        // Null device/button means "clear all DX inputs for this callback."
+        // v2 treats DX as button OR POV, so Clear DX removes both.
+        // The popup uses this first, then re-adds every pending DX input one at a time.
         if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedButtonIndex.HasValue || !selectedAssignmentIndex.HasValue)
         {
             foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
@@ -803,6 +804,13 @@ public sealed class ControlsViewModel : ViewModelBase
                              .ToList())
                 {
                     aircraftProfile.ButtonBindings.Remove(existing);
+                }
+
+                foreach (DevicePovBinding existing in aircraftProfile.PovBindings
+                             .Where(binding => string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
+                             .ToList())
+                {
+                    aircraftProfile.PovBindings.Remove(existing);
                 }
             }
 
@@ -852,6 +860,85 @@ public sealed class ControlsViewModel : ViewModelBase
                 AssignmentIndex = normalizedAssignmentIndex,
                 CallbackName = selectedRow.CallbackName,
                 Invoke = DeviceButtonBinding.GetDefaultInvoke(normalizedAssignmentIndex),
+                SoundId = selectedRow.SoundId
+            });
+        }
+
+        foreach (string callbackName in affectedCallbackNames)
+            RefreshDeviceCellsForCallback(callbackName);
+
+        _isDirty = true;
+        OnPropertyChanged(nameof(SummaryText));
+    }
+
+    public void ApplyDevicePovMappingFromPopup(
+        BindingRow selectedRow,
+        string? selectedDeviceKey,
+        int? selectedPovIndex,
+        int? selectedDirection,
+        string? selectedInvoke)
+    {
+        if (SelectedProfile is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedPovIndex.HasValue || !selectedDirection.HasValue)
+            return;
+
+        string aircraftProfileName = SelectedProfile.AircraftProfile;
+        string invoke = string.Equals(selectedInvoke, "Shift", StringComparison.OrdinalIgnoreCase)
+            ? "Shift"
+            : "Default";
+
+        var affectedCallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        selectedRow.CallbackName
+    };
+
+        DeviceBindingProfile? selectedDevice = DeviceColumns.FirstOrDefault(device =>
+            string.Equals(device.DurableDeviceKey, selectedDeviceKey, StringComparison.OrdinalIgnoreCase));
+
+        DeviceAircraftBindingProfile? selectedAircraftProfile = selectedDevice?.AircraftProfiles.FirstOrDefault(profile =>
+            string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+        if (selectedDevice is null || selectedAircraftProfile is null)
+            return;
+
+        // POV bindings do not have release slots. They only support normal and shifted invoke.
+        // The popup passes the selected shift state by storing shifted POVs with Invoke="Shift".
+        // For now, a newly added POV from the popup defaults to normal invoke unless an existing
+        // shifted POV is being re-added through the ViewModel save path.
+        //
+        // The KeyMappingWindowViewModel stores the shifted state in its pending POV list,
+        // but this apply method only receives the physical POV information. If shifted POV
+        // assignment is needed later, extend this method signature to include invoke.
+        //
+
+        foreach (DevicePovBinding conflict in selectedAircraftProfile.PovBindings
+                     .Where(binding =>
+                         binding.PovIndex == selectedPovIndex.Value &&
+                         binding.Direction == selectedDirection.Value &&
+                         string.Equals(binding.Invoke, invoke, StringComparison.OrdinalIgnoreCase) &&
+                         !string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            affectedCallbackNames.Add(conflict.CallbackName);
+            selectedAircraftProfile.PovBindings.Remove(conflict);
+        }
+
+        bool alreadyAssigned = selectedAircraftProfile.PovBindings.Any(binding =>
+            binding.PovIndex == selectedPovIndex.Value &&
+            binding.Direction == selectedDirection.Value &&
+            string.Equals(binding.Invoke, invoke, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(binding.CallbackName, selectedRow.CallbackName, StringComparison.OrdinalIgnoreCase));
+
+        if (!alreadyAssigned)
+        {
+            selectedAircraftProfile.PovBindings.Add(new DevicePovBinding
+            {
+                PovIndex = selectedPovIndex.Value,
+                Direction = selectedDirection.Value,
+                CallbackName = selectedRow.CallbackName,
+                Invoke = invoke,
                 SoundId = selectedRow.SoundId
             });
         }
