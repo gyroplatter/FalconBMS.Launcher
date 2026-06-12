@@ -94,30 +94,52 @@ namespace FalconBMS.Launcher
         {
             if (MainWindow == null)
             {
-                DebugDiagnosticsService.Warn("BringMainWindowToFront requested, but MainWindow is null.");
+                DebugDiagnosticsService.Warn(
+                    "BringMainWindowToFront requested, but MainWindow is null.");
+
+                return;
+            }
+
+            if (!MainWindow.IsVisible)
+            {
+                DebugDiagnosticsService.Warn(
+                    "BringMainWindowToFront requested, but MainWindow is not visible yet.");
+
                 return;
             }
 
             if (MainWindow.WindowState == WindowState.Minimized)
             {
-                MainWindow.WindowState = WindowState.Normal;
+                MainWindow.WindowState =
+                    WindowState.Normal;
             }
 
-            MainWindow.Show();
             MainWindow.Activate();
 
-            var helper = new System.Windows.Interop.WindowInteropHelper(MainWindow);
+            var helper =
+                new System.Windows.Interop.WindowInteropHelper(
+                    MainWindow);
+
             if (helper.Handle != IntPtr.Zero)
             {
-                ShowWindow(helper.Handle, SW_RESTORE);
-                SetForegroundWindow(helper.Handle);
+                ShowWindow(
+                    helper.Handle,
+                    SW_RESTORE);
+
+                SetForegroundWindow(
+                    helper.Handle);
             }
 
-            MainWindow.Topmost = true;
-            MainWindow.Topmost = false;
+            MainWindow.Topmost =
+                true;
+
+            MainWindow.Topmost =
+                false;
+
             MainWindow.Focus();
 
-            DebugDiagnosticsService.Info("Main window brought to foreground.");
+            DebugDiagnosticsService.Info(
+                "Main window brought to foreground.");
         }
     }
 }
