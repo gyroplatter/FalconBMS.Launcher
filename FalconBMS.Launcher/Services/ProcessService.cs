@@ -1,6 +1,9 @@
-﻿using System;
+﻿using FalconBMS.Launcher.Models;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace FalconBMS.Launcher.Services;
 
@@ -9,11 +12,48 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class ProcessService
 {
-    public bool IsUpdaterRunning()
+    public bool IsBmsUpdaterRunning(
+        IReadOnlyList<BmsInstall> installs)
     {
-        bool running = Process.GetProcessesByName("Updater").Length > 0;
-        DebugDiagnosticsService.Info($"Updater running check: {running}");
-        return running;
+        if (installs.Count == 0)
+        {
+            DebugDiagnosticsService.Info("BMS updater running check skipped: no installs.");
+            return false;
+        }
+
+        var expectedUpdaterPaths = new HashSet<string>(
+            installs
+                .Select(install => Path.Combine(install.BaseDir, "Updater.exe"))
+                .Select(NormalizePath)
+                .Where(path => !string.IsNullOrWhiteSpace(path)),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (Process process in Process.GetProcessesByName("Updater"))
+        {
+            string? processPath = TryGetProcessPath(process);
+
+            if (string.IsNullOrWhiteSpace(processPath))
+            {
+                DebugDiagnosticsService.Warn(
+                    $"Updater process found but path could not be read. ProcessId={process.Id}");
+
+                continue;
+            }
+
+            string normalizedProcessPath = NormalizePath(processPath!);
+
+            bool isBmsUpdater =
+                expectedUpdaterPaths.Contains(normalizedProcessPath);
+
+            DebugDiagnosticsService.Info(
+                $"Updater process found | ProcessId={process.Id} | Path=\"{processPath}\" | IsBmsUpdater={isBmsUpdater}");
+
+            if (isBmsUpdater)
+                return true;
+        }
+
+        DebugDiagnosticsService.Info("BMS updater running check: false");
+        return false;
     }
 
     public Process StartFalcon(string exePath, string? arguments = null)
@@ -92,5 +132,29 @@ public sealed class ProcessService
         };
 
         Process.Start(psi);
+    }
+
+    private static string NormalizePath(
+        string path)
+    {
+        return Path
+            .GetFullPath(path)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    private static string? TryGetProcessPath(
+        Process process)
+    {
+        try
+        {
+            return process.MainModule?.FileName;
+        }
+        catch (Exception ex) when (
+            ex is InvalidOperationException ||
+            ex is System.ComponentModel.Win32Exception ||
+            ex is NotSupportedException)
+        {
+            return null;
+        }
     }
 }

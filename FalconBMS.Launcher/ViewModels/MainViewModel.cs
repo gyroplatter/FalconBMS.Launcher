@@ -396,7 +396,9 @@ public sealed class MainViewModel : ViewModelBase
     {
         DebugDiagnosticsService.Info("MainViewModel.Init starting.");
 
-        if (_proc.IsUpdaterRunning())
+        var installs = _discovery.Discover();
+
+        if (_proc.IsBmsUpdaterRunning(installs))
         {
             DebugDiagnosticsService.Warn("Falcon BMS Updater is currently running. Launcher will shut down.");
 
@@ -410,7 +412,6 @@ public sealed class MainViewModel : ViewModelBase
             return;
         }
 
-        var installs = _discovery.Discover();
         Installs.Clear();
         foreach (var i in installs) Installs.Add(i);
 
