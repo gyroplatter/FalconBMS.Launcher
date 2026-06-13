@@ -48,6 +48,11 @@
 	  <None Remove="Assets\F4RADAR.png" />
 	  <None Remove="Assets\F4WX.png" />
 	  <None Remove="Assets\favicon.ico" />
+	  <None Remove="Assets\Fonts\Inter_18pt-Bold.ttf" />
+	  <None Remove="Assets\Fonts\Inter_18pt-Italic.ttf" />
+	  <None Remove="Assets\Fonts\Inter_18pt-Medium.ttf" />
+	  <None Remove="Assets\Fonts\Inter_18pt-Regular.ttf" />
+	  <None Remove="Assets\Fonts\Inter_18pt-SemiBold.ttf" />
 	  <None Remove="Assets\icon-folder.png" />
 	  <None Remove="Assets\icon-gear.png" />
 	  <None Remove="Assets\icon-launch.png" />
@@ -106,6 +111,24 @@
 	  <Content Include="Services\Controls\StockDeviceManifest.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Assets\Fonts\Inter_18pt-Bold.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\Inter_18pt-Italic.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\Inter_18pt-Medium.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\Inter_18pt-Regular.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\Inter_18pt-SemiBold.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 
 </Project>

@@ -9,12 +9,15 @@
     -->
 
     <!-- Typography tokens. Keep this scale intentionally small -->
-    <FontFamily x:Key="AppFontFamily">Arial</FontFamily>
+    <FontFamily x:Key="AppFontFamily">pack://application:,,,/Assets/Fonts/#Inter 18pt, Liberation Sans, Arial, Sans Serif</FontFamily>
 
     <System:Double x:Key="FontSizeSmall">12</System:Double>
     <System:Double x:Key="FontSizeMedium">13</System:Double>
     <System:Double x:Key="FontSizeLarge">18</System:Double>
     <System:Double x:Key="FontSizeXLarge">22</System:Double>
+
+    <System:Double x:Key="LineHeightCompact">16</System:Double>
+    <System:Double x:Key="LineHeightBody">18</System:Double>
 
     <Style TargetType="{x:Type Window}">
         <Setter Property="Background" Value="{DynamicResource AppWindowBackgroundBrush}"/>
@@ -32,29 +35,41 @@
     </Style>
 
     <!-- Typography: Heading -->
-    <Style x:Key="HeadingTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="HeadingTextBlockStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeXLarge}"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="{DynamicResource AppHeadingForegroundBrush}"/>
     </Style>
 
     <!-- Typography: Subheading -->
-    <Style x:Key="SubheadingTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="SubheadingTextBlockStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource AppSubHeadingForegroundBrush}"/>
     </Style>
 
     <!-- Typography: Body -->
-    <Style x:Key="BodyTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="BodyTextBlockStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
         <Setter Property="Foreground" Value="{DynamicResource AppBodyForegroundBrush}"/>
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
     </Style>
 
     <!-- Typography: Muted -->
-    <Style x:Key="MutedTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="MutedTextBlockStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
         <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
     </Style>
 
     <!--
@@ -81,8 +96,8 @@
         use the same visual language instead of maintaining separate local styles
     -->
     <Style x:Key="DialogTitleTextBlockStyle"
-           TargetType="TextBlock"
-           BasedOn="{StaticResource BodyTextBlockStyle}">
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
@@ -120,8 +135,8 @@
 
     <!-- Shared warning text for overwrite/conflict messages in popup dialogs -->
     <Style x:Key="DialogWarningTextBlockStyle"
-           TargetType="TextBlock"
-           BasedOn="{StaticResource BodyTextBlockStyle}">
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="Foreground" Value="{DynamicResource AppWarningTextBrush}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
@@ -499,7 +514,9 @@
     </Style>
 
 
-    <Style x:Key="ControlsTableTextBlockStyle" TargetType="TextBlock">
+    <Style x:Key="ControlsTableTextBlockStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="Margin" Value="6,0"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
