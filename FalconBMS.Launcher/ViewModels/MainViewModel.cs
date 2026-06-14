@@ -435,6 +435,15 @@ public sealed class MainViewModel : ViewModelBase
         if (Properties.Settings.Default.LegacyImportPromptHandled)
             return true;
 
+        if (HasExistingLauncherBindingJson(install.BaseDir))
+        {
+            DebugDiagnosticsService.Info(
+                "Legacy import skipped because existing Launcher JSON bindings were found. Marking legacy import as handled.");
+
+            MarkLegacyImportPromptHandled();
+            return true;
+        }
+
         if (!_legacyImport.HasLegacyAutoKeyFiles(install.BaseDir))
         {
             MarkLegacyImportPromptHandled();
@@ -469,6 +478,23 @@ public sealed class MainViewModel : ViewModelBase
             importResult);
 
         return true;
+    }
+
+    private static bool HasExistingLauncherBindingJson(
+    string baseDir)
+    {
+        string jsonDir =
+            Path.Combine(
+                baseDir,
+                "User",
+                "Config",
+                "JSON");
+
+        if (!Directory.Exists(jsonDir))
+            return false;
+
+        return Directory.EnumerateFiles(jsonDir, "KeyboardBindings_*.json").Any()
+            || Directory.EnumerateFiles(jsonDir, "DeviceBindings_*.json").Any();
     }
 
     private void ApplyImportedLauncherSettings(
