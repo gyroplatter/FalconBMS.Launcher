@@ -46,6 +46,37 @@ public sealed class JsonKeyboardBindingWriterService
         DebugDiagnosticsService.Info($"Keyboard JSON write end. | ActionId={actionId}");
     }
 
+    public void WriteExportFile(
+    BindingAircraftProfile profile,
+    string destinationPath,
+    string actionId)
+    {
+        Directory.CreateDirectory(
+            Path.GetDirectoryName(destinationPath) ?? "");
+
+        string beforeSignature =
+            DebugDiagnosticsService.GetFileSignature(destinationPath);
+
+        string content =
+            BuildProfileJson(profile);
+
+        if (File.Exists(destinationPath))
+            File.SetAttributes(destinationPath, File.GetAttributes(destinationPath) & ~FileAttributes.ReadOnly);
+
+        File.WriteAllText(
+            destinationPath,
+            content,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+        DebugDiagnosticsService.LogFileWriteResult(
+            Path.GetFileName(destinationPath),
+            destinationPath,
+            beforeSignature,
+            "JsonKeyboardBindingWriterService.WriteExportFile",
+            profile.AircraftProfile,
+            actionId);
+    }
+
     private static void WriteProfile(
         string configDir,
         BindingModel bindingModel,

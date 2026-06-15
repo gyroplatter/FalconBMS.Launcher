@@ -14,6 +14,9 @@ public sealed class BindingJsonImportExportService
 {
     private const string BindingJsonFilter = "Launcher binding JSON (*.json)|*.json";
 
+    private readonly JsonKeyboardBindingWriterService _keyboardJsonWriter = new();
+    private readonly DeviceJsonWriterService _deviceJsonWriter = new();
+
     public bool Import(
         string baseDir,
         BindingModel bindingModel,
@@ -63,13 +66,14 @@ public sealed class BindingJsonImportExportService
     {
         try
         {
-            List<ExportCandidate> candidates = BuildExportCandidates(baseDir, bindingModel);
+            List<ExportCandidate> candidates =
+                BuildExportCandidates(bindingModel);
 
             if (candidates.Count == 0)
             {
                 MessageBox.Show(
                     owner,
-                    "No binding JSON files were found to export.",
+                    "No bindings were found to export.",
                     "Export Bindings",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -77,7 +81,11 @@ public sealed class BindingJsonImportExportService
                 return;
             }
 
-            ExportCandidate? selected = SelectExportCandidate(candidates, owner);
+            ExportCandidate? selected =
+                SelectExportCandidate(
+                    candidates,
+                    owner);
+
             if (selected is null)
                 return;
 
@@ -92,10 +100,13 @@ public sealed class BindingJsonImportExportService
             if (saveDialog.ShowDialog(owner) != true)
                 return;
 
-            File.Copy(selected.Path, saveDialog.FileName, overwrite: true);
+            string actionId =
+                DebugDiagnosticsService.CreateActionId("JSONEXPORT");
 
-            DebugDiagnosticsService.Info(
-                $"Binding JSON exported | Source=\"{selected.Path}\" | Destination=\"{saveDialog.FileName}\"");
+            WriteExportCandidate(
+                selected,
+                saveDialog.FileName,
+                actionId);
 
             MessageBox.Show(
                 owner,
@@ -114,6 +125,50 @@ public sealed class BindingJsonImportExportService
                 "Export Bindings",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
+        }
+    }
+
+    private void WriteExportCandidate(
+    ExportCandidate candidate,
+    string destinationPath,
+    string actionId)
+    {
+        switch (candidate.Kind)
+        {
+            case ExportCandidateKind.Keyboard:
+                if (candidate.KeyboardProfile is null)
+                    throw new InvalidOperationException("Keyboard export candidate is missing its profile.");
+
+                _keyboardJsonWriter.WriteExportFile(
+                    candidate.KeyboardProfile,
+                    destinationPath,
+                    actionId);
+
+                DebugDiagnosticsService.Info(
+                    $"Binding JSON exported from memory | Type=Keyboard | Display=\"{candidate.DisplayName}\" | Destination=\"{destinationPath}\" | ActionId={actionId}");
+
+                break;
+
+            case ExportCandidateKind.Device:
+                if (candidate.DeviceProfile is null ||
+                    candidate.DeviceAircraftProfile is null)
+                {
+                    throw new InvalidOperationException("Device export candidate is missing its profile.");
+                }
+
+                _deviceJsonWriter.WriteExportFile(
+                    candidate.DeviceProfile,
+                    candidate.DeviceAircraftProfile,
+                    destinationPath,
+                    actionId);
+
+                DebugDiagnosticsService.Info(
+                    $"Binding JSON exported from memory | Type=Device | Display=\"{candidate.DisplayName}\" | Destination=\"{destinationPath}\" | ActionId={actionId}");
+
+                break;
+
+            default:
+                throw new InvalidOperationException("Unknown export candidate type.");
         }
     }
 
@@ -461,10 +516,8 @@ public sealed class BindingJsonImportExportService
     }
 
     private static List<ExportCandidate> BuildExportCandidates(
-        string baseDir,
         BindingModel bindingModel)
     {
-        string jsonDir = GetJsonDir(baseDir);
         var candidates = new List<ExportCandidate>();
 
         foreach (BindingAircraftProfile profile in bindingModel.AircraftProfiles)
@@ -474,19 +527,14 @@ public sealed class BindingJsonImportExportService
                 SanitizeFileNameSegment(profile.AircraftProfile).TrimEnd('.') +
                 ".json";
 
-            string path =
-                Path.Combine(
-                    jsonDir,
-                    fileName);
-
-            if (File.Exists(path))
-            {
-                candidates.Add(
-                    new ExportCandidate(
-                        DisplayName: "Keyboard / " + profile.AircraftProfile,
-                        FileName: fileName,
-                        Path: path));
-            }
+            candidates.Add(
+                new ExportCandidate(
+                    DisplayName: "Keyboard / " + profile.AircraftProfile,
+                    FileName: fileName,
+                    Kind: ExportCandidateKind.Keyboard,
+                    KeyboardProfile: profile,
+                    DeviceProfile: null,
+                    DeviceAircraftProfile: null));
         }
 
         foreach (DeviceBindingProfile device in bindingModel.DeviceProfiles)
@@ -499,19 +547,14 @@ public sealed class BindingJsonImportExportService
                         device.DurableDeviceKey,
                         device.ProductName);
 
-                string path =
-                    Path.Combine(
-                        jsonDir,
-                        fileName);
-
-                if (File.Exists(path))
-                {
-                    candidates.Add(
-                        new ExportCandidate(
-                            DisplayName: "Device / " + aircraft.AircraftProfile + " / " + device.ProductName,
-                            FileName: fileName,
-                            Path: path));
-                }
+                candidates.Add(
+                    new ExportCandidate(
+                        DisplayName: "Device / " + aircraft.AircraftProfile + " / " + device.ProductName,
+                        FileName: fileName,
+                        Kind: ExportCandidateKind.Device,
+                        KeyboardProfile: null,
+                        DeviceProfile: device,
+                        DeviceAircraftProfile: aircraft));
             }
         }
 
@@ -529,6 +572,7 @@ public sealed class BindingJsonImportExportService
             {
                 ItemsSource = candidates,
                 DisplayMemberPath = nameof(ExportCandidate.DisplayName),
+                SelectionMode = SelectionMode.Single,
                 MinWidth = 520,
                 MinHeight = 280,
                 Margin = new Thickness(0, 8, 0, 12)
@@ -573,7 +617,7 @@ public sealed class BindingJsonImportExportService
         panel.Children.Add(
             new TextBlock
             {
-                Text = "Choose a control file to export:",
+                Text = "Choose one control file to export:",
                 FontWeight = FontWeights.SemiBold
             });
 
@@ -679,8 +723,17 @@ public sealed class BindingJsonImportExportService
         string DurableDeviceKey,
         string ProductName);
 
+    private enum ExportCandidateKind
+    {
+        Keyboard,
+        Device
+    }
+
     private sealed record ExportCandidate(
         string DisplayName,
         string FileName,
-        string Path);
+        ExportCandidateKind Kind,
+        BindingAircraftProfile? KeyboardProfile,
+        DeviceBindingProfile? DeviceProfile,
+        DeviceAircraftBindingProfile? DeviceAircraftProfile);
 }

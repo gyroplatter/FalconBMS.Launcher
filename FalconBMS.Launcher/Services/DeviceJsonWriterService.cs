@@ -23,6 +23,38 @@ public sealed class DeviceJsonWriterService
         DebugDiagnosticsService.Info($"Device JSON write end. | ActionId={actionId}");
     }
 
+    public void WriteExportFile(
+    DeviceBindingProfile profile,
+    DeviceAircraftBindingProfile aircraft,
+    string destinationPath,
+    string actionId)
+    {
+        Directory.CreateDirectory(
+            Path.GetDirectoryName(destinationPath) ?? "");
+
+        string beforeSignature =
+            DebugDiagnosticsService.GetFileSignature(destinationPath);
+
+        string content =
+            BuildProfileJson(profile, aircraft);
+
+        if (File.Exists(destinationPath))
+            File.SetAttributes(destinationPath, File.GetAttributes(destinationPath) & ~FileAttributes.ReadOnly);
+
+        File.WriteAllText(
+            destinationPath,
+            content,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+        DebugDiagnosticsService.LogFileWriteResult(
+            Path.GetFileName(destinationPath),
+            destinationPath,
+            beforeSignature,
+            "DeviceJsonWriterService.WriteExportFile",
+            profile.ProductName,
+            actionId);
+    }
+
     private static void WriteProfile(string configDir, DeviceBindingProfile profile, string actionId)
     {
         // Persist one JSON file per physical device + aircraft profile.
