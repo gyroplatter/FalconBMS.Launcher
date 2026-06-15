@@ -125,13 +125,12 @@ public sealed class BindingJsonImportExportService
         Window? owner)
     {
         if (string.IsNullOrWhiteSpace(candidate.PidVid) ||
-            string.IsNullOrWhiteSpace(candidate.ProductName) ||
             string.IsNullOrWhiteSpace(candidate.AircraftProfile))
         {
             MessageBox.Show(
                 owner,
                 "The selected device binding file is missing required identity fields.\n\n" +
-                "Required fields: pidvid, product_name, aircraft_profile.",
+                "Required fields: pidvid, aircraft_profile.",
                 "Import Bindings",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -139,18 +138,21 @@ public sealed class BindingJsonImportExportService
             return false;
         }
 
-        DeviceBindingProfile? matchingDevice = bindingModel.DeviceProfiles.FirstOrDefault(device =>
-            device.IsConnected &&
-            SameText(device.PidVid, candidate.PidVid) &&
-            SameText(NormalizeDeviceName(device.ProductName), NormalizeDeviceName(candidate.ProductName)));
+        List<DeviceBindingProfile> pidVidMatches =
+            bindingModel.DeviceProfiles
+                .Where(device =>
+                    device.IsConnected &&
+                    SameText(device.PidVid, candidate.PidVid))
+                .ToList();
 
-        if (matchingDevice is null)
+        if (pidVidMatches.Count == 0)
         {
             MessageBox.Show(
                 owner,
                 "This binding file is for:\n\n" +
-                candidate.ProductName + "\n" +
-                candidate.AircraftProfile + "\n\n" +
+                DisplayImportDeviceName(candidate) + "\n" +
+                candidate.AircraftProfile + "\n" +
+                "PIDVID: " + candidate.PidVid + "\n\n" +
                 "That matching device is not currently detected by the Launcher.\n\n" +
                 "The bindings were not imported. Connect the matching device and try again.",
                 "Import Bindings",
@@ -158,6 +160,50 @@ public sealed class BindingJsonImportExportService
                 MessageBoxImage.Warning);
 
             return false;
+        }
+
+        if (pidVidMatches.Count > 1)
+        {
+            MessageBox.Show(
+                owner,
+                "This binding file matches more than one connected device by PIDVID:\n\n" +
+                "PIDVID: " + candidate.PidVid + "\n\n" +
+                "The Launcher cannot safely choose which connected device should receive these bindings.\n\n" +
+                "The bindings were not imported.",
+                "Import Bindings",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            return false;
+        }
+
+        DeviceBindingProfile matchingDevice = pidVidMatches[0];
+
+        bool productNameMatches =
+            SameText(
+                NormalizeDeviceName(matchingDevice.ProductName),
+                NormalizeDeviceName(candidate.ProductName));
+
+        if (!productNameMatches)
+        {
+            MessageBoxResult productNameResult =
+                MessageBox.Show(
+                    owner,
+                    "The device ID matches, but the device name is different.\n\n" +
+                    "Binding file device:\n" +
+                    DisplayImportDeviceName(candidate) + "\n\n" +
+                    "Connected device:\n" +
+                    matchingDevice.ProductName + "\n\n" +
+                    "PIDVID:\n" +
+                    candidate.PidVid + "\n\n" +
+                    "This can happen across Windows, Linux, Wine, or different drivers.\n\n" +
+                    "Import these bindings for the connected device?",
+                    "Import Bindings",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning);
+
+            if (productNameResult != MessageBoxResult.OK)
+                return false;
         }
 
         string jsonDir = GetJsonDir(baseDir);
@@ -183,9 +229,17 @@ public sealed class BindingJsonImportExportService
         DebugDiagnosticsService.Info(
             $"Device binding JSON imported | Device=\"{matchingDevice.ProductName}\" | Aircraft={candidate.AircraftProfile} | Source=\"{sourcePath}\" | Destination=\"{destinationPath}\"");
 
+        if (!productNameMatches)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Device binding JSON imported with product name mismatch | JsonProductName=\"{candidate.ProductName}\" | ConnectedProductName=\"{matchingDevice.ProductName}\" | PIDVID={candidate.PidVid} | Aircraft={candidate.AircraftProfile}");
+        }
+
         MessageBox.Show(
             owner,
-            "Imported bindings for:\n\n" + matchingDevice.ProductName + "\n" + candidate.AircraftProfile,
+            "Imported bindings for:\n\n" +
+            matchingDevice.ProductName + "\n" +
+            candidate.AircraftProfile,
             "Import Bindings",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
@@ -269,6 +323,18 @@ public sealed class BindingJsonImportExportService
         return true;
     }
 
+    private static string DisplayImportDeviceName(
+    ImportCandidate candidate)
+    {
+        if (!string.IsNullOrWhiteSpace(candidate.ProductName))
+            return candidate.ProductName;
+
+        if (!string.IsNullOrWhiteSpace(candidate.DurableDeviceKey))
+            return candidate.DurableDeviceKey;
+
+        return "Unknown Device";
+    }
+
     private static bool ShowUnsupportedImport(
         string bindingType,
         Window? owner)
@@ -320,15 +386,8 @@ public sealed class BindingJsonImportExportService
         string configDir =
             Directory.GetParent(jsonDir)?.FullName ?? jsonDir;
 
-        string timestamp =
-            DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-
         string backupDir =
-            Path.Combine(
-                configDir,
-                "Launcher-Import-Backup-" + timestamp);
-
-        Directory.CreateDirectory(backupDir);
+            CreateUniqueImportBackupDirectory(configDir);
 
         string backupPath =
             Path.Combine(
@@ -342,6 +401,38 @@ public sealed class BindingJsonImportExportService
 
         DebugDiagnosticsService.Info(
             $"Binding JSON backup created | Source=\"{destinationPath}\" | Backup=\"{backupPath}\"");
+    }
+
+    private static string CreateUniqueImportBackupDirectory(
+    string configDir)
+    {
+        string timestamp =
+            DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+
+        string backupDir =
+            Path.Combine(
+                configDir,
+                "Launcher-Import-Backup-" + timestamp);
+
+        if (!Directory.Exists(backupDir))
+        {
+            Directory.CreateDirectory(backupDir);
+            return backupDir;
+        }
+
+        for (int index = 2; index < 100; index++)
+        {
+            string numberedBackupDir =
+                backupDir + "-" + index.ToString("00");
+
+            if (!Directory.Exists(numberedBackupDir))
+            {
+                Directory.CreateDirectory(numberedBackupDir);
+                return numberedBackupDir;
+            }
+        }
+
+        throw new IOException("Unable to create a unique import backup folder.");
     }
 
     private static void CopyJson(
@@ -398,9 +489,10 @@ public sealed class BindingJsonImportExportService
         BindingModel bindingModel)
     {
         string jsonDir = GetJsonDir(baseDir);
-        var candidates = new List<ExportCandidate>();
+        var keyboardCandidates = new List<ExportCandidate>();
+        var deviceCandidates = new List<ExportCandidate>();
 
-        foreach (BindingAircraftProfile profile in bindingModel.AircraftProfiles.OrderBy(profile => profile.AircraftProfile, StringComparer.OrdinalIgnoreCase))
+        foreach (BindingAircraftProfile profile in bindingModel.AircraftProfiles)
         {
             string fileName =
                 "KeyboardBindings_" +
@@ -414,7 +506,7 @@ public sealed class BindingJsonImportExportService
 
             if (File.Exists(path))
             {
-                candidates.Add(
+                keyboardCandidates.Add(
                     new ExportCandidate(
                         DisplayName: "Keyboard / " + profile.AircraftProfile,
                         FileName: fileName,
@@ -422,9 +514,9 @@ public sealed class BindingJsonImportExportService
             }
         }
 
-        foreach (DeviceBindingProfile device in bindingModel.DeviceProfiles.OrderBy(device => device.ProductName, StringComparer.OrdinalIgnoreCase))
+        foreach (DeviceBindingProfile device in bindingModel.DeviceProfiles)
         {
-            foreach (DeviceAircraftBindingProfile aircraft in device.AircraftProfiles.OrderBy(aircraft => aircraft.AircraftProfile, StringComparer.OrdinalIgnoreCase))
+            foreach (DeviceAircraftBindingProfile aircraft in device.AircraftProfiles)
             {
                 string fileName =
                     BuildDeviceFileName(
@@ -439,7 +531,7 @@ public sealed class BindingJsonImportExportService
 
                 if (File.Exists(path))
                 {
-                    candidates.Add(
+                    deviceCandidates.Add(
                         new ExportCandidate(
                             DisplayName: "Device / " + aircraft.AircraftProfile + " / " + device.ProductName,
                             FileName: fileName,
@@ -448,7 +540,11 @@ public sealed class BindingJsonImportExportService
             }
         }
 
-        return candidates;
+        return keyboardCandidates
+            .OrderBy(candidate => candidate.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Concat(
+                deviceCandidates.OrderBy(candidate => candidate.DisplayName, StringComparer.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private static ExportCandidate? SelectExportCandidate(
