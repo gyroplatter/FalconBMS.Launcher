@@ -140,7 +140,7 @@ public sealed class ControlsViewModel : ViewModelBase
         string? baseDir = _getBaseDir?.Invoke();
         BindingModel? bindingModel = _getBindingModel?.Invoke();
 
-        if (string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
+        if (baseDir is null || string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
             return;
 
         bool imported =
@@ -160,7 +160,7 @@ public sealed class ControlsViewModel : ViewModelBase
         string? baseDir = _getBaseDir?.Invoke();
         BindingModel? bindingModel = _getBindingModel?.Invoke();
 
-        if (string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
+        if (baseDir is null || string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
             return;
 
         _bindingJsonImportExport.Export(
