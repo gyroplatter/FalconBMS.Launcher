@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 
 namespace FalconBMS.Launcher.ViewModels;
 
@@ -18,8 +19,14 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
     private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
+    private readonly BindingJsonImportExportService _bindingJsonImportExport = new();
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
+
+    private Func<string?>? _getBaseDir;
+    private Func<BindingModel>? _getBindingModel;
+    private Func<Window?>? _getOwnerWindow;
+    private Action? _reloadBindingModel;
 
     public ObservableCollection<BindingAircraftProfile> Profiles { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
@@ -97,10 +104,69 @@ public sealed class ControlsViewModel : ViewModelBase
             : $"{SelectedProfile.AircraftProfile}: {Rows.Count} visible rows";
 
     public RelayCommand ClearFilterCommand { get; }
+    public RelayCommand ImportBindingsCommand { get; }
+    public RelayCommand ExportBindingsCommand { get; }
 
     public ControlsViewModel()
     {
         ClearFilterCommand = new RelayCommand(ClearFilters, () => true);
+        ImportBindingsCommand = new RelayCommand(ImportBindings, CanImportOrExportBindings);
+        ExportBindingsCommand = new RelayCommand(ExportBindings, CanImportOrExportBindings);
+    }
+
+    public void ConfigureImportExport(
+        Func<string?> getBaseDir,
+        Func<BindingModel> getBindingModel,
+        Func<Window?> getOwnerWindow,
+        Action reloadBindingModel)
+    {
+        _getBaseDir = getBaseDir;
+        _getBindingModel = getBindingModel;
+        _getOwnerWindow = getOwnerWindow;
+        _reloadBindingModel = reloadBindingModel;
+
+        ImportBindingsCommand.RaiseCanExecuteChanged();
+        ExportBindingsCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool CanImportOrExportBindings()
+    {
+        return !string.IsNullOrWhiteSpace(_getBaseDir?.Invoke()) &&
+               _getBindingModel is not null;
+    }
+
+    private void ImportBindings()
+    {
+        string? baseDir = _getBaseDir?.Invoke();
+        BindingModel? bindingModel = _getBindingModel?.Invoke();
+
+        if (string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
+            return;
+
+        bool imported =
+            _bindingJsonImportExport.Import(
+                baseDir,
+                bindingModel,
+                _getOwnerWindow?.Invoke());
+
+        if (!imported)
+            return;
+
+        _reloadBindingModel?.Invoke();
+    }
+
+    private void ExportBindings()
+    {
+        string? baseDir = _getBaseDir?.Invoke();
+        BindingModel? bindingModel = _getBindingModel?.Invoke();
+
+        if (string.IsNullOrWhiteSpace(baseDir) || bindingModel is null)
+            return;
+
+        _bindingJsonImportExport.Export(
+            baseDir,
+            bindingModel,
+            _getOwnerWindow?.Invoke());
     }
 
     public void LoadBindingModel(BindingModel bindingModel)

@@ -72,8 +72,18 @@
                              Margin="0,0,12,0"/>
 
                     <Button Content="Clear"
-                            Width="70"
-                            Command="{Binding ClearFilterCommand}"/>
+        Width="70"
+        Command="{Binding ClearFilterCommand}"
+        Margin="0,0,16,0"/>
+
+                    <Button Content="Import Bindings..."
+        Width="130"
+        Command="{Binding ImportBindingsCommand}"
+        Margin="0,0,8,0"/>
+
+                    <Button Content="Export Bindings..."
+        Width="130"
+        Command="{Binding ExportBindingsCommand}"/>
                 </DockPanel>
 
                 <TextBlock Grid.Row="2"

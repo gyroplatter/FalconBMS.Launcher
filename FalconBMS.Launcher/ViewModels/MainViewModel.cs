@@ -429,6 +429,18 @@ public sealed class MainViewModel : ViewModelBase
         SelectedInstall = Installs.FirstOrDefault(i => i.RegistryKeyName == last) ?? Installs[0];
     }
 
+    public void ReloadBindingModelForSelectedInstall()
+    {
+        if (SelectedInstall is null)
+            return;
+
+        DebugDiagnosticsService.Info("Reloading binding model after binding JSON import.");
+
+        LoadFullBindingModelForInstall(SelectedInstall);
+        OnPropertyChanged(nameof(CurrentBindingModel));
+        ShowJsonReadFailureStartupWarningIfNeeded();
+    }
+
     private bool HandleFirstLaunchLegacyImport(
         BmsInstall install)
     {

@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Utils;
+using System.Windows;
 
 namespace FalconBMS.Launcher.ViewModels;
 
@@ -43,6 +44,12 @@ public sealed class MainWindowViewModel : ViewModelBase
         // Give MainViewModel a reference to ControlsViewModel so SaveOutputsForClose
         // can check IsDirty and skip the write pipeline when nothing has changed.
         Main.ControlsViewModel = Controls;
+
+        Controls.ConfigureImportExport(
+            getBaseDir: () => Main.SelectedInstall?.BaseDir,
+            getBindingModel: () => Main.CurrentBindingModel,
+            getOwnerWindow: () => Application.Current?.MainWindow,
+            reloadBindingModel: Main.ReloadBindingModelForSelectedInstall);
 
         // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
         // and notifies here. ControlsViewModel reloads from the new complete model.
