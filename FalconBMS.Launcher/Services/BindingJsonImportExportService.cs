@@ -418,12 +418,27 @@ public sealed class BindingJsonImportExportService
             Directory.GetParent(jsonDir)?.FullName ?? jsonDir;
 
         string backupDir =
-            CreateUniqueImportBackupDirectory(configDir);
+            Path.Combine(
+                configDir,
+                "Launcher-Import-Backups");
+
+        Directory.CreateDirectory(backupDir);
+
+        string timestamp =
+            DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+
+        string backupFileName =
+            timestamp +
+            "_" +
+            Path.GetFileName(destinationPath);
 
         string backupPath =
             Path.Combine(
                 backupDir,
-                Path.GetFileName(destinationPath));
+                backupFileName);
+
+        backupPath =
+            GetUniqueBackupPath(backupPath);
 
         File.Copy(
             destinationPath,
@@ -434,37 +449,35 @@ public sealed class BindingJsonImportExportService
             $"Binding JSON backup created | Source=\"{destinationPath}\" | Backup=\"{backupPath}\"");
     }
 
-    private static string CreateUniqueImportBackupDirectory(
-        string configDir)
+    private static string GetUniqueBackupPath(
+    string backupPath)
     {
-        string timestamp =
-            DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+        if (!File.Exists(backupPath))
+            return backupPath;
 
-        string backupDir =
-            Path.Combine(
-                configDir,
-                "Launcher-Import-Backup-" + timestamp);
+        string directory =
+            Path.GetDirectoryName(backupPath) ?? "";
 
-        if (!Directory.Exists(backupDir))
-        {
-            Directory.CreateDirectory(backupDir);
-            return backupDir;
-        }
+        string fileNameWithoutExtension =
+            Path.GetFileNameWithoutExtension(backupPath);
+
+        string extension =
+            Path.GetExtension(backupPath);
 
         for (int index = 2; index < 100; index++)
         {
-            string numberedBackupDir =
-                backupDir + "-" + index.ToString("00");
+            string numberedPath =
+                Path.Combine(
+                    directory,
+                    fileNameWithoutExtension + "-" + index.ToString("00") + extension);
 
-            if (!Directory.Exists(numberedBackupDir))
-            {
-                Directory.CreateDirectory(numberedBackupDir);
-                return numberedBackupDir;
-            }
+            if (!File.Exists(numberedPath))
+                return numberedPath;
         }
 
-        throw new IOException("Unable to create a unique import backup folder.");
+        throw new IOException("Unable to create a unique import backup file.");
     }
+
 
     private static void CopyJson(
         string sourcePath,
