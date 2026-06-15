@@ -925,7 +925,14 @@ public sealed class MainViewModel : ViewModelBase
             DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
             DebugDiagnosticsService.Info("Updater launch requested.");
 
+            // Save any pending Launcher output before the updater starts changing BMS files.
+            SaveOutputsForClose();
+
             _proc.StartUpdater(SelectedInstall.BaseDir);
+
+            DebugDiagnosticsService.Info(
+                "Updater started successfully. Launcher will close so updated BMS files are loaded on next run.");
+
             Application.Current.Shutdown();
         }
         catch (Exception ex)
@@ -992,6 +999,12 @@ public sealed class MainViewModel : ViewModelBase
 
         try
         {
+            if (string.Equals(id, "updater", StringComparison.OrdinalIgnoreCase))
+            {
+                RunUpdaterSelected();
+                return;
+            }
+
             var item = _firstPartyStrip.GetItem(SelectedInstall, id);
             if (item is null)
                 return;
