@@ -171,7 +171,8 @@ public sealed class AxisBar : Control
         Brush backgroundBrush = GetResourceBrush("AppWindowBackgroundBrush", Brushes.Transparent);
         Brush borderBrush = GetResourceBrush("AppBorderBrush", Brushes.Gray);
         Brush fillBrush = GetResourceBrush("AppAccentBrush", Brushes.DodgerBlue);
-        Brush textBrush = GetResourceBrush("AppForegroundBrush", Brushes.White);
+        Brush textOnEmptyBrush = GetResourceBrush("AppForegroundBrush", Brushes.Black);
+        Brush textOnFillBrush = Brushes.White;
 
         var outerRect = new Rect(0.5, 0.5, Math.Max(0, width - 1), Math.Max(0, height - 1));
         var innerRect = new Rect(1.0, 1.0, Math.Max(0, width - 2), Math.Max(0, height - 2));
@@ -202,7 +203,18 @@ public sealed class AxisBar : Control
             DrawDetentMarker(drawingContext, Brushes.LimeGreen, AfterburnerDetentFraction, width, height);
         }
 
-        DrawText(drawingContext, textBrush, width, height);
+        double fillWidthForText = IsActive
+            ? Math.Max(0, innerRect.Width * Value)
+            : 0.0;
+
+                DrawText(
+                    drawingContext,
+                    textOnEmptyBrush,
+                    textOnFillBrush,
+                    width,
+                    height,
+                    innerRect.X,
+                    fillWidthForText);
     }
 
     private static object CoerceUnitInterval(DependencyObject dependencyObject, object baseValue)
@@ -244,29 +256,81 @@ public sealed class AxisBar : Control
             new Point(x, Math.Max(1, height - 1)));
     }
 
-    private void DrawText(DrawingContext drawingContext, Brush textBrush, double width, double height)
+    private void DrawText(
+        DrawingContext drawingContext,
+        Brush textOnEmptyBrush,
+        Brush textOnFillBrush,
+        double width,
+        double height,
+        double fillX,
+        double fillWidth)
     {
         if (string.IsNullOrWhiteSpace(Text))
             return;
 
         double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        double fontSize = FontSize > 0 ? FontSize : 11.0;
 
-        var formattedText = new FormattedText(
+        var typeface = new Typeface(
+            FontFamily,
+            FontStyle,
+            FontWeight,
+            FontStretch);
+
+        var emptyText = new FormattedText(
             Text,
             CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
-            new Typeface(FontFamily, FontStyle, FontWeight, FontStretch),
-            FontSize > 0 ? FontSize : 11.0,
-            textBrush,
+            typeface,
+            fontSize,
+            textOnEmptyBrush,
             pixelsPerDip);
 
-        drawingContext.PushClip(new RectangleGeometry(new Rect(0, 0, width, height)));
+        var fillText = new FormattedText(
+            Text,
+            CultureInfo.CurrentCulture,
+            FlowDirection.LeftToRight,
+            typeface,
+            fontSize,
+            textOnFillBrush,
+            pixelsPerDip);
+
+        double textX = Math.Max(
+            2,
+            (width - emptyText.Width) / 2.0);
+
+        double textY = Math.Max(
+            0,
+            (height - emptyText.Height) / 2.0);
+
+        var fullClip = new Rect(
+            0,
+            0,
+            width,
+            height);
+
+        var filledClip = new Rect(
+            fillX,
+            0,
+            Math.Max(0, fillWidth),
+            height);
+
+        drawingContext.PushClip(new RectangleGeometry(fullClip));
 
         drawingContext.DrawText(
-            formattedText,
-            new Point(
-                Math.Max(2, (width - formattedText.Width) / 2.0),
-                Math.Max(0, (height - formattedText.Height) / 2.0)));
+            emptyText,
+            new Point(textX, textY));
+
+        if (filledClip.Width > 0)
+        {
+            drawingContext.PushClip(new RectangleGeometry(filledClip));
+
+            drawingContext.DrawText(
+                fillText,
+                new Point(textX, textY));
+
+            drawingContext.Pop();
+        }
 
         drawingContext.Pop();
     }
