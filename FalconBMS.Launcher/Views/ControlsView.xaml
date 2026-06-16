@@ -87,10 +87,10 @@
                 </DockPanel>
 
                 <TextBlock Grid.Row="2"
-                           Text="Double-click a row to map that control to a key, button, axis, or POV hat. Press a key, button, or hat direction to jump to its current assignment. Italicized rows are not editable"
-                           Style="{StaticResource MutedTextBlockStyle}"
-                           FontSize="{StaticResource FontSizeSmall}"
-                           TextWrapping="Wrap"/>
+                   Text="{Binding HelperText}"
+                   Style="{StaticResource MutedTextBlockStyle}"
+                   FontSize="{StaticResource FontSizeSmall}"
+                   TextWrapping="Wrap"/>
             </Grid>
         </Border>
 
@@ -135,31 +135,8 @@
                       MouseDoubleClick="ControlsGrid_MouseDoubleClick"
                       ColumnReordered="ControlsGrid_ColumnReordered">
 
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Mapping"
-                                            Width="380"
-                                            MinWidth="380">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal"
-                                            VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Mapping}"
-                                               Style="{StaticResource ControlsTableTextBlockStyle}"/>
-
-                                    <Border Style="{StaticResource ControlsTableAxisBadgeStyle}">
-                                        <TextBlock Style="{StaticResource ControlsTableAxisBadgeTextStyle}"/>
-                                    </Border>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-
-                    <DataGridTextColumn Header="Key"
-                                        Binding="{Binding Key}"
-                                        ElementStyle="{StaticResource ControlsTableTextBlockStyle}"
-                                        Width="140"
-                                        MinWidth="140"/>
-                </DataGrid.Columns>
+                <DataGrid.Columns/>
+                
             </DataGrid>
         </Grid>
     </Grid>

@@ -16,10 +16,12 @@ public sealed class ControlsViewModel : ViewModelBase
     private const string AllActionsLabel = "ALL";
     private const string AllAxesLabel = "ALL AXES";
     private const string AxisCategoryName = "AXIS";
+    private const string UnassignedKeysLabel = "UNASSIGNED KEYS";
 
     private readonly KeyControlsGridBuilderService _keyGridBuilder = new();
     private readonly AxisControlsGridBuilderService _axisGridBuilder = new();
     private readonly BindingJsonImportExportService _bindingJsonImportExport = new();
+    private readonly UnassignedKeyboardKeyService _unassignedKeyboardKeyService = new();
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
 
@@ -76,6 +78,10 @@ public sealed class ControlsViewModel : ViewModelBase
         set
         {
             if (!Set(ref _selectedCategory, value)) return;
+
+            OnPropertyChanged(nameof(IsUnassignedKeysCategory));
+            OnPropertyChanged(nameof(HelperText));
+
             ApplyFilters();
         }
     }
@@ -98,10 +104,27 @@ public sealed class ControlsViewModel : ViewModelBase
         }
     }
 
-    public string SummaryText =>
-        SelectedProfile is null
-            ? "No binding profile loaded."
-            : $"{SelectedProfile.AircraftProfile}: {Rows.Count} visible rows";
+    public string SummaryText
+    {
+        get
+        {
+            if (SelectedProfile is null)
+                return "No binding profile loaded.";
+
+            if (IsUnassignedKeysCategory)
+                return $"{SelectedProfile.AircraftProfile}: {Rows.Count} unassigned keys";
+
+            return $"{SelectedProfile.AircraftProfile}: {Rows.Count} visible rows";
+        }
+    }
+
+    public bool IsUnassignedKeysCategory =>
+        string.Equals(SelectedCategory, UnassignedKeysLabel, StringComparison.OrdinalIgnoreCase);
+
+    public string HelperText =>
+        IsUnassignedKeysCategory
+            ? $"These {Rows.Count} keyboard combinations are not currently assigned to this aircraft."
+            : "Double-click a row to map that control to a key, button, axis, or POV hat. Press a key, button, or hat direction to jump to its current assignment. Italicized rows are not editable";
 
     public RelayCommand ClearFilterCommand { get; }
     public RelayCommand ImportBindingsCommand { get; }
@@ -567,10 +590,22 @@ public sealed class ControlsViewModel : ViewModelBase
 
             Categories.Add(category);
         }
+
+        // This is a generated helper category, not a real .key category.
+        // Keep it last so it does not interrupt the normal BMS category order.
+        Categories.Add(UnassignedKeysLabel);
     }
 
     private void ApplyFilters()
     {
+        if (IsUnassignedKeysCategory)
+        {
+            RebuildUnassignedKeyRows();
+            OnPropertyChanged(nameof(SummaryText));
+            OnPropertyChanged(nameof(HelperText));
+            return;
+        }
+
         Rows.Clear();
 
         bool isFiltering = !string.IsNullOrWhiteSpace(FilterText) ||
@@ -636,6 +671,27 @@ public sealed class ControlsViewModel : ViewModelBase
         }
 
         OnPropertyChanged(nameof(SummaryText));
+    }
+
+    private void RebuildUnassignedKeyRows()
+    {
+        Rows.Clear();
+
+        foreach (UnassignedKeyboardKeyCandidate candidate in
+                 _unassignedKeyboardKeyService.BuildRows(SelectedProfileRows, FilterText))
+        {
+            Rows.Add(new ControlGridRowViewModel
+            {
+                RowKind = BindingRowKind.Remark,
+                IsUnassignedKeyRow = true,
+                UnassignedKey = candidate.DisplayText,
+                UnassignedModifier = candidate.ModifierDisplayName,
+                UnassignedBaseKey = candidate.BaseKeyDisplayName,
+                UnassignedKeySortKey = candidate.KeySortKey,
+                UnassignedModifierSortKey = candidate.ModifierSortKey,
+                UnassignedBaseKeySortKey = candidate.BaseKeySortKey
+            });
+        }
     }
 
     private bool PassesCategoryFilter(ControlGridRowViewModel row)

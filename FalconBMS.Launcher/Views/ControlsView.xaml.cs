@@ -6,6 +6,7 @@ using FalconBMS.Launcher.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -72,12 +73,24 @@ public partial class ControlsView : UserControl
             return;
 
         if (_subscribedViewModel is not null)
+        {
             _subscribedViewModel.DeviceColumns.CollectionChanged -= DeviceColumns_CollectionChanged;
+            _subscribedViewModel.PropertyChanged -= ControlsViewModel_PropertyChanged;
+        }
 
         _subscribedViewModel = viewModel;
 
         if (_subscribedViewModel is not null)
+        {
             _subscribedViewModel.DeviceColumns.CollectionChanged += DeviceColumns_CollectionChanged;
+            _subscribedViewModel.PropertyChanged += ControlsViewModel_PropertyChanged;
+        }
+    }
+
+    private void ControlsViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(ControlsViewModel.IsUnassignedKeysCategory))
+            RebuildDeviceColumns();
     }
 
     private void DeviceColumns_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -87,15 +100,45 @@ public partial class ControlsView : UserControl
 
     private void RebuildDeviceColumns()
     {
-        const int fixedColumnCount = 2;
-
         _deviceKeyByColumn.Clear();
-
-        while (ControlsGrid.Columns.Count > fixedColumnCount)
-            ControlsGrid.Columns.RemoveAt(fixedColumnCount);
+        ControlsGrid.Columns.Clear();
 
         if (DataContext is not ControlsViewModel viewModel)
+        {
+            AddNormalFixedColumns();
             return;
+        }
+
+        if (viewModel.IsUnassignedKeysCategory)
+        {
+            ControlsGrid.FrozenColumnCount = 0;
+            ControlsGrid.CanUserReorderColumns = false;
+
+            ControlsGrid.Columns.Add(CreateUnassignedTextColumn(
+                "Unassigned Key",
+                nameof(ControlGridRowViewModel.UnassignedKey),
+                nameof(ControlGridRowViewModel.UnassignedKeySortKey),
+                180));
+
+            ControlsGrid.Columns.Add(CreateUnassignedTextColumn(
+                "Modifier",
+                nameof(ControlGridRowViewModel.UnassignedModifier),
+                nameof(ControlGridRowViewModel.UnassignedModifierSortKey),
+                180));
+
+            ControlsGrid.Columns.Add(CreateUnassignedTextColumn(
+                "Key",
+                nameof(ControlGridRowViewModel.UnassignedBaseKey),
+                nameof(ControlGridRowViewModel.UnassignedBaseKeySortKey),
+                180));
+
+            return;
+        }
+
+        ControlsGrid.FrozenColumnCount = 2;
+        ControlsGrid.CanUserReorderColumns = true;
+
+        AddNormalFixedColumns();
 
         foreach (DeviceBindingProfile deviceProfile in viewModel.DeviceColumns)
         {
@@ -105,7 +148,8 @@ public partial class ControlsView : UserControl
                 CellTemplate = CreateDeviceCellTemplate(deviceProfile.DurableDeviceKey),
                 Width = new DataGridLength(140),
                 MinWidth = 140,
-                IsReadOnly = true
+                IsReadOnly = true,
+                CanUserSort = false
             };
 
             ControlsGrid.Columns.Add(column);
@@ -118,6 +162,103 @@ public partial class ControlsView : UserControl
         // This keeps the setting current when new devices are discovered
         // and appends them after the user's saved device order.
         SaveDeviceColumnOrder();
+    }
+
+    private void AddNormalFixedColumns()
+    {
+        ControlsGrid.Columns.Add(CreateMappingColumn());
+
+        ControlsGrid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Key",
+            Binding = new Binding(nameof(ControlGridRowViewModel.Key)),
+            ElementStyle = TryFindResource("ControlsTableTextBlockStyle") as Style,
+            Width = new DataGridLength(140),
+            MinWidth = 140,
+            SortMemberPath = nameof(ControlGridRowViewModel.Key),
+            CanUserSort = true,
+            IsReadOnly = true
+        });
+    }
+
+    private static DataGridTemplateColumn CreateMappingColumn()
+    {
+        var column = new DataGridTemplateColumn
+        {
+            Header = "Mapping",
+            Width = new DataGridLength(380),
+            MinWidth = 380,
+            SortMemberPath = nameof(ControlGridRowViewModel.Mapping),
+            CanUserSort = true,
+            IsReadOnly = true
+        };
+
+        var template = new DataTemplate();
+
+        var stackPanelFactory =
+            new FrameworkElementFactory(typeof(StackPanel));
+
+        stackPanelFactory.SetValue(
+            StackPanel.OrientationProperty,
+            Orientation.Horizontal);
+
+        stackPanelFactory.SetValue(
+            FrameworkElement.VerticalAlignmentProperty,
+            VerticalAlignment.Center);
+
+        var mappingTextFactory =
+            new FrameworkElementFactory(typeof(TextBlock));
+
+        mappingTextFactory.SetBinding(
+            TextBlock.TextProperty,
+            new Binding(nameof(ControlGridRowViewModel.Mapping)));
+
+        mappingTextFactory.SetResourceReference(
+            FrameworkElement.StyleProperty,
+            "ControlsTableTextBlockStyle");
+
+        var axisBadgeFactory =
+            new FrameworkElementFactory(typeof(Border));
+
+        axisBadgeFactory.SetResourceReference(
+            FrameworkElement.StyleProperty,
+            "ControlsTableAxisBadgeStyle");
+
+        var axisBadgeTextFactory =
+            new FrameworkElementFactory(typeof(TextBlock));
+
+        axisBadgeTextFactory.SetResourceReference(
+            FrameworkElement.StyleProperty,
+            "ControlsTableAxisBadgeTextStyle");
+
+        axisBadgeFactory.AppendChild(axisBadgeTextFactory);
+
+        stackPanelFactory.AppendChild(mappingTextFactory);
+        stackPanelFactory.AppendChild(axisBadgeFactory);
+
+        template.VisualTree = stackPanelFactory;
+        column.CellTemplate = template;
+
+        return column;
+    }
+
+    private DataGridTextColumn CreateUnassignedTextColumn(
+        string header,
+        string bindingPath,
+        string sortMemberPath,
+        double width)
+    {
+        return new DataGridTextColumn
+        {
+            Header = header,
+            Binding = new Binding(bindingPath),
+            ElementStyle = TryFindResource("ControlsTableTextBlockStyle") as Style,
+            Width = new DataGridLength(width),
+            MinWidth = 140,
+            SortMemberPath = sortMemberPath,
+            CanUserSort = true,
+            IsReadOnly = true
+        };
     }
 
     private void RestoreSavedDeviceColumnOrder()
@@ -179,6 +320,15 @@ public partial class ControlsView : UserControl
 
     private void SaveDeviceColumnOrder()
     {
+        if (DataContext is ControlsViewModel viewModel &&
+            viewModel.IsUnassignedKeysCategory)
+        {
+            return;
+        }
+
+        if (_deviceKeyByColumn.Count == 0)
+            return;
+
         string savedOrder = string.Join(
             "|",
             ControlsGrid.Columns

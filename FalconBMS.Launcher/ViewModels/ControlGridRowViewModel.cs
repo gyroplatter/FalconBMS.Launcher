@@ -26,6 +26,16 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsAxisPairRow { get; init; }
     public AxisPairDefinition? AxisPairDefinition { get; init; }
 
+    public bool IsUnassignedKeyRow { get; init; }
+
+    public string UnassignedKey { get; init; } = "";
+    public string UnassignedModifier { get; init; } = "";
+    public string UnassignedBaseKey { get; init; } = "";
+
+    public string UnassignedKeySortKey { get; init; } = "";
+    public string UnassignedModifierSortKey { get; init; } = "";
+    public string UnassignedBaseKeySortKey { get; init; } = "";
+
     private string _key = "";
     public string Key
     {
@@ -40,7 +50,8 @@ public sealed class ControlGridRowViewModel : ViewModelBase
     public bool IsRemark => RowKind == BindingRowKind.Remark;
 
     // Axis rows and axis pair rows are editable even though they do not come from a .key BindingRow.
-    public bool IsEditable => IsAxisRow || IsAxisPairRow || SourceRow?.IsEditable == true;
+    public bool IsEditable => !IsUnassignedKeyRow &&
+                              (IsAxisRow || IsAxisPairRow || SourceRow?.IsEditable == true);
 
     public void RefreshFromSource()
     {
