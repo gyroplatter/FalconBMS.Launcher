@@ -50,41 +50,53 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0"
-                           LastChildFill="False">
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="Profile"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
+                    <StackPanel Grid.Column="0"
+                Orientation="Horizontal">
 
-                    <ComboBox Width="180"
-                              ItemsSource="{Binding Profiles}"
-                              SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
-                              DisplayMemberPath="AircraftProfile"
-                              Margin="0,0,16,0"/>
+                        <TextBlock Text="Profile"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"/>
 
-                    <TextBlock Text="Filter"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0"/>
+                        <ComboBox Width="180"
+                  ItemsSource="{Binding Profiles}"
+                  SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                  DisplayMemberPath="AircraftProfile"
+                  Margin="0,0,16,0"/>
 
-                    <TextBox Width="260"
-                             Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Margin="0,0,12,0"/>
+                        <TextBlock Text="Filter"
+                   VerticalAlignment="Center"
+                   Margin="0,0,8,0"/>
 
-                    <Button Content="Clear"
-        Width="70"
-        Command="{Binding ClearFilterCommand}"
-        Margin="0,0,16,0"/>
+                        <TextBox Width="260"
+                 Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 Margin="0,0,12,0"/>
 
-                    <Button Content="Import Bindings..."
-        Width="130"
-        Command="{Binding ImportBindingsCommand}"
-        Margin="0,0,8,0"/>
+                        <Button Content="Clear"
+                Width="70"
+                Command="{Binding ClearFilterCommand}"/>
+                    </StackPanel>
 
-                    <Button Content="Export Bindings..."
-        Width="130"
-        Command="{Binding ExportBindingsCommand}"/>
-                </DockPanel>
+                    <StackPanel Grid.Column="2"
+                Orientation="Horizontal"
+                HorizontalAlignment="Right">
+
+                        <Button Content="Import Controls"
+                Width="130"
+                Command="{Binding ImportBindingsCommand}"
+                Margin="0,0,8,0"/>
+
+                        <Button Content="Export Controls"
+                Width="130"
+                Command="{Binding ExportBindingsCommand}"/>
+                    </StackPanel>
+                </Grid>
 
                 <TextBlock Grid.Row="2"
                    Text="{Binding HelperText}"
