@@ -397,6 +397,10 @@ public partial class ControlsView : UserControl
             StackPanel.OrientationProperty,
             Orientation.Vertical);
 
+        panelFactory.SetValue(
+            FrameworkElement.VerticalAlignmentProperty,
+            VerticalAlignment.Center);
+
         /*
          * Primary axis bar
          *
@@ -429,11 +433,11 @@ public partial class ControlsView : UserControl
 
         primaryAxisBarFactory.SetValue(
             FrameworkElement.HeightProperty,
-            14.0);
+            18.0);
 
         primaryAxisBarFactory.SetValue(
             FrameworkElement.MarginProperty,
-            new Thickness(4, 1, 4, 1));
+            new Thickness(4, 2, 4, 2));
 
         primaryAxisBarFactory.SetValue(
             FrameworkElement.StyleProperty,
@@ -519,11 +523,11 @@ public partial class ControlsView : UserControl
 
         secondaryAxisBarFactory.SetValue(
             FrameworkElement.HeightProperty,
-            14.0);
+            18.0);
 
         secondaryAxisBarFactory.SetValue(
             FrameworkElement.MarginProperty,
-            new Thickness(4, 1, 4, 1));
+            new Thickness(4, 2, 4, 2));
 
         secondaryAxisBarFactory.SetValue(
             FrameworkElement.StyleProperty,

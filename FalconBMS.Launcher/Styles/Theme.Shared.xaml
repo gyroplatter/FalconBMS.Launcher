@@ -419,6 +419,13 @@
                 <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
             </DataTrigger>
 
+            <!-- AxisPair rows need enough height for two live axis bars. -->
+            <DataTrigger Binding="{Binding IsAxisPairRow}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+                <Setter Property="MinHeight" Value="48"/>
+            </DataTrigger>
+
             <!-- Subheading rows keep their fixed background and do not hover-highlight or selected-highlight. -->
             <DataTrigger Binding="{Binding IsSectionHeader}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource ControlsTableSubsectionBackgroundBrush}"/>
