@@ -43,7 +43,7 @@
             <LineBreak/>
             <Run x:Name="BackupFolderRun"
                  FontWeight="SemiBold"
-                 Text="User\Config\Launcher-Import-Backup"/>
+                 Text="User\Config\Launcher-Backups\V2-to-V3-Import"/>
         </TextBlock>
 
         <StackPanel x:Name="ImportMessagesPanel"

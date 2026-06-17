@@ -7,8 +7,11 @@ namespace FalconBMS.Launcher.Services.Legacy;
 
 public sealed class LegacyImportBackupService
 {
+    private const string BackupParentFolderName =
+        "Launcher-Backups";
+
     private const string BackupFolderPrefix =
-        "Launcher-Import-Backup";
+        "V2-to-V3-Import";
 
     private static readonly string[] BackupIncludePatterns =
     {
@@ -116,6 +119,7 @@ public sealed class LegacyImportBackupService
         string backupDirectory =
             Path.Combine(
                 configDirectory,
+                BackupParentFolderName,
                 $"{BackupFolderPrefix}-{timestamp}");
 
         Directory.CreateDirectory(

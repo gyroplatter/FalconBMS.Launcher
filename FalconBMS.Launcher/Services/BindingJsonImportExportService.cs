@@ -254,7 +254,10 @@ public sealed class BindingJsonImportExportService
         if (!ConfirmReplaceIfNeeded(destinationPath, owner))
             return false;
 
-        BackupIfExists(destinationPath);
+        BackupIfExists(
+            destinationPath,
+            candidate.AircraftProfile,
+            matchingDevice.ProductName);
         CopyJson(sourcePath, destinationPath);
 
         DebugDiagnosticsService.Info(
@@ -338,7 +341,10 @@ public sealed class BindingJsonImportExportService
                 jsonDir,
                 destinationFileName);
 
-        BackupIfExists(destinationPath);
+        BackupIfExists(
+            destinationPath,
+            matchingProfile.AircraftProfile,
+            "Keyboard");
         CopyJson(sourcePath, destinationPath);
 
         DebugDiagnosticsService.Info(
@@ -402,7 +408,9 @@ public sealed class BindingJsonImportExportService
     }
 
     private static void BackupIfExists(
-        string destinationPath)
+        string destinationPath,
+        string aircraftProfile,
+        string backupDisplayName)
     {
         if (!File.Exists(destinationPath))
             return;
@@ -420,17 +428,19 @@ public sealed class BindingJsonImportExportService
         string backupDir =
             Path.Combine(
                 configDir,
-                "Launcher-Import-Backups");
+                "Launcher-Backups");
 
-        Directory.CreateDirectory(backupDir);
+        Directory.CreateDirectory(
+            backupDir);
 
         string timestamp =
             DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
         string backupFileName =
-            timestamp +
-            "_" +
-            Path.GetFileName(destinationPath);
+            BuildImportBackupFileName(
+                timestamp,
+                aircraftProfile,
+                backupDisplayName);
 
         string backupPath =
             Path.Combine(
@@ -447,6 +457,48 @@ public sealed class BindingJsonImportExportService
 
         DebugDiagnosticsService.Info(
             $"Binding JSON backup created | Source=\"{destinationPath}\" | Backup=\"{backupPath}\"");
+    }
+
+    private static string BuildImportBackupFileName(
+    string timestamp,
+    string aircraftProfile,
+    string backupDisplayName)
+    {
+        string safeAircraftProfile =
+            SanitizeFileNameSegment(aircraftProfile).TrimEnd('.');
+
+        if (string.IsNullOrWhiteSpace(safeAircraftProfile))
+            safeAircraftProfile = "Unknown Aircraft";
+
+        string safeDisplayName =
+            SanitizeFileNameSegment(backupDisplayName).TrimEnd('.');
+
+        if (string.IsNullOrWhiteSpace(safeDisplayName))
+            safeDisplayName = "Unknown";
+
+        safeDisplayName =
+            LimitFileNameSegment(
+                safeDisplayName,
+                80);
+
+        return
+            "Backup-" +
+            timestamp +
+            "_" +
+            safeAircraftProfile +
+            "_" +
+            safeDisplayName +
+            ".json";
+    }
+
+    private static string LimitFileNameSegment(
+        string value,
+        int maxLength)
+    {
+        if (value.Length <= maxLength)
+            return value;
+
+        return value.Substring(0, maxLength).TrimEnd('.', ' ');
     }
 
     private static string GetUniqueBackupPath(

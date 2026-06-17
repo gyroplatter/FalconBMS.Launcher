@@ -88,7 +88,7 @@ public partial class LegacyImportCompleteWindow : Window
         if (string.IsNullOrWhiteSpace(
                 backupDirectory))
         {
-            return "User\\Config\\Launcher-Import-Backup";
+            return "User\\Config\\Launcher-Backups\\V2-to-V3-Import";
         }
 
         string normalizedPath =
