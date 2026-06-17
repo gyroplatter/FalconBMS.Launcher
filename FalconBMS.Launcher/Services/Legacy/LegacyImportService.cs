@@ -39,11 +39,14 @@ public sealed class LegacyImportService
     private readonly DeviceJsonWriterService
         _deviceJsonWriter = new();
 
-    public bool HasLegacyAutoKeyFiles(
+    public bool HasLegacyControlFiles(
         string baseDir)
     {
         string configDirectory =
             GetConfigDirectory(baseDir);
+
+        if (!Directory.Exists(configDirectory))
+            return false;
 
         return
             File.Exists(
@@ -53,7 +56,27 @@ public sealed class LegacyImportService
             File.Exists(
                 Path.Combine(
                     configDirectory,
-                    "BMS - Auto-F15ABCD.key"));
+                    "BMS - Auto-F15ABCD.key")) ||
+            File.Exists(
+                Path.Combine(
+                    configDirectory,
+                    "axismapping.dat")) ||
+            File.Exists(
+                Path.Combine(
+                    configDirectory,
+                    "joystick.cal")) ||
+            File.Exists(
+                Path.Combine(
+                    configDirectory,
+                    "DeviceSorting.txt")) ||
+            File.Exists(
+                Path.Combine(
+                    configDirectory,
+                    "Falcon BMS User.cfg")) ||
+            Directory.EnumerateFiles(
+                    configDirectory,
+                    "Setup.v100.*.xml")
+                .Any();
     }
 
     public LegacyImportScanResult Scan(

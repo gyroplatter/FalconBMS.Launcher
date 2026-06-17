@@ -41,6 +41,10 @@ public sealed class MainViewModel : ViewModelBase
     // callbacks should sync JSON without being treated as a user binding edit.
     private bool _needsKeyboardJsonCatalogSync;
 
+    // Set when missing device JSON files/profiles were rebuilt from stock/defaults
+    // during startup and need to be written back on close or launch.
+    private bool _needsDeviceJsonSync;
+
     // Set when a keyboard/device JSON file failed to read during startup.
     // When true, output writes are blocked so fallback/partial in-memory data
     // cannot overwrite the user's broken JSON file or generated outputs.
@@ -74,7 +78,7 @@ public sealed class MainViewModel : ViewModelBase
                 Properties.Settings.Default.LastInstall = value.RegistryKeyName;
                 Properties.Settings.Default.Save();
 
-                if (!HandleFirstLaunchLegacyImport(value))
+                if (!HandleStartupLegacyImport(value))
                     return;
 
                 // Build the complete model (catalogs + keyboard JSON + device JSON) before
@@ -99,8 +103,11 @@ public sealed class MainViewModel : ViewModelBase
 
                 KeyCatalogs = Array.Empty<KeyCatalog>();
                 CurrentBindingModel = new();
+                _needsKeyboardJsonCatalogSync = false;
+                _needsDeviceJsonSync = false;
                 _jsonReadFailureBlocksOutputSave = false;
                 _hasShownJsonReadFailureStartupWarning = false;
+
                 OnPropertyChanged(nameof(KeyCatalogs));
                 OnPropertyChanged(nameof(CurrentBindingModel));
 
@@ -441,26 +448,27 @@ public sealed class MainViewModel : ViewModelBase
         ShowJsonReadFailureStartupWarningIfNeeded();
     }
 
-    private bool HandleFirstLaunchLegacyImport(
+    private bool HandleStartupLegacyImport(
         BmsInstall install)
     {
-        if (Properties.Settings.Default.LegacyImportPromptHandled)
-            return true;
-
         if (HasExistingLauncherBindingJson(install.BaseDir))
         {
             DebugDiagnosticsService.Info(
-                "Legacy import skipped because existing Launcher JSON bindings were found. Marking legacy import as handled.");
+                "Legacy import skipped because existing Launcher JSON bindings were found.");
 
-            MarkLegacyImportPromptHandled();
             return true;
         }
 
-        if (!_legacyImport.HasLegacyAutoKeyFiles(install.BaseDir))
+        if (!_legacyImport.HasLegacyControlFiles(install.BaseDir))
         {
-            MarkLegacyImportPromptHandled();
+            DebugDiagnosticsService.Info(
+                "Legacy import skipped because no Launcher JSON bindings or legacy v2 control files were found.");
+
             return true;
         }
+
+        DebugDiagnosticsService.Info(
+            "No Launcher JSON bindings were found, but legacy v2 control files exist. Running legacy import.");
 
         LegacyImportScanResult scanResult =
             _legacyImport.Scan(
@@ -483,8 +491,6 @@ public sealed class MainViewModel : ViewModelBase
 
         ApplyImportedLauncherSettings(
             importResult);
-
-        MarkLegacyImportPromptHandled();
 
         ShowLegacyImportCompleteMessage(
             importResult);
@@ -533,12 +539,6 @@ public sealed class MainViewModel : ViewModelBase
         completeWindow.ShowDialog();
     }
 
-    private static void MarkLegacyImportPromptHandled()
-    {
-        Properties.Settings.Default.LegacyImportPromptHandled = true;
-        Properties.Settings.Default.Save();
-    }
-
     /// <summary>
     /// Builds the complete in-memory binding model for the given install in one pass:
     ///   1. Load BMS - Full*.key catalogs (read-only structure and defaults)
@@ -551,6 +551,7 @@ public sealed class MainViewModel : ViewModelBase
     /// </summary>
     private void LoadFullBindingModelForInstall(BmsInstall install)
     {
+        _needsDeviceJsonSync = false;
         _jsonReadFailureBlocksOutputSave = false;
         _hasShownJsonReadFailureStartupWarning = false;
 
@@ -578,6 +579,14 @@ public sealed class MainViewModel : ViewModelBase
 
         foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(install.BaseDir, stockDeviceMatches))
             CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
+
+        _needsDeviceJsonSync = _deviceJsonReader.NeedsJsonSync;
+
+        if (_needsDeviceJsonSync)
+        {
+            DebugDiagnosticsService.Info(
+                "Device JSON sync required. Missing device JSON files/profiles will be synced on close or launch.");
+        }
 
         if (_deviceJsonReader.HasReadFailuresBlockingSave)
         {
@@ -710,6 +719,7 @@ public sealed class MainViewModel : ViewModelBase
 
         bool hasUserBindingChanges = ControlsViewModel?.IsDirty == true;
         bool needsKeyboardJsonCatalogSync = _needsKeyboardJsonCatalogSync;
+        bool needsDeviceJsonSync = _needsDeviceJsonSync;
 
         if (IsOutputSaveBlockedByJsonReadFailure())
         {
@@ -723,9 +733,9 @@ public sealed class MainViewModel : ViewModelBase
         // and no startup-discovered FULL-key catalog differences that need to be synced to JSON.
         // The individual writers also SHA1-diff before touching disk, but skipping the
         // entire pass avoids opening every file unnecessarily on close.
-        if (!hasUserBindingChanges && !needsKeyboardJsonCatalogSync)
+        if (!hasUserBindingChanges && !needsKeyboardJsonCatalogSync && !needsDeviceJsonSync)
         {
-            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes and no keyboard JSON catalog sync required.");
+            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes and no JSON sync required.");
             return;
         }
 
@@ -734,7 +744,7 @@ public sealed class MainViewModel : ViewModelBase
             DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
             DebugDiagnosticsService.Info($"Launcher close requested output save for install: {SelectedInstall.RegistryKeyName}");
             DebugDiagnosticsService.Info(
-                $"PrepareForLaunch on close start. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={needsKeyboardJsonCatalogSync}");
+                $"PrepareForLaunch on close start. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={needsKeyboardJsonCatalogSync} | DeviceJsonSync={needsDeviceJsonSync}");
 
             bool vrEnabled = VrSteamVr || VrOpenXr;
 
@@ -746,6 +756,7 @@ public sealed class MainViewModel : ViewModelBase
                 CurrentBindingModel);
 
             _needsKeyboardJsonCatalogSync = false;
+            _needsDeviceJsonSync = false;
             ControlsViewModel?.ResetDirty();
 
             DebugDiagnosticsService.Info("PrepareForLaunch on close complete.");
@@ -822,6 +833,7 @@ public sealed class MainViewModel : ViewModelBase
             // SaveOutputsForClose can skip the redundant write if nothing changes
             // while BMS is running.
             _needsKeyboardJsonCatalogSync = false;
+            _needsDeviceJsonSync = false;
             ControlsViewModel?.ResetDirty();
 
             var arguments = BuildFalconArguments();

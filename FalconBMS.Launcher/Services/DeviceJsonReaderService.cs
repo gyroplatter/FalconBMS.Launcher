@@ -13,6 +13,12 @@ public sealed class DeviceJsonReaderService
     // This aircraft profile supplies the authoritative axis block if files differ.
     private const string PrimarySharedAxisAircraftProfile = "F-16";
 
+        private static readonly string[] RequiredAircraftProfiles =
+        {
+            "F-16",
+            "F-15ABCD"
+        };
+
     private readonly DeviceBindingProfileBuilderService _fallbackBuilder = new();
 
     /// <summary>
@@ -26,11 +32,19 @@ public sealed class DeviceJsonReaderService
 
     public List<string> ReadFailureMessages { get; } = new();
 
+    /// <summary>
+    /// True when startup had to rebuild missing device JSON content from stock/defaults.
+    /// MainViewModel uses this to run the normal write pipeline on close even when
+    /// the user made no manual binding changes.
+    /// </summary>
+    public bool NeedsJsonSync { get; private set; }
+
     public IReadOnlyList<DeviceBindingProfile> LoadOrBuild(
         string baseDir,
         IReadOnlyList<StockDeviceSetupMatch> matches)
     {
         HasReadFailuresBlockingSave = false;
+        NeedsJsonSync = false;
         ReadFailureMessages.Clear();
 
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTASREAD");
@@ -53,7 +67,7 @@ public sealed class DeviceJsonReaderService
 
             try
             {
-                DeviceBindingProfile profile = CreateConnectedProfileFromJson(match.Device, savedProfileGroup, actionId);
+                DeviceBindingProfile profile = CreateConnectedProfileFromJson(match, savedProfileGroup, actionId);
                 profiles.Add(profile);
                 matchedSavedKeys.Add(durableDeviceKey);
 
@@ -161,8 +175,10 @@ public sealed class DeviceJsonReaderService
 
     private DeviceBindingProfile BuildFallbackProfile(StockDeviceSetupMatch match, string actionId)
     {
+        NeedsJsonSync = true;
+
         DebugDiagnosticsService.Info(
-            $"Device JSON missing. Falling back to stock XML/empty model | Device=\"{match.Device.ProductName}\" | DurableKey={match.Device.DurableDeviceKey} | InstanceGuid={match.Device.InstanceGuid:B} | ActionId={actionId}");
+            $"Device JSON missing. Falling back to stock XML/empty model and marking device JSON sync required | Device=\"{match.Device.ProductName}\" | DurableKey={match.Device.DurableDeviceKey} | InstanceGuid={match.Device.InstanceGuid:B} | ActionId={actionId}");
 
         return _fallbackBuilder.Build(new[] { match }).First();
     }
@@ -182,10 +198,11 @@ public sealed class DeviceJsonReaderService
     }
 
     private DeviceBindingProfile CreateConnectedProfileFromJson(
-        InputDeviceInfo device,
+        StockDeviceSetupMatch match,
         SavedDeviceJsonGroup savedProfileGroup,
         string actionId)
     {
+        InputDeviceInfo device = match.Device;
         JsonDeviceBindingDocument metadataDocument = savedProfileGroup.MetadataDocument;
         Guid? previousInstanceGuid = ParseGuid(metadataDocument.LastSeenInstanceGuid);
 
@@ -218,6 +235,8 @@ public sealed class DeviceJsonReaderService
 
         ApplyAxisBindings(profile, SelectSharedAxisSource(savedProfileGroup.Documents));
         ApplyAircraftProfiles(profile, savedProfileGroup.Documents);
+
+        EnsureRequiredAircraftProfiles(profile, match, savedProfileGroup, actionId);
 
         return profile;
     }
@@ -358,6 +377,83 @@ public sealed class DeviceJsonReaderService
 
         foreach (DeviceAircraftBindingProfile aircraft in aircraftProfilesByName.Values.OrderBy(aircraft => GetAircraftSortKey(aircraft.AircraftProfile), StringComparer.OrdinalIgnoreCase))
             profile.AircraftProfiles.Add(aircraft);
+    }
+
+    private void EnsureRequiredAircraftProfiles(
+    DeviceBindingProfile profile,
+    StockDeviceSetupMatch match,
+    SavedDeviceJsonGroup savedProfileGroup,
+    string actionId)
+    {
+        DeviceBindingProfile? fallbackProfile = null;
+
+        foreach (string aircraftProfileName in RequiredAircraftProfiles)
+        {
+            bool alreadyExists = profile.AircraftProfiles.Any(aircraft =>
+                string.Equals(aircraft.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            if (alreadyExists)
+                continue;
+
+            fallbackProfile ??= _fallbackBuilder.Build(new[] { match }).First();
+
+            DeviceAircraftBindingProfile? fallbackAircraft =
+                fallbackProfile.AircraftProfiles.FirstOrDefault(aircraft =>
+                    string.Equals(aircraft.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
+
+            DeviceAircraftBindingProfile aircraftToAdd = fallbackAircraft is not null
+                ? CloneAircraftProfile(fallbackAircraft)
+                : new DeviceAircraftBindingProfile
+                {
+                    AircraftProfile = aircraftProfileName
+                };
+
+            profile.AircraftProfiles.Add(aircraftToAdd);
+            NeedsJsonSync = true;
+
+            DebugDiagnosticsService.Info(
+                $"Device JSON aircraft profile missing. Rebuilt missing profile from stock/default and marked device JSON sync required | Device=\"{profile.ProductName}\" | DurableKey={profile.DurableDeviceKey} | MissingAircraft={aircraftProfileName} | ExistingJson=\"{savedProfileGroup.DisplayFileName}\" | ActionId={actionId}");
+        }
+
+        profile.AircraftProfiles.Sort((left, right) =>
+            string.Compare(
+                GetAircraftSortKey(left.AircraftProfile),
+                GetAircraftSortKey(right.AircraftProfile),
+                StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static DeviceAircraftBindingProfile CloneAircraftProfile(DeviceAircraftBindingProfile source)
+    {
+        var clone = new DeviceAircraftBindingProfile
+        {
+            AircraftProfile = source.AircraftProfile
+        };
+
+        foreach (DeviceButtonBinding button in source.ButtonBindings)
+        {
+            clone.ButtonBindings.Add(new DeviceButtonBinding
+            {
+                ButtonIndex = button.ButtonIndex,
+                AssignmentIndex = button.AssignmentIndex,
+                CallbackName = button.CallbackName,
+                Invoke = button.Invoke,
+                SoundId = button.SoundId
+            });
+        }
+
+        foreach (DevicePovBinding pov in source.PovBindings)
+        {
+            clone.PovBindings.Add(new DevicePovBinding
+            {
+                PovIndex = pov.PovIndex,
+                Direction = pov.Direction,
+                CallbackName = pov.CallbackName,
+                Invoke = pov.Invoke,
+                SoundId = pov.SoundId
+            });
+        }
+
+        return clone;
     }
 
     private static void ApplyAircraftProfilesFromDocument(
