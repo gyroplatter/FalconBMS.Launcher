@@ -128,11 +128,14 @@
                                Text="CATEGORIES"
                                Style="{StaticResource ControlsNavHeadingTextBlockStyle}"/>
 
-                    <ListBox Grid.Row="1"
-                             ItemsSource="{Binding Categories}"
-                             SelectedItem="{Binding SelectedCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Style="{StaticResource ControlsNavListBoxStyle}"
-                             ItemContainerStyle="{StaticResource ControlsNavListBoxItemStyle}"/>
+                    <ListBox x:Name="CategoryListBox"
+                        Grid.Row="1"
+                        ItemsSource="{Binding Categories}"
+                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Style="{StaticResource ControlsNavListBoxStyle}"
+                        ItemContainerStyle="{StaticResource ControlsNavListBoxItemStyle}"
+                        PreviewKeyDown="CategoryListBox_PreviewKeyDown"
+                        PreviewMouseLeftButtonUp="CategoryListBox_PreviewMouseLeftButtonUp"/>
                 </Grid>
             </Border>
 

@@ -413,6 +413,11 @@
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
             </DataTrigger>
 
+            <!-- Unassigned key helper rows stay italic, but use the normal foreground color. -->
+            <DataTrigger Binding="{Binding IsUnassignedKeyRow}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+            </DataTrigger>
+
             <!-- Axis rows use the same base row color as normal keyboard rows. -->
             <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
@@ -451,13 +456,23 @@
                 <Setter Property="Background" Value="{DynamicResource ControlsTableHoverBrush}"/>
             </MultiDataTrigger>
 
-            <!-- Only editable rows get active/selected feedback. -->
+            <!-- Editable rows get active/selected feedback. -->
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding IsEditable}" Value="True"/>
                     <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
                 </MultiDataTrigger.Conditions>
                 <Setter Property="Background" Value="{DynamicResource ControlsTableSelectedBrush}"/>
+            </MultiDataTrigger>
+
+            <!-- Unassigned key helper rows can also show selected feedback when key-jumped. -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsUnassignedKeyRow}" Value="True"/>
+                    <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource ControlsTableSelectedBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
             </MultiDataTrigger>
         </Style.Triggers>
     </Style>
@@ -479,6 +494,11 @@
 
             <DataTrigger Binding="{Binding IsRemark}" Value="True">
                 <Setter Property="TextElement.Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <!-- Unassigned key helper rows stay italic, but use the normal foreground color. -->
+            <DataTrigger Binding="{Binding IsUnassignedKeyRow}" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource AppForegroundBrush}"/>
             </DataTrigger>
 
             <DataTrigger Binding="{Binding IsAxisRow}" Value="True">
@@ -537,6 +557,11 @@
 
             <DataTrigger Binding="{Binding IsRemark}" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource ControlsTableCommentForegroundBrush}"/>
+            </DataTrigger>
+
+            <!-- Unassigned key helper rows stay italic, but use the normal foreground color. -->
+            <DataTrigger Binding="{Binding IsUnassignedKeyRow}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
             </DataTrigger>
 
             <DataTrigger Binding="{Binding IsAxisRow}" Value="True">

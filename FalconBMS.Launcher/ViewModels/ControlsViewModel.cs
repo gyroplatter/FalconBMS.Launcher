@@ -717,15 +717,18 @@ public sealed class ControlsViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(FilterText))
             return true;
 
-        return Contains(row.Mapping, FilterText) ||
-               Contains(row.Key, FilterText) ||
-               Contains(row.CategoryName, FilterText) ||
-               Contains(row.SectionName, FilterText);
+        return ContainsIgnoreCase(row.Mapping, FilterText) ||
+               ContainsIgnoreCase(row.Key, FilterText) ||
+               ContainsIgnoreCase(row.CategoryName, FilterText) ||
+               ContainsIgnoreCase(row.SectionName, FilterText);
     }
 
-    private static bool Contains(string value, string filter)
+    private static bool ContainsIgnoreCase(string? value, string filter)
     {
-        return value?.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
+        if (string.IsNullOrWhiteSpace(filter))
+            return true;
+
+        return (value ?? "").IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     public bool SelectFirstVisibleKeyMatch(string keySearchText)
@@ -734,7 +737,24 @@ public sealed class ControlsViewModel : ViewModelBase
             return false;
 
         ControlGridRowViewModel? match = Rows.FirstOrDefault(
-            row => string.Equals(row.Key, keySearchText, StringComparison.OrdinalIgnoreCase));
+            row => !row.IsUnassignedKeyRow &&
+                   string.Equals(row.Key, keySearchText, StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+            return false;
+
+        SelectedRow = match;
+        return true;
+    }
+
+    public bool SelectFirstVisibleUnassignedKeyMatch(string keySearchText)
+    {
+        if (string.IsNullOrWhiteSpace(keySearchText))
+            return false;
+
+        ControlGridRowViewModel? match = Rows.FirstOrDefault(
+            row => row.IsUnassignedKeyRow &&
+                   string.Equals(row.UnassignedKey, keySearchText, StringComparison.OrdinalIgnoreCase));
 
         if (match is null)
             return false;

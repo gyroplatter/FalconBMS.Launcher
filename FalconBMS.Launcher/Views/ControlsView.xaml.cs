@@ -880,7 +880,12 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        if (!viewModel.SelectFirstVisibleKeyMatch(assignmentStatus))
+        bool selectedMatch =
+            viewModel.IsUnassignedKeysCategory
+                ? viewModel.SelectFirstVisibleUnassignedKeyMatch(assignmentStatus)
+                : viewModel.SelectFirstVisibleKeyMatch(assignmentStatus);
+
+        if (!selectedMatch)
             return;
 
         if (viewModel.SelectedRow is null)
@@ -1212,6 +1217,36 @@ public partial class ControlsView : UserControl
         {
             _keyboard = null;
         }
+    }
+
+    private void CategoryListBox_PreviewMouseLeftButtonUp(
+    object sender,
+    MouseButtonEventArgs e)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            ControlsGrid.Focus();
+            Keyboard.Focus(ControlsGrid);
+        }, DispatcherPriority.Background);
+    }
+
+    private void CategoryListBox_PreviewKeyDown(
+        object sender,
+        KeyEventArgs e)
+    {
+        if (!IsCategoryTextSearchKey(e.Key))
+            return;
+
+        // Prevent WPF ListBox text-search from changing categories.
+        // DirectInput polling still sees the key press and can jump the table row.
+        e.Handled = true;
+    }
+
+    private static bool IsCategoryTextSearchKey(Key key)
+    {
+        return (key >= Key.A && key <= Key.Z) ||
+               (key >= Key.D0 && key <= Key.D9) ||
+               (key >= Key.NumPad0 && key <= Key.NumPad9);
     }
 
     private bool IsFilterControlFocused()

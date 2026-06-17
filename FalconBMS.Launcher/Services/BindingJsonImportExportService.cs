@@ -24,7 +24,7 @@ public sealed class BindingJsonImportExportService
     {
         var openDialog = new OpenFileDialog
         {
-            Title = "Import Bindings",
+            Title = "Import Controls",
             Filter = BindingJsonFilter,
             CheckFileExists = true,
             Multiselect = false
@@ -74,7 +74,7 @@ public sealed class BindingJsonImportExportService
                 MessageBox.Show(
                     owner,
                     "No bindings were found to export.",
-                    "Export Bindings",
+                    "Export Controls",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
 
@@ -91,7 +91,7 @@ public sealed class BindingJsonImportExportService
 
             var saveDialog = new SaveFileDialog
             {
-                Title = "Export Bindings",
+                Title = "Export Controls",
                 Filter = BindingJsonFilter,
                 FileName = selected.FileName,
                 OverwritePrompt = true
@@ -110,19 +110,19 @@ public sealed class BindingJsonImportExportService
 
             MessageBox.Show(
                 owner,
-                "Exported bindings for:\n\n" + selected.DisplayName,
-                "Export Bindings",
+                "Exported controls for:\n\n" + selected.DisplayName,
+                "Export Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            DebugDiagnosticsService.Exception(ex, "Binding JSON export failed");
+            DebugDiagnosticsService.Exception(ex, "Control JSON export failed");
 
             MessageBox.Show(
                 owner,
-                "The selected bindings could not be exported.\n\n" + ex.Message,
-                "Export Bindings",
+                "The selected control file could not be exported.\n\n" + ex.Message,
+                "Export Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -153,7 +153,7 @@ public sealed class BindingJsonImportExportService
                 if (candidate.DeviceProfile is null ||
                     candidate.DeviceAircraftProfile is null)
                 {
-                    throw new InvalidOperationException("Device export candidate is missing its profile.");
+                    throw new InvalidOperationException("Device export is missing its profile.");
                 }
 
                 _deviceJsonWriter.WriteExportFile(
@@ -163,7 +163,7 @@ public sealed class BindingJsonImportExportService
                     actionId);
 
                 DebugDiagnosticsService.Info(
-                    $"Binding JSON exported from memory | Type=Device | Display=\"{candidate.DisplayName}\" | Destination=\"{destinationPath}\" | ActionId={actionId}");
+                    $"Control JSON exported from memory | Type=Device | Display=\"{candidate.DisplayName}\" | Destination=\"{destinationPath}\" | ActionId={actionId}");
 
                 break;
 
@@ -184,9 +184,9 @@ public sealed class BindingJsonImportExportService
         {
             MessageBox.Show(
                 owner,
-                "The selected device binding file is missing required identity fields.\n\n" +
+                "The selected device control file is missing required identity fields.\n\n" +
                 "Required fields: pidvid, aircraft_profile.",
-                "Import Bindings",
+                "Import Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -204,12 +204,12 @@ public sealed class BindingJsonImportExportService
         {
             MessageBox.Show(
                 owner,
-                "This binding file is for:\n\n" +
+                "This control file is for:\n\n" +
                 DisplayImportDeviceName(candidate) + "\n" +
                 candidate.AircraftProfile + "\n\n" +
-                "That matching device is not currently detected by the Launcher.\n\n" +
-                "The bindings were not imported. Connect the matching device and try again.",
-                "Import Bindings",
+                "A matching device is not currently detected by the Launcher.\n\n" +
+                "The control file was not imported. Connect the matching device and try again.",
+                "Import Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -220,10 +220,10 @@ public sealed class BindingJsonImportExportService
         {
             MessageBox.Show(
                 owner,
-                "This binding file matches more than one connected device.\n\n" +
-                "The Launcher cannot safely choose which connected device should receive these bindings.\n\n" +
-                "The bindings were not imported.",
-                "Import Bindings",
+                "This control file matches more than one connected device.\n\n" +
+                "The Launcher cannot safely choose which connected device should receive this update.\n\n" +
+                "The control file was not imported.",
+                "Import Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -258,20 +258,20 @@ public sealed class BindingJsonImportExportService
         CopyJson(sourcePath, destinationPath);
 
         DebugDiagnosticsService.Info(
-            $"Device binding JSON imported | Device=\"{matchingDevice.ProductName}\" | Aircraft={candidate.AircraftProfile} | Source=\"{sourcePath}\" | Destination=\"{destinationPath}\"");
+            $"Device JSON imported | Device=\"{matchingDevice.ProductName}\" | Aircraft={candidate.AircraftProfile} | Source=\"{sourcePath}\" | Destination=\"{destinationPath}\"");
 
         if (!productNameMatches)
         {
             DebugDiagnosticsService.Warn(
-                $"Device binding JSON imported with product name mismatch | JsonProductName=\"{candidate.ProductName}\" | ConnectedProductName=\"{matchingDevice.ProductName}\" | PIDVID={candidate.PidVid} | Aircraft={candidate.AircraftProfile}");
+                $"Device JSON imported with product name mismatch | JsonProductName=\"{candidate.ProductName}\" | ConnectedProductName=\"{matchingDevice.ProductName}\" | PIDVID={candidate.PidVid} | Aircraft={candidate.AircraftProfile}");
         }
 
         MessageBox.Show(
             owner,
-            "Imported bindings for:\n\n" +
+            "Imported control for:\n\n" +
             matchingDevice.ProductName + "\n" +
             candidate.AircraftProfile,
-            "Import Bindings",
+            "Import Controls",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 
@@ -289,8 +289,8 @@ public sealed class BindingJsonImportExportService
         {
             MessageBox.Show(
                 owner,
-                "The selected keyboard binding file is missing aircraft_profile.",
-                "Import Bindings",
+                "The selected keyboard file is missing aircraft_profile.",
+                "Import Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -304,9 +304,9 @@ public sealed class BindingJsonImportExportService
         {
             MessageBox.Show(
                 owner,
-                "This keyboard binding file is for an aircraft profile that is not currently loaded:\n\n" +
+                "This keyboard file is for an aircraft profile that is not currently loaded:\n\n" +
                 candidate.AircraftProfile,
-                "Import Bindings",
+                "Import Controls",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
 
@@ -316,9 +316,9 @@ public sealed class BindingJsonImportExportService
         MessageBoxResult replaceResult =
             MessageBox.Show(
                 owner,
-                "This will replace your current " + matchingProfile.AircraftProfile + " keyboard bindings.\n\n" +
+                "This will replace your current " + matchingProfile.AircraftProfile + " keyboard file.\n\n" +
                 "A backup will be created before import.",
-                "Import Keyboard Bindings",
+                "Import Keyboard Control",
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning);
 
@@ -342,12 +342,12 @@ public sealed class BindingJsonImportExportService
         CopyJson(sourcePath, destinationPath);
 
         DebugDiagnosticsService.Info(
-            $"Keyboard binding JSON imported | Aircraft={matchingProfile.AircraftProfile} | Source=\"{sourcePath}\" | Destination=\"{destinationPath}\"");
+            $"Keyboard JSON imported | Aircraft={matchingProfile.AircraftProfile} | Source=\"{sourcePath}\" | Destination=\"{destinationPath}\"");
 
         MessageBox.Show(
             owner,
-            "Imported keyboard bindings for:\n\n" + matchingProfile.AircraftProfile,
-            "Import Bindings",
+            "Imported keyboard file for:\n\n" + matchingProfile.AircraftProfile,
+            "Import Controls",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
 
@@ -372,9 +372,9 @@ public sealed class BindingJsonImportExportService
     {
         MessageBox.Show(
             owner,
-            "The selected JSON file is not a supported Launcher binding file.\n\n" +
+            "The selected JSON file is not a supported Launcher control file.\n\n" +
             "binding_type: " + (string.IsNullOrWhiteSpace(bindingType) ? "(missing)" : bindingType),
-            "Import Bindings",
+            "Import Controls",
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
 
@@ -391,10 +391,10 @@ public sealed class BindingJsonImportExportService
         MessageBoxResult result =
             MessageBox.Show(
                 owner,
-                "A matching binding file already exists.\n\n" +
+                "A matching control file already exists.\n\n" +
                 Path.GetFileName(destinationPath) + "\n\n" +
                 "A backup will be created before it is replaced.",
-                "Import Bindings",
+                "Import Controls",
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning);
 
@@ -591,6 +591,18 @@ public sealed class BindingJsonImportExportService
                 Margin = new Thickness(0, 8, 0, 12)
             };
 
+        listBox.SetResourceReference(
+            Control.BackgroundProperty,
+            "AppSurfaceBrush");
+
+        listBox.SetResourceReference(
+            Control.ForegroundProperty,
+            "AppForegroundBrush");
+
+        listBox.SetResourceReference(
+            Control.BorderBrushProperty,
+            "AppBorderBrush");
+
         if (candidates.Count > 0)
             listBox.SelectedIndex = 0;
 
@@ -618,8 +630,8 @@ public sealed class BindingJsonImportExportService
                 HorizontalAlignment = HorizontalAlignment.Right
             };
 
-        buttons.Children.Add(exportButton);
         buttons.Children.Add(cancelButton);
+        buttons.Children.Add(exportButton);
 
         var panel =
             new StackPanel
@@ -640,7 +652,7 @@ public sealed class BindingJsonImportExportService
         var window =
             new Window
             {
-                Title = "Export Bindings",
+                Title = "Export Controls",
                 Content = panel,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 ResizeMode = ResizeMode.NoResize,
