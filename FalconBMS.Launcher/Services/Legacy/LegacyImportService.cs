@@ -445,104 +445,9 @@ public sealed class LegacyImportService
                 profile);
         }
 
-        int nextOfflineDiscoveryIndex =
-            connectedMatches.Count;
-
-        foreach (LegacyDeviceXmlFile legacyXml in
-                 legacyXmlFiles.Where(xml =>
-                     !usedLegacyXmlPaths.Contains(
-                         xml.Path)))
-        {
-            LegacySortedDevice? sortedDevice =
-                sortedDevices.FirstOrDefault(device =>
-                    LegacyDeviceXmlImportService.NamesMatch(
-                        device.ProductName,
-                        legacyXml.DeviceName));
-
-            if (sortedDevice is null)
-            {
-                DebugDiagnosticsService.Warn(
-                    $"Legacy offline device skipped because it was not found in DeviceSorting.txt | Device=\"{legacyXml.DeviceName}\"");
-
-                skippedItems.Add(
-                    new LegacyImportSkippedItem
-                    {
-                        SourceName =
-                            legacyXml.DeviceName,
-                        ControlName =
-                            "Device profile",
-                        Reason =
-                            "This disconnected device could not be identified and was not imported."
-                    });
-
-                continue;
-            }
-
-            string? stockXmlPath =
-                _deviceXmlImporter.FindStockXmlByName(
-                    legacyXml.DeviceName,
-                    connectedMatches);
-
-            bool legacyXmlReadable =
-                _deviceXmlImporter.CanReadXml(
-                    legacyXml.Path);
-
-            if (!legacyXmlReadable &&
-                string.IsNullOrWhiteSpace(stockXmlPath))
-            {
-                DebugDiagnosticsService.Warn(
-                    $"Legacy offline device skipped because neither its legacy XML nor a stock XML could be read | Device=\"{legacyXml.DeviceName}\"");
-
-                skippedItems.Add(
-                    new LegacyImportSkippedItem
-                    {
-                        SourceName =
-                            legacyXml.DeviceName,
-                        ControlName =
-                            "Device profile",
-                        Reason =
-                            "The existing device file could not be read and no stock profile was available."
-                    });
-
-                continue;
-            }
-
-            if (!legacyXmlReadable)
-            {
-                stockFallbackCount++;
-
-                skippedItems.Add(
-                    new LegacyImportSkippedItem
-                    {
-                        SourceName =
-                            legacyXml.DeviceName,
-                        ControlName =
-                            "Device profile",
-                        Reason =
-                            "The existing device file could not be read. The stock profile was used instead."
-                    });
-            }
-
-            int? duplicateSequenceNumber =
-                GetDuplicateSequenceNumber(
-                    sortedDevices,
-                    sortedDevice);
-
-            DeviceBindingProfile offlineProfile =
-                _deviceXmlImporter.BuildOfflineProfile(
-                    legacyXml,
-                    sortedDevice,
-                    stockXmlPath,
-                    nextOfflineDiscoveryIndex++,
-                    duplicateSequenceNumber,
-                    skippedItems);
-
-            profiles.Add(
-                offlineProfile);
-
-            if (legacyXmlReadable)
-                legacyDeviceCount++;
-        }
+        LogIgnoredDisconnectedLegacyXmlFiles(
+            legacyXmlFiles,
+            usedLegacyXmlPaths);
 
         return profiles
             .OrderBy(profile =>
@@ -559,18 +464,145 @@ public sealed class LegacyImportService
         IReadOnlyList<LegacyDeviceXmlFile> legacyXmlFiles,
         ISet<string> usedPaths)
     {
-        return legacyXmlFiles.FirstOrDefault(xml =>
-            !usedPaths.Contains(xml.Path) &&
-            (
-                xml.InstanceGuid ==
-                match.Device.InstanceGuid ||
-                LegacyDeviceXmlImportService.NamesMatch(
-                    xml.DeviceName,
-                    match.Device.ProductName) ||
-                LegacyDeviceXmlImportService.NamesMatch(
-                    xml.DeviceName,
-                    match.Device.InstanceName)
-            ));
+        List<LegacyDeviceXmlFile> unusedXmlFiles =
+            legacyXmlFiles
+                .Where(xml =>
+                    !usedPaths.Contains(
+                        xml.Path))
+                .ToList();
+
+        LegacyDeviceXmlFile? exactInstanceGuidMatch =
+            unusedXmlFiles
+                .Where(xml =>
+                    xml.InstanceGuid ==
+                    match.Device.InstanceGuid)
+                .OrderByDescending(xml =>
+                    GetLegacyXmlLastWriteTimeUtc(
+                        xml.Path))
+                .ThenBy(xml =>
+                    xml.Path,
+                    StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+
+        if (exactInstanceGuidMatch is not null)
+        {
+            int sameNameCandidateCount =
+                CountSameNameCandidates(
+                    match,
+                    unusedXmlFiles);
+
+            LogLegacyXmlSelection(
+                match,
+                exactInstanceGuidMatch,
+                sameNameCandidateCount,
+                "InstanceGuid");
+
+            return exactInstanceGuidMatch;
+        }
+
+        List<LegacyDeviceXmlFile> sameNameCandidates =
+            unusedXmlFiles
+                .Where(xml =>
+                    LegacyDeviceXmlImportService.NamesMatch(
+                        xml.DeviceName,
+                        match.Device.ProductName) ||
+                    LegacyDeviceXmlImportService.NamesMatch(
+                        xml.DeviceName,
+                        match.Device.InstanceName))
+                .ToList();
+
+        if (sameNameCandidates.Count == 0)
+        {
+            DebugDiagnosticsService.Info(
+                $"Legacy XML not found for connected device | Device=\"{match.Device.ProductName}\" | InstanceGuid={match.Device.InstanceGuid}");
+
+            return null;
+        }
+
+        LegacyDeviceXmlFile newestSameNameXml =
+            sameNameCandidates
+                .OrderByDescending(xml =>
+                    GetLegacyXmlLastWriteTimeUtc(
+                        xml.Path))
+                .ThenBy(xml =>
+                    xml.Path,
+                    StringComparer.OrdinalIgnoreCase)
+                .First();
+
+        LogLegacyXmlSelection(
+            match,
+            newestSameNameXml,
+            sameNameCandidates.Count,
+            "NewestSameName");
+
+        return newestSameNameXml;
+    }
+
+    private static int CountSameNameCandidates(
+        StockDeviceSetupMatch match,
+        IEnumerable<LegacyDeviceXmlFile> legacyXmlFiles)
+    {
+        return legacyXmlFiles.Count(xml =>
+            LegacyDeviceXmlImportService.NamesMatch(
+                xml.DeviceName,
+                match.Device.ProductName) ||
+            LegacyDeviceXmlImportService.NamesMatch(
+                xml.DeviceName,
+                match.Device.InstanceName));
+    }
+
+    private static void LogLegacyXmlSelection(
+        StockDeviceSetupMatch match,
+        LegacyDeviceXmlFile selectedXml,
+        int sameNameCandidateCount,
+        string matchMethod)
+    {
+        DebugDiagnosticsService.Info(
+            $"Legacy XML selected for connected device | MatchMethod={matchMethod} | Device=\"{match.Device.ProductName}\" | CurrentInstanceGuid={match.Device.InstanceGuid} | XmlDevice=\"{selectedXml.DeviceName}\" | XmlInstanceGuid={selectedXml.InstanceGuid} | SameNameCandidates={sameNameCandidateCount} | LastWriteUtc={GetLegacyXmlLastWriteTimeUtc(selectedXml.Path):O} | Xml=\"{selectedXml.Path}\"");
+
+        if (sameNameCandidateCount <= 1)
+            return;
+
+        DebugDiagnosticsService.Info(
+            $"Legacy duplicate same-name XMLs detected for connected device. Only the selected XML will be imported; remaining same-name XMLs will not create offline devices. | Device=\"{match.Device.ProductName}\" | SameNameCandidates={sameNameCandidateCount}");
+    }
+
+    private static void LogIgnoredDisconnectedLegacyXmlFiles(
+        IReadOnlyList<LegacyDeviceXmlFile> legacyXmlFiles,
+        ISet<string> usedPaths)
+    {
+        foreach (LegacyDeviceXmlFile ignoredXml in
+                 legacyXmlFiles
+                     .Where(xml =>
+                         !usedPaths.Contains(
+                             xml.Path))
+                     .OrderBy(xml =>
+                         xml.DeviceName,
+                         StringComparer.OrdinalIgnoreCase)
+                     .ThenByDescending(xml =>
+                         GetLegacyXmlLastWriteTimeUtc(
+                             xml.Path))
+                     .ThenBy(xml =>
+                         xml.Path,
+                         StringComparer.OrdinalIgnoreCase))
+        {
+            DebugDiagnosticsService.Info(
+                $"Legacy XML ignored because v2-to-v3 import only imports currently connected devices | Device=\"{ignoredXml.DeviceName}\" | XmlInstanceGuid={ignoredXml.InstanceGuid} | LastWriteUtc={GetLegacyXmlLastWriteTimeUtc(ignoredXml.Path):O} | Xml=\"{ignoredXml.Path}\"");
+        }
+    }
+
+    private static DateTime GetLegacyXmlLastWriteTimeUtc(
+        string path)
+    {
+        try
+        {
+            return File.GetLastWriteTimeUtc(
+                path);
+        }
+        catch
+        {
+            return DateTime.MinValue;
+        }
     }
 
     private static int GetLegacyOrder(
@@ -587,30 +619,6 @@ public sealed class LegacyImportService
 
         return sortedDevice?.Order ??
                int.MaxValue;
-    }
-
-    private static int? GetDuplicateSequenceNumber(
-        IReadOnlyList<LegacySortedDevice> sortedDevices,
-        LegacySortedDevice target)
-    {
-        List<LegacySortedDevice> duplicates =
-            sortedDevices
-                .Where(device =>
-                    device.ProductGuid ==
-                    target.ProductGuid)
-                .OrderBy(device => device.Order)
-                .ToList();
-
-        if (duplicates.Count <= 1)
-            return null;
-
-        int index =
-            duplicates.FindIndex(device =>
-                ReferenceEquals(device, target));
-
-        return index >= 0
-            ? index + 1
-            : null;
     }
 
     private static LegacyImportExecutionResult Failure(
