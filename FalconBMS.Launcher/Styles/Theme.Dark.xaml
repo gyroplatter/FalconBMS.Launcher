@@ -38,7 +38,7 @@
     <SolidColorBrush x:Key="ControlsTableOfflineDeviceBackgroundBrush" Color="#252A33"/>
 
     <SolidColorBrush x:Key="AppHeadingForegroundBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="AppSubHeadingForegroundBrush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="AppSubHeadingForegroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="AppBodyForegroundBrush" Color="#D1D5DB"/>
 
     <SolidColorBrush x:Key="ControlsTableAxisBadgeBackgroundBrush" Color="#244760"/>

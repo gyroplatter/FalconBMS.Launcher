@@ -9,7 +9,25 @@
         ResizeMode="NoResize"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+      ClipToBounds="True">
+
+        <!-- Background image for all Key Mapping popups.
+         Uses ImageBrush so it does not affect SizeToContent window height. -->
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <ImageBrush ImageSource="/Assets/background-window-keymapping.jpg"
+                        Stretch="UniformToFill"
+                        AlignmentX="Center"
+                        AlignmentY="Center"/>
+            </Border.Background>
+        </Border>
+
+        <!-- Fade layer. Increase opacity to hide more of the image. -->
+        <Border Background="{DynamicResource AppWindowBackgroundBrush}"
+            Opacity="0.92"
+            IsHitTestVisible="False"/>
+
         <Grid Margin="26">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

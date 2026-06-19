@@ -43,20 +43,48 @@
 
         <!-- Row 0: header logo and nav row -->
         <Border Grid.Row="0"
-                Style="{StaticResource MainWindowHeaderBorderStyle}">
+        Style="{StaticResource MainWindowHeaderBorderStyle}"
+        Padding="0"
+        ClipToBounds="True">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <!-- Full-opacity source image. The Launcher fades it with overlays below. -->
+                <Image Source="Assets/background-header.jpg"
+               Stretch="UniformToFill"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
 
-                <Image Grid.Column="0"
-                       Source="Assets/bms-logo.png"
-                       Style="{StaticResource MainWindowHeaderLogoStyle}"/>
+                <!-- Main fade/tint layer. Increase opacity to make the image more subtle. -->
+                <Border Background="{DynamicResource AppHeaderBackgroundBrush}"
+                Opacity="0.50"/>
 
-                <views:LauncherNavBar Grid.Column="2"
-                                      Style="{StaticResource MainWindowHeaderNavHostStyle}"/>
+                <!-- Extra readability gradient: darker behind the logo and nav text -->
+                <Rectangle IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#A0000000" Offset="0.00"/>
+                            <GradientStop Color="#55000000" Offset="0.35"/>
+                            <GradientStop Color="#55000000" Offset="0.65"/>
+                            <GradientStop Color="#A0000000" Offset="1.00"/>
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <!-- Existing header content -->
+                <Grid Margin="18,0,56,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Image Grid.Column="0"
+                   Source="Assets/bms-logo.png"
+                   Style="{StaticResource MainWindowHeaderLogoStyle}"/>
+
+                    <views:LauncherNavBar Grid.Column="2"
+                                  Style="{StaticResource MainWindowHeaderNavHostStyle}"/>
+                </Grid>
             </Grid>
         </Border>
 

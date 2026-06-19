@@ -166,7 +166,7 @@
         keeps the Falcon BMS logo and top nav in the same dark header row
     -->
     <Style x:Key="MainWindowHeaderBorderStyle" TargetType="Border">
-        <Setter Property="Height" Value="68"/>
+        <Setter Property="Height" Value="78"/>
         <Setter Property="Padding" Value="18,0,56,0"/>
         <Setter Property="Background" Value="{DynamicResource AppHeaderBackgroundBrush}"/>
     </Style>
@@ -1017,7 +1017,7 @@
                             <Ellipse x:Name="InnerDot"
                                      Width="8"
                                      Height="8"
-                                     Fill="{DynamicResource AppTertiaryBrush}"
+                                     Fill="{DynamicResource AppCheckBoxCheckedBrush}"
                                      Opacity="0"
                                      HorizontalAlignment="Center"
                                      VerticalAlignment="Center"/>
@@ -1032,13 +1032,13 @@
 
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{DynamicResource AppTertiaryBrush}"/>
+                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{DynamicResource AppCheckBoxCheckedBrush}"/>
                             <Setter TargetName="OuterCircle" Property="BorderThickness" Value="2"/>
                             <Setter TargetName="InnerDot" Property="Opacity" Value="1"/>
                         </Trigger>
 
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{DynamicResource AppTertiaryHoverBrush}"/>
+                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{DynamicResource AppCheckBoxCheckedBrush}"/>
                         </Trigger>
 
                         <Trigger Property="IsEnabled" Value="False">

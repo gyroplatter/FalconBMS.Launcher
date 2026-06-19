@@ -46,7 +46,25 @@
         </Style>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+      ClipToBounds="True">
+
+        <!-- Axis Pair background image for all uses of this window.
+         Uses ImageBrush so it does not affect window size. -->
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <ImageBrush ImageSource="/Assets/background-window-axispair.jpg"
+                        Stretch="UniformToFill"
+                        AlignmentX="Center"
+                        AlignmentY="Center"/>
+            </Border.Background>
+        </Border>
+
+        <!-- Fade layer. Increase opacity to hide more of the image. -->
+        <Border Background="{DynamicResource AppWindowBackgroundBrush}"
+            Opacity="0.88"
+            IsHitTestVisible="False"/>
+
         <Grid Margin="26">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

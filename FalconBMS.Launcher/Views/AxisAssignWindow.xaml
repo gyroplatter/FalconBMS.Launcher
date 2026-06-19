@@ -14,7 +14,25 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+      ClipToBounds="True">
+
+        <!-- Background image for all uses of Assign Axis.
+         Uses ImageBrush so it does not affect window size. -->
+        <Border IsHitTestVisible="False">
+            <Border.Background>
+                <ImageBrush ImageSource="/Assets/background-window-throttle.jpg"
+                        Stretch="UniformToFill"
+                        AlignmentX="Center"
+                        AlignmentY="Center"/>
+            </Border.Background>
+        </Border>
+
+        <!-- Fade layer. Increase opacity to hide more of the image. -->
+        <Border Background="{DynamicResource AppWindowBackgroundBrush}"
+            Opacity="0.88"
+            IsHitTestVisible="False"/>
+
         <Grid Margin="26">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

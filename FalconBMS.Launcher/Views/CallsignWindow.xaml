@@ -28,73 +28,91 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="16"
-          Background="{DynamicResource AppWindowBackgroundBrush}">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid ClipToBounds="True">
+        <!-- Callsign-window-only background image. Keep the image full opacity;
+             this window controls how faded it appears with the overlay below. -->
+        <Image Source="/Assets/background-window-callsign.jpg"
+               Stretch="UniformToFill"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
 
-        <TextBlock Grid.Row="0"
-                   Text="Register Pilot"
-                   Style="{StaticResource DashboardTitleStyle}"
-                   Margin="0,0,0,14"/>
+        <!-- Light-theme fade layer. Increase opacity to hide more of the image. -->
+        <Border Background="{DynamicResource AppWindowBackgroundBrush}"
+                Opacity="0.8"/>
 
-        <TextBlock Grid.Row="1"
-                   Text="Callsign"
-                   Style="{StaticResource DashboardSectionLabelStyle}"/>
+        <!-- Slight readability wash over the form area. -->
+        <Border Margin="16"
+                Opacity="0.35"
+                CornerRadius="0"/>
 
-        <TextBox Grid.Row="2"
-                 x:Name="TextBox_Callsign"
-                 Text="Viper"
-                 MaxLength="12"
-                 Margin="0,0,0,4"
-                 TextChanged="Callsign_Changed"/>
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="3"
-                   x:Name="Label_Error_Callsign"
-                   Text="Seriously your callsign is &quot;Viper&quot; !?"
-                   Visibility="Collapsed"
-                   Foreground="Firebrick"
-                   Margin="0,0,0,10"/>
+            <TextBlock Grid.Row="0"
+                       Text="Register Pilot"
+                       Style="{StaticResource DashboardTitleStyle}"
+                       Margin="0,0,0,14"/>
 
-        <TextBlock Grid.Row="4"
-                   Text="Pilot Name"
-                   Style="{StaticResource DashboardSectionLabelStyle}"/>
+            <TextBlock Grid.Row="1"
+                       Text="Callsign"
+                       Style="{StaticResource DashboardSectionLabelStyle}"/>
 
-        <StackPanel Grid.Row="5">
-            <TextBox x:Name="TextBox_PilotName"
-                     Text="Joe Pilot"
-                     MaxLength="20"
+            <TextBox Grid.Row="2"
+                     x:Name="TextBox_Callsign"
+                     Text="Viper"
+                     MaxLength="12"
                      Margin="0,0,0,4"
-                     TextChanged="PilotName_Changed"/>
+                     TextChanged="Callsign_Changed"/>
 
-            <TextBlock x:Name="Label_Error_PilotName"
-                       Text="Seriously your name is &quot;Joe Pilot&quot; !?"
+            <TextBlock Grid.Row="3"
+                       x:Name="Label_Error_Callsign"
+                       Text="Seriously your callsign is &quot;Viper&quot; !?"
                        Visibility="Collapsed"
-                       Foreground="Firebrick"/>
-        </StackPanel>
+                       Foreground="Firebrick"
+                       Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="6"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Margin="0,16,0,0">
-            <Button Content="Cancel"
-                    Width="90"
-                    Margin="0,0,10,0"
-                    IsCancel="True"
-                    Click="Cancel_Click"/>
+            <TextBlock Grid.Row="4"
+                       Text="Pilot Name"
+                       Style="{StaticResource DashboardSectionLabelStyle}"/>
 
-            <Button Content="Register"
-                    Width="90"
-                    Style="{StaticResource TertiaryButtonStyle}" 
-                    IsDefault="True"
-                    Click="Button_Register_Click"/>
-        </StackPanel>
+            <StackPanel Grid.Row="5">
+                <TextBox x:Name="TextBox_PilotName"
+                         Text="Joe Pilot"
+                         MaxLength="20"
+                         Margin="0,0,0,4"
+                         TextChanged="PilotName_Changed"/>
+
+                <TextBlock x:Name="Label_Error_PilotName"
+                           Text="Seriously your name is &quot;Joe Pilot&quot; !?"
+                           Visibility="Collapsed"
+                           Foreground="Firebrick"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="6"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,0,0">
+                <Button Content="Cancel"
+                        Width="90"
+                        Margin="0,0,10,0"
+                        IsCancel="True"
+                        Click="Cancel_Click"/>
+
+                <Button Content="Register"
+                        Width="90"
+                        Style="{StaticResource TertiaryButtonStyle}"
+                        IsDefault="True"
+                        Click="Button_Register_Click"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

@@ -40,6 +40,11 @@
 
 	<ItemGroup>
 	  <None Remove="Assets\AVC.png" />
+	  <None Remove="Assets\background-header.jpg" />
+	  <None Remove="Assets\background-window-axispair.jpg" />
+	  <None Remove="Assets\background-window-callsign.jpg" />
+	  <None Remove="Assets\background-window-keymapping.jpg" />
+	  <None Remove="Assets\background-window-throttle.jpg" />
 	  <None Remove="Assets\bms-logo.png" />
 	  <None Remove="Assets\BmsMultiMon.png" />
 	  <None Remove="Assets\CFG.png" />
@@ -95,6 +100,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\background-header.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-window-axispair.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-window-callsign.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-window-keymapping.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-window-throttle.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\bms-logo.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
