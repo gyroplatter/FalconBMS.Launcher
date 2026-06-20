@@ -70,6 +70,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0"
@@ -654,7 +655,22 @@
                 </Grid>
             </Grid>
 
-            <StackPanel Grid.Row="2"
+            <!--
+                Axis sharing notice: BMS currently uses one shared axismapping.dat table
+                for all aircraft, so an axis pair edited here from the F-15 profile also
+                affects F-16. ShowsSharedAxisNotice is only true when this popup was opened
+                from the F-15 profile, so the F-16 workflow is unaffected.
+            -->
+            <TextBlock Grid.Row="2"
+                       Text="Axes are currently shared between the F-16 and F-15. Changing this axis here will also change it for your F-16 controls."
+                       Visibility="{Binding ShowsSharedAxisNotice, Converter={StaticResource BooleanToVisibilityConverter}}"
+                       Foreground="{DynamicResource AppMutedForegroundBrush}"
+                       TextWrapping="Wrap"
+                       TextAlignment="Right"
+                       HorizontalAlignment="Right"
+                       Margin="0,16,0,0"/>
+
+            <StackPanel Grid.Row="3"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         Margin="0,16,0,0">

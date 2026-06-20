@@ -176,6 +176,11 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     public string LogicalAxisName => _axisRow.AxisLogicalAxisName;
     public bool IsCleared => _isCleared;
 
+    // BMS currently has one axismapping.dat table shared by all aircraft, so editing an
+    // axis from the F-15 profile also changes it for F-16 (and vice versa). Only the F-15
+    // popup shows the notice, since F-16 is the "home" profile pilots expect to edit freely.
+    public bool ShowsSharedAxisNotice { get; }
+
     public RelayCommand ClearCommand { get; }
     public RelayCommand SaveCommand { get; }
     public RelayCommand CancelCommand { get; }
@@ -187,6 +192,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         IEnumerable<DeviceBindingProfile> deviceProfiles,
         string? initialDeviceKey,
         IntPtr hwnd,
+        string aircraftProfile,
         Action<AxisAssignViewModel> saveAxisAssignment,
         Action closeWindow)
     {
@@ -195,6 +201,8 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _hwnd = hwnd;
         _saveAxisAssignment = saveAxisAssignment;
         _closeWindow = closeWindow;
+
+        ShowsSharedAxisNotice = string.Equals(aircraftProfile, "F-15ABCD", StringComparison.OrdinalIgnoreCase);
 
         _definition = AxisDefinitionService.Find(axisRow.AxisLogicalAxisName);
         TitleText = (_definition?.DisplayName ?? axisRow.Mapping) + " Axis";

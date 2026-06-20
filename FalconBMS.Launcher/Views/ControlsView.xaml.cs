@@ -678,13 +678,14 @@ public partial class ControlsView : UserControl
                     : IntPtr.Zero;
 
             axisPairWindow.DataContext =
-                new AxisPairAssignViewModel(
-                    advancedAxisDefinition,
-                    viewModel.DeviceColumns,
-                    clickedDeviceKey,
-                    hwnd,
-                    viewModel.ApplyAxisPairMappingFromPopup,
-                    () => axisPairWindow.Close());
+                            new AxisPairAssignViewModel(
+                                advancedAxisDefinition,
+                                viewModel.DeviceColumns,
+                                clickedDeviceKey,
+                                hwnd,
+                                viewModel.SelectedProfile?.AircraftProfile ?? "",
+                                viewModel.ApplyAxisPairMappingFromPopup,
+                                () => axisPairWindow.Close());
 
             try
             {
@@ -723,13 +724,14 @@ public partial class ControlsView : UserControl
                     : IntPtr.Zero;
 
             axisWindow.DataContext =
-                new AxisAssignViewModel(
-                    selectedRow,
-                    viewModel.DeviceColumns,
-                    clickedDeviceKey,
-                    hwnd,
-                    viewModel.ApplyAxisMappingFromPopup,
-                    () => axisWindow.Close());
+                            new AxisAssignViewModel(
+                                selectedRow,
+                                viewModel.DeviceColumns,
+                                clickedDeviceKey,
+                                hwnd,
+                                viewModel.SelectedProfile?.AircraftProfile ?? "",
+                                viewModel.ApplyAxisMappingFromPopup,
+                                () => axisWindow.Close());
 
             try
             {
