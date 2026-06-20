@@ -497,12 +497,12 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 string.Equals(GetAssignmentText(row), selectedAssignment, StringComparison.OrdinalIgnoreCase));
 
             if (conflict is not null)
-                keyboardConflict = "Keyboard input currently bound to: " + conflict.Description.Trim();
+                keyboardConflict = "\'" + selectedAssignment + "\' is currently being used by: " + conflict.Description.Trim() + "";
         }
 
         KeyboardConflictText = string.IsNullOrWhiteSpace(keyboardConflict)
             ? ""
-            : keyboardConflict + "\nClick \"Save\" to replace the existing assignment.";
+            : keyboardConflict + "\nClick \"Save\" to replace this anyway.";
 
         var dxConflicts = new List<string>();
 
@@ -530,8 +530,13 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 ?? pendingDxButton.DeviceKey;
 
             dxConflicts.Add(
-                deviceName + " " + DeviceButtonBinding.BuildDisplayText(pendingDxButton.ButtonIndex, pendingDxButton.AssignmentIndex) +
-                " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
+                deviceName +
+                " " +
+                DeviceButtonBinding.BuildDisplayText(
+                    pendingDxButton.ButtonIndex,
+                    pendingDxButton.AssignmentIndex) +
+                " is currently being used by: " +
+                (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
         foreach (PendingDxPov pendingDxPov in _pendingDxPovs)
@@ -559,8 +564,14 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
                 ?? pendingDxPov.DeviceKey;
 
             dxConflicts.Add(
-                deviceName + " " + BuildPovDisplayText(pendingDxPov.PovIndex, pendingDxPov.Direction, pendingDxPov.Invoke) +
-                " currently bound to: " + (conflictRow?.Description.Trim() ?? conflict.CallbackName));
+                deviceName +
+                " " +
+                BuildPovDisplayText(
+                    pendingDxPov.PovIndex,
+                    pendingDxPov.Direction,
+                    pendingDxPov.Invoke) +
+                " is currently being used by: " +
+                (conflictRow?.Description.Trim() ?? conflict.CallbackName));
         }
 
         List<string> distinctDxConflicts = dxConflicts
@@ -569,7 +580,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         DxConflictText = distinctDxConflicts.Count == 0
             ? ""
-            : string.Join("\n", distinctDxConflicts) + "\nClick \"Save\" to replace the existing assignment.";
+            : string.Join("\n", distinctDxConflicts) + "\nClick \"Save\" to replace this anyway.";
     }
 
     private static string GetAssignmentText(BindingRow row)
@@ -592,7 +603,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         string keyText = BuildKeyboardAssignmentText();
 
         return string.IsNullOrWhiteSpace(keyText)
-            ? "Awaiting input: Press any key"
+            ? "Press any key to assign"
             : keyText;
     }
 
@@ -625,7 +636,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         }
 
         return parts.Count == 0
-            ? "Awaiting input: Press any DX button or POV"
+            ? "Press any button to assign"
             : string.Join(" / ", parts);
     }
 

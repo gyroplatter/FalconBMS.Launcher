@@ -862,9 +862,10 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 conflict.LogicalAxisName);
 
         axis.ConflictText =
-            "Axis input currently bound to: " +
+            GetAxisInputDisplayText(axis) +
+            " is currently being used by: " +
             conflictName +
-            "\nClick \"Save\" to replace the existing assignment.";
+            "\nClick \"Save\" to replace this anyway.";
 
         axis.HasAxisConflict = true;
 
@@ -877,6 +878,32 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             $"SelectedPhysicalAxis={FormatPhysicalAxis(axis.SelectedPhysicalAxisIndex)} | " +
             $"ConflictingLogicalAxis={conflict.LogicalAxisName} | " +
             $"ConflictingDisplayName={conflictName}");
+    }
+
+    private string GetAxisInputDisplayText(
+    AxisEditViewModel axis)
+    {
+        DeviceBindingProfile? device =
+            _deviceProfiles.FirstOrDefault(
+                d =>
+                    string.Equals(
+                        d.DurableDeviceKey,
+                        axis.SelectedDeviceKey,
+                        StringComparison.OrdinalIgnoreCase));
+
+        string deviceName =
+            device?.ProductName
+            ?? device?.InstanceName
+            ?? axis.SelectedDeviceKey
+            ?? "device";
+
+        string physicalAxisName =
+            axis.SelectedPhysicalAxisIndex.HasValue
+                ? PhysicalAxisNameService.GetDisplayName(
+                    axis.SelectedPhysicalAxisIndex.Value)
+                : "axis input";
+
+        return deviceName + " " + physicalAxisName;
     }
 
     private DeviceAxisBinding? FindAxisConflict(

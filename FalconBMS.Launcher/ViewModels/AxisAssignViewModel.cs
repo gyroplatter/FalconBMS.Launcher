@@ -236,7 +236,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         _timer.Start();
 
         StatusText = _captureArmed
-            ? "Awaiting inputs: move the axis to assign"
+            ? "Move the control to assign"
             : GetSelectedDeviceName() + " / " + PhysicalAxisNameService.GetDisplayName(_selectedPhysicalAxisIndex!.Value);
 
         UpdateAxisConflict();
@@ -566,8 +566,18 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         DebugDiagnosticsService.Warn(
             $"Axis conflict found. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConflictingLogicalAxis={conflict.LogicalAxisName} | ConflictingDisplayName={conflictName}");
 
-        ConflictText = "Axis input currently bound to: " + conflictName + "\nClick \"Save\" to replace the existing assignment.";
+        ConflictText = "\'" + GetSelectedAxisDisplayText() + "\' is currently being used by: " + conflictName + "\nClick \"Save\" to replace this anyway.";
         HasAxisConflict = true;
+    }
+
+    private string GetSelectedAxisDisplayText()
+    {
+        string deviceName = GetSelectedDeviceName();
+
+        if (string.IsNullOrWhiteSpace(deviceName))
+            deviceName = _selectedDeviceKey ?? "Selected device";
+
+        return deviceName + " " + PhysicalAxisNameService.GetDisplayName(_selectedPhysicalAxisIndex!.Value);
     }
 
     private DeviceAxisBinding? FindAxisConflict()
