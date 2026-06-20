@@ -31,7 +31,7 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Row 0: header with logo and nav -->
@@ -101,5 +101,13 @@
                 Background="{DynamicResource AppSurfaceBrush}">
             <TextBlock Text="{Binding Main.LauncherVersion}" />
         </Border>
+
+        <!-- Modal overlay shown behind popup windows. -->
+        <Border x:Name="ModalOverlay"
+                Grid.RowSpan="3"
+                Background="{DynamicResource AppModalOverlayBrush}"
+                Visibility="Collapsed"
+                IsHitTestVisible="True"
+                Panel.ZIndex="1000"/>
     </Grid>
 </Window>

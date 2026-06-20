@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.ViewModels;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -10,6 +11,8 @@ namespace FalconBMS.Launcher;
 public partial class MainWindow : Window
 {
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+
+    private int _modalOverlayDepth;
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(
@@ -31,6 +34,17 @@ public partial class MainWindow : Window
         DebugDiagnosticsService.Info("MainWindow constructed.");
     }
 
+    public static IDisposable BeginModalOverlay(Window? ownerWindow)
+    {
+        if (ownerWindow is MainWindow mainWindow)
+        {
+            mainWindow.ShowModalOverlay();
+            return new ModalOverlayScope(mainWindow);
+        }
+
+        return EmptyDisposable.Instance;
+    }
+
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -42,6 +56,26 @@ public partial class MainWindow : Window
     private void ThemeService_EffectiveDarkThemeChanged(bool isDarkTheme)
     {
         ApplyNativeTitleBarTheme(isDarkTheme);
+    }
+
+    private void ShowModalOverlay()
+    {
+        _modalOverlayDepth++;
+
+        ModalOverlay.Visibility =
+            Visibility.Visible;
+    }
+
+    private void HideModalOverlay()
+    {
+        if (_modalOverlayDepth > 0)
+            _modalOverlayDepth--;
+
+        if (_modalOverlayDepth == 0)
+        {
+            ModalOverlay.Visibility =
+                Visibility.Collapsed;
+        }
     }
 
     private void ApplyNativeTitleBarTheme(bool useDarkTitleBar)
@@ -75,5 +109,37 @@ public partial class MainWindow : Window
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
         ThemeService.EffectiveDarkThemeChanged -= ThemeService_EffectiveDarkThemeChanged;
+    }
+
+    private sealed class ModalOverlayScope : IDisposable
+    {
+        private MainWindow? _mainWindow;
+
+        public ModalOverlayScope(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
+        }
+
+        public void Dispose()
+        {
+            if (_mainWindow is null)
+                return;
+
+            _mainWindow.HideModalOverlay();
+            _mainWindow = null;
+        }
+    }
+
+    private sealed class EmptyDisposable : IDisposable
+    {
+        public static readonly EmptyDisposable Instance = new();
+
+        private EmptyDisposable()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }

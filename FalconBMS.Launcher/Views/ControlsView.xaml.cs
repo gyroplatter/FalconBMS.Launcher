@@ -645,6 +645,9 @@ public partial class ControlsView : UserControl
         if (selectedRow is null)
             return;
 
+        Window? popupOwnerWindow =
+            Window.GetWindow(this);
+
         AxisPairDefinition? advancedAxisDefinition =
             selectedRow.IsAxisPairRow
                 ? selectedRow.AxisPairDefinition
@@ -657,13 +660,10 @@ public partial class ControlsView : UserControl
         {
             StopKeyboardSearchCapture();
 
-            Window? ownerWindow =
-                Window.GetWindow(this);
-
             var axisPairWindow =
                 new AxisPairAssignWindow
                 {
-                    Owner = ownerWindow
+                    Owner = popupOwnerWindow
                 };
 
             string? clickedDeviceKey =
@@ -672,9 +672,9 @@ public partial class ControlsView : UserControl
                     viewModel);
 
             IntPtr hwnd =
-                ownerWindow is not null
+                popupOwnerWindow is not null
                     ? new WindowInteropHelper(
-                        ownerWindow).Handle
+                        popupOwnerWindow).Handle
                     : IntPtr.Zero;
 
             axisPairWindow.DataContext =
@@ -686,9 +686,18 @@ public partial class ControlsView : UserControl
                     viewModel.ApplyAxisPairMappingFromPopup,
                     () => axisPairWindow.Close());
 
-            axisPairWindow.ShowDialog();
+            try
+            {
+                using (MainWindow.BeginModalOverlay(popupOwnerWindow))
+                {
+                    axisPairWindow.ShowDialog();
+                }
+            }
+            finally
+            {
+                StartKeyboardSearchCapture();
+            }
 
-            StartKeyboardSearchCapture();
             return;
         }
 
@@ -696,13 +705,10 @@ public partial class ControlsView : UserControl
         {
             StopKeyboardSearchCapture();
 
-            Window? ownerWindow =
-                Window.GetWindow(this);
-
             var axisWindow =
                 new AxisAssignWindow
                 {
-                    Owner = ownerWindow
+                    Owner = popupOwnerWindow
                 };
 
             string? clickedDeviceKey =
@@ -711,9 +717,9 @@ public partial class ControlsView : UserControl
                     viewModel);
 
             IntPtr hwnd =
-                ownerWindow is not null
+                popupOwnerWindow is not null
                     ? new WindowInteropHelper(
-                        ownerWindow).Handle
+                        popupOwnerWindow).Handle
                     : IntPtr.Zero;
 
             axisWindow.DataContext =
@@ -725,9 +731,18 @@ public partial class ControlsView : UserControl
                     viewModel.ApplyAxisMappingFromPopup,
                     () => axisWindow.Close());
 
-            axisWindow.ShowDialog();
+            try
+            {
+                using (MainWindow.BeginModalOverlay(popupOwnerWindow))
+                {
+                    axisWindow.ShowDialog();
+                }
+            }
+            finally
+            {
+                StartKeyboardSearchCapture();
+            }
 
-            StartKeyboardSearchCapture();
             return;
         }
 
@@ -742,7 +757,7 @@ public partial class ControlsView : UserControl
         var window =
             new KeyMappingWindow
             {
-                Owner = Window.GetWindow(this)
+                Owner = popupOwnerWindow
             };
 
         if (viewModel.SelectedProfile is null)
@@ -762,9 +777,17 @@ public partial class ControlsView : UserControl
                 viewModel.ApplyDevicePovMappingFromPopup,
                 () => window.Close());
 
-        window.ShowDialog();
-
-        StartKeyboardSearchCapture();
+        try
+        {
+            using (MainWindow.BeginModalOverlay(popupOwnerWindow))
+            {
+                window.ShowDialog();
+            }
+        }
+        finally
+        {
+            StartKeyboardSearchCapture();
+        }
     }
 
     private void StartKeyboardSearchCapture()

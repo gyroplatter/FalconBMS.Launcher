@@ -10,6 +10,7 @@
     <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#959CB1"/>
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
+    <SolidColorBrush x:Key="AppModalOverlayBrush" Color="#B0000000"/>
 
     <!-- Warning text color used for overwrite/conflict warnings -->
     <SolidColorBrush x:Key="AppWarningTextBrush" Color="#FF8A80"/>

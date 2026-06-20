@@ -532,11 +532,20 @@ public sealed class MainViewModel : ViewModelBase
     private static void ShowLegacyImportCompleteMessage(
         LegacyImportExecutionResult importResult)
     {
+        Window? ownerWindow =
+            Application.Current.MainWindow;
+
         var completeWindow =
             new LegacyImportCompleteWindow(
                 importResult);
 
-        completeWindow.ShowDialog();
+        if (ownerWindow is not null && ownerWindow != completeWindow)
+            completeWindow.Owner = ownerWindow;
+
+        using (FalconBMS.Launcher.MainWindow.BeginModalOverlay(ownerWindow))
+        {
+            completeWindow.ShowDialog();
+        }
     }
 
     /// <summary>
@@ -785,7 +794,10 @@ public sealed class MainViewModel : ViewModelBase
                 if (Application.Current.MainWindow is Window owner && owner != window)
                     window.Owner = owner;
 
-                window.ShowDialog();
+                using (FalconBMS.Launcher.MainWindow.BeginModalOverlay(window.Owner))
+                {
+                    window.ShowDialog();
+                }
 
                 if (!_callsign.IsUniqueNameDefined(SelectedInstall.RegistryKeyName, SelectedInstall.BaseDir))
                 {
