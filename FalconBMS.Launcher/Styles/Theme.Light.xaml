@@ -12,6 +12,17 @@
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1E232E"/>
     <SolidColorBrush x:Key="AppModalOverlayBrush" Color="#99000000"/>
 
+    <!--
+        Used by DialogCardStyle
+    -->
+    <SolidColorBrush x:Key="AppDialogCardBorderBrush" Color="#33384A"/>
+    <SolidColorBrush x:Key="AppDialogCardSurfaceBrush" Color="#F2FFFFFF"/>
+
+    <LinearGradientBrush x:Key="AppDialogCardAccentGradientBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Offset="0" Color="#3E6FA8"/>
+        <GradientStop Offset="1" Color="#9FB6CC"/>
+    </LinearGradientBrush>
+
     <!-- Warning text color used for overwrite/conflict warnings -->
     <SolidColorBrush x:Key="AppWarningTextBrush" Color="#B42318"/>
 

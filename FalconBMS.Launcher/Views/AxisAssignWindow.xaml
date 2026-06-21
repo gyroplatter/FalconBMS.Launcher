@@ -50,8 +50,8 @@
                 invert state, curve settings, and throttle detents are all
                 settings for the same physical axis assignment.
             -->
-            <Border Grid.Row="1"
-                    Style="{StaticResource DashboardCardStyle}"
+            <ContentControl Grid.Row="1"
+                    Style="{StaticResource DialogCardStyle}"
                     Padding="16">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -214,7 +214,7 @@
                         </StackPanel>
                     </WrapPanel>
                 </Grid>
-            </Border>
+            </ContentControl>
 
             <!--
                 Axis sharing notice: BMS currently uses one shared axismapping.dat table

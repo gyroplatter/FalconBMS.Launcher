@@ -90,6 +90,43 @@
     </Style>
 
     <!--
+        Card container for popup windows. TargetType is ContentControl, not Border. The content
+        goes in ContentPresenter and the template adds a thin gradient accent strip
+        above the content.
+    -->
+    <Style x:Key="DialogCardStyle" TargetType="ContentControl">
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Border BorderBrush="{DynamicResource AppDialogCardBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Background="{DynamicResource AppDialogCardSurfaceBrush}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="4"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!--
+                                Accent strip. Given its own top-corner radius matching the
+                                outer Border (8px) instead of relying on the parent's
+                                ClipToBounds clip. 
+                            -->
+                            <Border Grid.Row="0"
+                                    CornerRadius="8,8,0,0"
+                                    Background="{DynamicResource AppDialogCardAccentGradientBrush}"/>
+
+                            <ContentPresenter Grid.Row="1" Margin="{TemplateBinding Padding}"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
         Shared popup/dialog typography.
 
         These are used by KeyMappingWindow and AxisAssignWindow so both dialogs
