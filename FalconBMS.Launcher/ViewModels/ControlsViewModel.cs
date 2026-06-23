@@ -208,9 +208,13 @@ public sealed class ControlsViewModel : ViewModelBase
             DeviceNavigationItems.Add(new ControlsDeviceNavigationItem(deviceProfile));
         }
 
-        SelectedProfile = Profiles.FirstOrDefault(
+        // Set the backing field directly during full model reload so the SelectedProfile
+        // setter does not rebuild/filter the grid once here and then again below.
+        _selectedProfile = Profiles.FirstOrDefault(
             profile => string.Equals(profile.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase))
             ?? Profiles.FirstOrDefault();
+
+        OnPropertyChanged(nameof(SelectedProfile));
 
         RebuildRowsFromSelectedProfile();
         RebuildCategories();
