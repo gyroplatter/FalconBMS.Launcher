@@ -539,10 +539,20 @@ public sealed class MainViewModel : ViewModelBase
             new LegacyImportCompleteWindow(
                 importResult);
 
-        if (ownerWindow is not null && ownerWindow != completeWindow)
-            completeWindow.Owner = ownerWindow;
+        // During first-run v2-to-v3 import, this message can appear before MainWindow
+        // has been shown. WPF does not allow assigning Owner to a window that has not
+        // been shown yet, so only use ownership/overlay when the owner is actually visible
+        Window? modalOwner =
+            ownerWindow is not null &&
+            ownerWindow != completeWindow &&
+            ownerWindow.IsVisible
+                ? ownerWindow
+                : null;
 
-        using (FalconBMS.Launcher.MainWindow.BeginModalOverlay(ownerWindow))
+        if (modalOwner is not null)
+            completeWindow.Owner = modalOwner;
+
+        using (FalconBMS.Launcher.MainWindow.BeginModalOverlay(modalOwner))
         {
             completeWindow.ShowDialog();
         }
