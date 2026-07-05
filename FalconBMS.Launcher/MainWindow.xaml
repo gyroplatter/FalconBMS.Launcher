@@ -35,30 +35,32 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <!-- Row 0: header with logo and nav -->
+            <RowDefinition Height="2"/>
+            <!-- Row 1: header/body accent separator -->
             <RowDefinition Height="*"/>
-            <!-- Row 1: content -->
+            <!-- Row 2: content -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 2: footer -->
+            <!-- Row 3: footer -->
         </Grid.RowDefinitions>
 
         <!-- Row 0: header logo and nav row -->
         <Border Grid.Row="0"
-        Style="{StaticResource MainWindowHeaderBorderStyle}"
-        Padding="0"
-        ClipToBounds="True">
+                Style="{StaticResource MainWindowHeaderBorderStyle}"
+                Padding="0"
+                ClipToBounds="True">
             <Grid>
                 <!-- Full-opacity source image. The Launcher fades it with overlays below. -->
                 <Image Source="Assets/background-header.jpg"
-               Stretch="UniformToFill"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               RenderOptions.BitmapScalingMode="HighQuality"/>
+                       Stretch="UniformToFill"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
 
                 <!-- Main fade/tint layer. Increase opacity to make the image more subtle. -->
                 <Border Background="{DynamicResource AppHeaderBackgroundBrush}"
-                Opacity="0.50"/>
+                        Opacity="0.50"/>
 
-                <!-- Extra readability gradient: darker behind the logo and nav text -->
+                <!-- Extra readability gradient: darker behind the logo and nav text. -->
                 <Rectangle IsHitTestVisible="False">
                     <Rectangle.Fill>
                         <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
@@ -70,7 +72,7 @@
                     </Rectangle.Fill>
                 </Rectangle>
 
-                <!-- Existing header content -->
+                <!-- Header content. -->
                 <Grid Margin="18,0,56,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -79,22 +81,26 @@
                     </Grid.ColumnDefinitions>
 
                     <Image Grid.Column="0"
-                   Source="Assets/bms-logo.png"
-                   Style="{StaticResource MainWindowHeaderLogoStyle}"/>
+                           Source="Assets/bms-logo.png"
+                           Style="{StaticResource MainWindowHeaderLogoStyle}"/>
 
                     <views:LauncherNavBar Grid.Column="2"
-                                  Style="{StaticResource MainWindowHeaderNavHostStyle}"/>
+                                          Style="{StaticResource MainWindowHeaderNavHostStyle}"/>
                 </Grid>
             </Grid>
         </Border>
 
-        <!-- Row 1: active tab content -->
-        <ContentControl Grid.Row="1"
-                Content="{Binding CurrentViewModel}"
-                Style="{StaticResource MainContentControlStyle}"/>
+        <!-- Row 1: header/body accent separator -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource AppHeaderSeparatorBrush}"/>
 
-        <!-- Row 2: footer -->
-        <Border Grid.Row="2"
+        <!-- Row 2: active tab content -->
+        <ContentControl Grid.Row="2"
+                        Content="{Binding CurrentViewModel}"
+                        Style="{StaticResource MainContentControlStyle}"/>
+
+        <!-- Row 3: footer -->
+        <Border Grid.Row="3"
                 Padding="10"
                 BorderThickness="0,1,0,0"
                 BorderBrush="{DynamicResource AppBorderBrush}"
@@ -104,7 +110,7 @@
 
         <!-- Modal overlay shown behind popup windows. -->
         <Border x:Name="ModalOverlay"
-                Grid.RowSpan="3"
+                Grid.RowSpan="4"
                 Background="{DynamicResource AppModalOverlayBrush}"
                 Visibility="Collapsed"
                 IsHitTestVisible="True"

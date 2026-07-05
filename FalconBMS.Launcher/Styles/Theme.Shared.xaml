@@ -89,6 +89,14 @@
         <Setter Property="Padding" Value="16"/>
     </Style>
 
+    <!-- Launch card  -->
+    <Style x:Key="LaunchDashboardCardStyle"
+           TargetType="Border"
+           BasedOn="{StaticResource DashboardCardStyle}">
+        <Setter Property="Background" Value="{DynamicResource LaunchDashboardCardBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaunchDashboardCardBorderBrush}"/>
+    </Style>
+
     <!--
         Card container for popup windows. TargetType is ContentControl, not Border. The content
         goes in ContentPresenter and the template adds a thin gradient accent strip
