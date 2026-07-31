@@ -48,6 +48,10 @@ public sealed class LegacyImportService
         if (!Directory.Exists(configDirectory))
             return false;
 
+        // Only actual legacy control files should trigger the automatic import.
+        //
+        // SearchOption.TopDirectoryOnly also makes it explicit that archived
+        // files inside backup or comparison folders must not trigger an import.
         return
             File.Exists(
                 Path.Combine(
@@ -69,13 +73,10 @@ public sealed class LegacyImportService
                 Path.Combine(
                     configDirectory,
                     "DeviceSorting.txt")) ||
-            File.Exists(
-                Path.Combine(
-                    configDirectory,
-                    "Falcon BMS User.cfg")) ||
             Directory.EnumerateFiles(
                     configDirectory,
-                    "Setup.v100.*.xml")
+                    "Setup.v100.*.xml",
+                    SearchOption.TopDirectoryOnly)
                 .Any();
     }
 
