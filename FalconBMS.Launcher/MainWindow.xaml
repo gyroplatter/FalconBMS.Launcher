@@ -58,7 +58,7 @@
 
                 <!-- Main fade/tint layer. Increase opacity to make the image more subtle. -->
                 <Border Background="{DynamicResource AppHeaderBackgroundBrush}"
-                        Opacity="0.50"/>
+                        Opacity="0.00"/>
 
                 <!-- Extra readability gradient: darker behind the logo and nav text. -->
                 <Rectangle IsHitTestVisible="False">

@@ -262,20 +262,20 @@
                                    VerticalAlignment="Center"/>
 
                         <Border x:Name="ActiveUnderline"
-                                Height="2"
-                                CornerRadius="1"
-                                Background="{DynamicResource AppAccentBrush}"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Bottom"
-                                Margin="0,0,0,10"
-                                Opacity="0"/>
+                            Height="2"
+                            CornerRadius="1"
+                            Background="{DynamicResource AppHeaderSeparatorBrush}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Bottom"
+                            Margin="0,0,0,10"
+                            Opacity="0"/>
                     </Grid>
 
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="NavText"
-                                    Property="Foreground"
-                                    Value="{DynamicResource AppAccentBrush}"/>
+                                Property="Foreground"
+                                Value="{DynamicResource AppHeaderSeparatorBrush}"/>
                         </Trigger>
 
                         <Trigger Property="IsPressed" Value="True">
@@ -310,11 +310,11 @@
                                            VerticalAlignment="Center"/>
 
                                 <Border Height="2"
-                                        CornerRadius="1"
-                                        Background="{DynamicResource AppAccentBrush}"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,0,10"/>
+                                    CornerRadius="1"
+                                    Background="{DynamicResource AppHeaderSeparatorBrush}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,10"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
@@ -344,11 +344,11 @@
                                            VerticalAlignment="Center"/>
 
                                 <Border Height="2"
-                                        CornerRadius="1"
-                                        Background="{DynamicResource AppAccentBrush}"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,0,10"/>
+                                    CornerRadius="1"
+                                    Background="{DynamicResource AppHeaderSeparatorBrush}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,10"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
@@ -378,11 +378,11 @@
                                            VerticalAlignment="Center"/>
 
                                 <Border Height="2"
-                                        CornerRadius="1"
-                                        Background="{DynamicResource AppAccentBrush}"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,0,10"/>
+                                    CornerRadius="1"
+                                    Background="{DynamicResource AppHeaderSeparatorBrush}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,10"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
@@ -412,11 +412,11 @@
                                            VerticalAlignment="Center"/>
 
                                 <Border Height="2"
-                                        CornerRadius="1"
-                                        Background="{DynamicResource AppAccentBrush}"
-                                        HorizontalAlignment="Stretch"
-                                        VerticalAlignment="Bottom"
-                                        Margin="0,0,0,10"/>
+                                    CornerRadius="1"
+                                    Background="{DynamicResource AppHeaderSeparatorBrush}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,0,10"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
