@@ -8,6 +8,7 @@ using Microsoft.Win32;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 
 namespace FalconBMS.Launcher.ViewModels;
@@ -57,7 +58,14 @@ public sealed class MainViewModel : ViewModelBase
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
     public ObservableCollection<string> Theaters { get; } = new();
     public ObservableCollection<LauncherStripItem> FirstPartyItems { get; } = new();
-    public ObservableCollection<LauncherStripItem> ThirdPartyItems { get; } = new();
+    public ObservableCollection<ThirdPartyToolItem> ThirdPartyItems { get; } = new();
+
+    private bool _isEditingCommunityTools;
+    public bool IsEditingCommunityTools
+    {
+        get => _isEditingCommunityTools;
+        set => Set(ref _isEditingCommunityTools, value);
+    }
 
     public IReadOnlyList<KeyCatalog> KeyCatalogs { get; private set; } = Array.Empty<KeyCatalog>();
     public BindingModel CurrentBindingModel { get; private set; } = new();
@@ -381,6 +389,9 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand OpenForumCommand { get; }
     public RelayCommandParam LaunchFirstPartyCommand { get; }
     public RelayCommandParam LaunchThirdPartyCommand { get; }
+    public RelayCommand AddThirdPartyToolCommand { get; }
+    public RelayCommand ToggleCommunityToolsEditCommand { get; }
+    public RelayCommandParam RemoveThirdPartyToolCommand { get; }
 
     public MainViewModel()
     {
@@ -393,6 +404,12 @@ public sealed class MainViewModel : ViewModelBase
         OpenForumCommand = new RelayCommand(OpenForum);
         LaunchFirstPartyCommand = new RelayCommandParam(LaunchFirstParty, CanLaunchFirstParty);
         LaunchThirdPartyCommand = new RelayCommandParam(LaunchThirdParty);
+        AddThirdPartyToolCommand = new RelayCommand(AddThirdPartyTool);
+        ToggleCommunityToolsEditCommand =
+            new RelayCommand(
+                () => IsEditingCommunityTools = !IsEditingCommunityTools);
+        RemoveThirdPartyToolCommand =
+            new RelayCommandParam(RemoveThirdPartyTool);
 
         Init();
         RefreshLauncherStrips();
@@ -665,6 +682,7 @@ public sealed class MainViewModel : ViewModelBase
     private void RefreshLauncherStrips()
     {
         FirstPartyItems.Clear();
+
         if (SelectedInstall is not null)
         {
             foreach (var item in _firstPartyStrip.GetItems(SelectedInstall))
@@ -672,7 +690,8 @@ public sealed class MainViewModel : ViewModelBase
         }
 
         ThirdPartyItems.Clear();
-        foreach (var item in _thirdPartyStrip.GetItems())
+
+        foreach (var item in _thirdPartyStrip.LoadTools())
             ThirdPartyItems.Add(item);
 
         LaunchFirstPartyCommand.RaiseCanExecuteChanged();
@@ -1056,63 +1075,273 @@ public sealed class MainViewModel : ViewModelBase
 
     private void LaunchThirdParty(object? parameter)
     {
-        if (parameter is not string id || string.IsNullOrWhiteSpace(id)) return;
+        if (IsEditingCommunityTools)
+            return;
+
+        if (parameter is not ThirdPartyToolItem item)
+            return;
+
+        if (item.IsBuiltInF4Wx)
+        {
+            LaunchBuiltInF4Wx(item);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.ExecutablePath) ||
+            !File.Exists(item.ExecutablePath))
+        {
+            MessageBox.Show(
+                $"{item.DisplayName} could not be found.\n\n" +
+                "Remove this application and add it again using the correct executable.",
+                "Application Not Found",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            return;
+        }
 
         try
         {
-            var item = _thirdPartyStrip.GetItem(id);
-            if (item is null)
-                return;
+            _proc.StartExecutable(
+                item.ExecutablePath);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.Message,
+                "Tool Launch Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
 
-            var exePath = _thirdPartyStrip.GetSavedExecutablePath(id);
+    private void LaunchBuiltInF4Wx(
+        ThirdPartyToolItem item)
+    {
+        try
+        {
+            string executablePath =
+                Properties.Settings.Default.ThirdPartyF4WxExePath ?? "";
 
-            if (!string.IsNullOrWhiteSpace(exePath) && !File.Exists(exePath))
+            if (!string.IsNullOrWhiteSpace(executablePath) &&
+                !File.Exists(executablePath))
             {
-                _thirdPartyStrip.ClearExecutablePath(id);
-                exePath = "";
+                _thirdPartyStrip.ClearF4WxExecutablePath();
+
+                executablePath = "";
+                item.ExecutablePath = "";
+
+                _thirdPartyStrip.SaveTools(
+                    ThirdPartyItems,
+                    out _);
             }
 
-            if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+            if (string.IsNullOrWhiteSpace(executablePath))
             {
-                exePath = PromptForThirdPartyExecutable(item);
+                var dialog =
+                    new OpenFileDialog
+                    {
+                        Title = "Locate F4Wx",
+                        Filter = "Executable files (*.exe)|*.exe",
+                        CheckFileExists = true,
+                        Multiselect = false,
+                        FileName = "F4Wx.exe"
+                    };
 
-                if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+                if (dialog.ShowDialog() != true)
                 {
-                    if (!string.IsNullOrWhiteSpace(item.DownloadUrl))
-                        _proc.OpenUrl(item.DownloadUrl!);
+                    _proc.OpenUrl(
+                        ThirdPartyLauncherStripService.F4WxDownloadUrl);
 
                     return;
                 }
 
-                _thirdPartyStrip.SaveExecutablePath(id, exePath!);
+                executablePath =
+                    dialog.FileName;
+
+                _thirdPartyStrip.SaveF4WxExecutablePath(
+                    executablePath);
+
+                item.ExecutablePath =
+                    executablePath;
+
+                _thirdPartyStrip.SaveTools(
+                    ThirdPartyItems,
+                    out _);
             }
 
-            _proc.StartExecutable(exePath!);
+            _proc.StartExecutable(
+                executablePath);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Tool Launch Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(
+                ex.Message,
+                "Tool Launch Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 
-    private static string? PromptForThirdPartyExecutable(LauncherStripItem item)
+    private void AddThirdPartyTool()
     {
-        var dialog = new OpenFileDialog
+        var dialog =
+            new OpenFileDialog
+            {
+                Title = "Add Community Tool",
+                Filter = "Executable files (*.exe)|*.exe",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        var newTool =
+            _thirdPartyStrip.TryCreateTool(
+                dialog.FileName,
+                ThirdPartyItems,
+                out string? createError);
+
+        if (newTool is null)
         {
-            Title = $"Locate {item.Label}",
-            Filter = "Executable files (*.exe)|*.exe",
-            CheckFileExists = true,
-            Multiselect = false
-        };
+            MessageBox.Show(
+                createError ??
+                "The selected application could not be added.",
+                "Add Community Tool",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
 
-        if (!string.IsNullOrWhiteSpace(item.ExpectedExeName))
-            dialog.FileName = item.ExpectedExeName;
+            return;
+        }
 
-        var result = dialog.ShowDialog();
-        if (result != true)
-            return null;
+        ThirdPartyItems.Add(
+            newTool);
 
-        return dialog.FileName;
+        if (_thirdPartyStrip.SaveTools(
+                ThirdPartyItems,
+                out string? saveError))
+        {
+            DebugDiagnosticsService.Info(
+                $"Community tool added | Name={newTool.DisplayName} | Path={newTool.ExecutablePath}");
+
+            return;
+        }
+
+        ThirdPartyItems.Remove(
+            newTool);
+
+        _thirdPartyStrip.DeleteCachedIcon(
+            newTool);
+
+        MessageBox.Show(
+            saveError ??
+            "The Community Tools list could not be saved.",
+            "Community Tools",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+    }
+
+    private void RemoveThirdPartyTool(
+        object? parameter)
+    {
+        if (parameter is not ThirdPartyToolItem item)
+            return;
+
+        int removedIndex =
+            ThirdPartyItems.IndexOf(item);
+
+        if (removedIndex < 0)
+            return;
+
+        ThirdPartyItems.RemoveAt(
+            removedIndex);
+
+        if (_thirdPartyStrip.SaveTools(
+                ThirdPartyItems,
+                out string? saveError))
+        {
+            DebugDiagnosticsService.Info(
+                $"Community tool removed | Name={item.DisplayName} | Path={item.ExecutablePath} | PreviousIndex={removedIndex}");
+
+            _thirdPartyStrip.DeleteCachedIcon(
+                item);
+
+            return;
+        }
+
+        ThirdPartyItems.Insert(
+            removedIndex,
+            item);
+
+        MessageBox.Show(
+            saveError ??
+            "The Community Tools list could not be saved.",
+            "Community Tools",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+    }
+
+    /// <summary>
+    /// Reorders the visible collection in memory while dragging.
+    /// </summary>
+    public void MoveThirdPartyTool(
+        int oldIndex,
+        int newIndex)
+    {
+        if (oldIndex < 0 ||
+            oldIndex >= ThirdPartyItems.Count ||
+            newIndex < 0 ||
+            newIndex >= ThirdPartyItems.Count ||
+            oldIndex == newIndex)
+        {
+            return;
+        }
+
+        ThirdPartyItems.Move(
+            oldIndex,
+            newIndex);
+    }
+
+    /// <summary>
+    /// Saves once when the completed drag releases the mouse.
+    /// </summary>
+    public void CompleteThirdPartyToolReorder(
+        IReadOnlyList<ThirdPartyToolItem> originalOrder)
+    {
+        if (_thirdPartyStrip.SaveTools(
+                ThirdPartyItems,
+                out string? saveError))
+        {
+            string previousOrder =
+                string.Join(
+                    " > ",
+                    originalOrder.Select(
+                        item => item.DisplayName));
+
+            string newOrder =
+                string.Join(
+                    " > ",
+                    ThirdPartyItems.Select(
+                        item => item.DisplayName));
+
+            DebugDiagnosticsService.Info(
+                $"Community tools reordered | Previous={previousOrder} | New={newOrder}");
+
+            return;
+        }
+
+        ThirdPartyItems.Clear();
+
+        foreach (ThirdPartyToolItem item in originalOrder)
+            ThirdPartyItems.Add(item);
+
+        MessageBox.Show(
+            saveError ??
+            "The new Community Tools order could not be saved.",
+            "Community Tools",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
     }
 
     private void MinimizeWindowUntilProcessEnds(Process process)

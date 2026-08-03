@@ -62,6 +62,24 @@
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
     </Style>
 
+    <!-- Typography: Falcon BMS and Community Tools -->
+    <Style x:Key="DashboardToolNameTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground"
+                Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="FontSize"
+                Value="{StaticResource FontSizeMedium}"/>
+        <Setter Property="FontWeight"
+                Value="SemiBold"/>
+        <Setter Property="TextAlignment"
+                Value="Center"/>
+        <Setter Property="TextWrapping"
+                Value="Wrap"/>
+        <Setter Property="LineHeight"
+                Value="13"/>
+    </Style>
+
     <!-- Typography: Muted -->
     <Style x:Key="MutedTextBlockStyle"
        TargetType="TextBlock"
@@ -1590,6 +1608,25 @@
                         <Canvas Width="135" Height="135">
                             <Path Fill="{DynamicResource AppAccentBrush}" 
                                   Data="F0 M61.9,17.2 L61.9,28.5 A39.4,39.4 0 0 0 67.5,106.9 A39.4,39.4 0 0 0 95.3,39.7 L87.3,47.7 A28.1,28.1 0 1 1 61.9,39.9 L61.9,51.5 A16.9,16.9 0 1 0 79.5,55.5 L73.1,61.9 L73.1,5.6 L61.8,5.6 L61.8,5.9 A61.8,61.8 0 1 0 111.3,23.7 L103.3,31.7 A50.6,50.6 0 1 1 61.9,17.2"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Customize pencil icon -->
+    <Style x:Key="LinkCustomizeIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="128"
+                                Height="128">
+                            <Path Fill="{DynamicResource AppAccentBrush}"
+                              Data="F0 M38,82 L78,42 L92,56 L52,96 Z M82,38 C85,35 90,35 93,38 L98,43 C101,46 101,51 98,54 L92,60 L76,44 Z M74,46 L78,42 L92,56 L88,60 Z M38,82 L52,96 L30,102 Z M30,102 L34,94 L38,98 Z"/>
                         </Canvas>
                     </Viewbox>
                 </ControlTemplate>
