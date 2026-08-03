@@ -97,7 +97,26 @@
     <Style x:Key="ViewContentRootStyle" TargetType="{x:Type FrameworkElement}">
         <Setter Property="Margin" Value="14"/>
     </Style>
-    
+
+    <!-- Shared title used in dashboard-style card headers across multiple views. -->
+    <Style x:Key="DashboardTitleStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource SubheadingTextBlockStyle}">
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Shared circular accent badge used beside dashboard-style card titles. -->
+    <Style x:Key="DashboardIconBadgeStyle"
+           TargetType="Border">
+        <Setter Property="Width" Value="34"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="CornerRadius" Value="17"/>
+        <Setter Property="Background" Value="{DynamicResource AppAccentBrush}"/>
+        <Setter Property="Margin" Value="0,0,12,0"/>
+    </Style>
+
     <!-- Shared card container used by dashboard-style panels and settings cards. -->
     <Style x:Key="DashboardCardStyle" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource AppSurfaceBrush}"/>
@@ -333,6 +352,40 @@
                                     HorizontalAlignment="Stretch"
                                     VerticalAlignment="Bottom"
                                     Margin="0,0,0,10"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="HeaderNavButtonDisplayStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource HeaderNavButtonStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding CurrentTab}"
+                         Value="{x:Static models:LauncherTab.Display}">
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Background="{TemplateBinding Background}">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           FontWeight="{TemplateBinding FontWeight}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+
+                                <Border Height="2"
+                                        CornerRadius="1"
+                                        Background="{DynamicResource AppHeaderSeparatorBrush}"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Bottom"
+                                        Margin="0,0,0,10"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>
@@ -1825,6 +1878,43 @@
                         <Canvas Width="84" Height="84">
                             <Path Fill="{DynamicResource AppAccentBrush}"
                                 Data="M73.5,74.5 C73.5,71.3 84,65 84,58.2 C84,50.3 76.7,44 67.7,41.4 A20,20 0 0 0 73.5,26.7 C73.5,12.1 58.3,0 38.9,0 C20.5,0 0,11 0,26.8 C0,37.8 8.4,45.7 12.1,48.9 C11.6,55.2 8.9,57.8 8.9,57.8 L2.6,63 L10.5,63 A32,32 0 0 0 29.9,57.2 L29.9,58.3 C29.9,68.8 41.5,77.2 56.2,77.2 L59.4,77.2 A25,25 0 0 0 77.2,84.5 C77.7,84 73.5,81.9 73.5,74.5 M38.9,5.2 C55.1,5.2 68.2,15.2 68.2,26.8 C68.2,38.4 54.5,48.3 37.8,48.3 L32,48.3 L31.5,49.4 A30,30 0 0 1 15.2,57.3 Q15.8,54.2 15.7,47.8 L15.7,46.2 C10.5,42 4.7,34.6 4.7,27.3 C4.7,15.8 21.5,5.2 38.9,5.2"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Screenshots icon -->
+    <Style x:Key="LinkScreenshotsIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="64"
+                                Height="64">
+
+                            <!-- Picture frame -->
+                            <Path Stroke="{DynamicResource AppAccentBrush}"
+                                  StrokeThickness="5"
+                                  StrokeLineJoin="Round"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  Fill="Transparent"
+                                  Data="M8,5 L56,5 L56,59 L8,59 Z"/>
+
+                            <!-- Sun -->
+                            <Ellipse Canvas.Left="39"
+                                     Canvas.Top="15"
+                                     Width="9"
+                                     Height="9"
+                                     Fill="{DynamicResource AppAccentBrush}"/>
+
+                            <!-- Mountains -->
+                            <Path Fill="{DynamicResource AppAccentBrush}"
+                                  Data="M12,52 L27,33 L36,43 L43,35 L52,52 Z"/>
                         </Canvas>
                     </Viewbox>
                 </ControlTemplate>

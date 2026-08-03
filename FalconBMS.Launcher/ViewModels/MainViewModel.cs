@@ -387,6 +387,7 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand OpenDocsCommand { get; }
     public RelayCommand OpenUserCommand { get; }
     public RelayCommand OpenForumCommand { get; }
+    public RelayCommand OpenScreenshotsCommand { get; }
     public RelayCommandParam LaunchFirstPartyCommand { get; }
     public RelayCommandParam LaunchThirdPartyCommand { get; }
     public RelayCommand AddThirdPartyToolCommand { get; }
@@ -401,6 +402,7 @@ public sealed class MainViewModel : ViewModelBase
         UpdateCommand = new RelayCommand(RunUpdaterSelected, () => SelectedInstall is not null);
         OpenDocsCommand = new RelayCommand(OpenDocs, () => SelectedInstall is not null);
         OpenUserCommand = new RelayCommand(OpenUser, () => SelectedInstall is not null);
+        OpenScreenshotsCommand = new RelayCommand(OpenScreenshots, () => SelectedInstall is not null);
         OpenForumCommand = new RelayCommand(OpenForum);
         LaunchFirstPartyCommand = new RelayCommandParam(LaunchFirstParty, CanLaunchFirstParty);
         LaunchThirdPartyCommand = new RelayCommandParam(LaunchThirdParty);
@@ -1031,6 +1033,32 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
+    private void OpenScreenshots()
+    {
+        if (SelectedInstall is null) return;
+
+        try
+        {
+            DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
+            DebugDiagnosticsService.Info("Open Screenshots requested.");
+
+            _folders.OpenFolder(
+                Path.Combine(
+                    SelectedInstall.BaseDir,
+                    "User",
+                    "Pictures"));
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(ex, "OpenScreenshots failed");
+            MessageBox.Show(
+                ex.Message,
+                "Open Screenshots Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
     private void OpenForum()
     {
         try
@@ -1422,6 +1450,7 @@ public sealed class MainViewModel : ViewModelBase
         UpdateCommand.RaiseCanExecuteChanged();
         OpenDocsCommand.RaiseCanExecuteChanged();
         OpenUserCommand.RaiseCanExecuteChanged();
+        OpenScreenshotsCommand.RaiseCanExecuteChanged();
         LaunchFirstPartyCommand.RaiseCanExecuteChanged();
     }
 }

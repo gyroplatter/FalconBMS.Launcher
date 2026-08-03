@@ -11,6 +11,10 @@ namespace FalconBMS.Launcher.ViewModels;
 public sealed class MainWindowViewModel : ViewModelBase
 {
     public MainViewModel Main { get; } = new();
+
+    // Display receives the same MainViewModel used by MainView.
+    public DisplayViewModel Display { get; }
+
     public ViewsViewModel Views { get; } = new();
     public ControlsViewModel Controls { get; } = new();
     public StylesViewModel Styles { get; } = new();
@@ -29,8 +33,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     public object CurrentViewModel =>
         CurrentTab switch
         {
-            LauncherTab.Views => Views,
             LauncherTab.Controls => Controls,
+            LauncherTab.Display => Display,
+            LauncherTab.Views => Views,
             LauncherTab.Styles => Styles,
             _ => Main
         };
@@ -39,6 +44,9 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
+        // Reuse Main rather than creating a second settings state
+        Display = new DisplayViewModel(Main);
+
         SetTabCommand = new RelayCommand(() => { }, () => true);
 
         // Give MainViewModel a reference to ControlsViewModel so SaveOutputsForClose

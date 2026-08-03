@@ -14,6 +14,10 @@
                 Style="{StaticResource HeaderNavButtonControlsStyle}"
                 Click="Controls_Click"/>
 
+        <Button Content="Display"
+                Style="{StaticResource HeaderNavButtonDisplayStyle}"
+                Click="Display_Click"/>
+
         <Button Content="Views"
                 Style="{StaticResource HeaderNavButtonViewsStyle}"
                 Click="Views_Click"/>

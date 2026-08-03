@@ -1,0 +1,246 @@
+﻿<UserControl x:Class="FalconBMS.Launcher.Views.DisplayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1248"
+             d:DesignHeight="680">
+
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+          Style="{StaticResource ViewContentRootStyle}">
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="14"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Display and output settings. -->
+        <Border Grid.Row="0"
+                Grid.Column="0"
+                Style="{StaticResource DashboardCardStyle}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="18"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal">
+                    <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                        <ContentControl Style="{StaticResource DashboardBadgeGearIconStyle}"/>
+                    </Border>
+
+                    <TextBlock Text="Display &amp; Output"
+                               Style="{StaticResource DashboardTitleStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2">
+                    <CheckBox Content="Windowed Mode"
+                              IsChecked="{Binding Main.LaunchWindow, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Runs Falcon BMS in a window instead of full-screen mode."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
+
+                    <CheckBox Content="RTT Export"
+                              IsChecked="{Binding Main.ExportRttTextures, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Enables export of cockpit displays such as the MFDs and HUD to external monitors and devices."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
+
+                    <CheckBox Content="ACMI Recording"
+                              IsChecked="{Binding Main.LaunchAcmi, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Begins recording ACMI automatically when entering 3D. Helpful for multiplayer servers."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
+
+                    <CheckBox Content="EyeFly"
+                              IsChecked="{Binding Main.LaunchEyeFly, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Provides a free-moving camera for exploring the 3D world, moving through aircraft cockpits, and creating custom viewing angles."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Virtual reality runtime selection. -->
+        <Border Grid.Row="0"
+                Grid.Column="2"
+                Style="{StaticResource DashboardCardStyle}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="18"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal">
+                    <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                        <ContentControl Style="{StaticResource DashboardBadgeToolsIconStyle}"/>
+                    </Border>
+
+                    <TextBlock Text="Virtual Reality"
+                               Style="{StaticResource DashboardTitleStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2">
+                    <RadioButton Content="No VR"
+                                 GroupName="DisplayVrMode"
+                                 IsChecked="{Binding Main.VrNoVr, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,16"/>
+
+                    <RadioButton Content="SteamVR"
+                                 GroupName="DisplayVrMode"
+                                 IsChecked="{Binding Main.VrSteamVr, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,16"/>
+
+                    <RadioButton Content="OpenXR"
+                                 GroupName="DisplayVrMode"
+                                 IsChecked="{Binding Main.VrOpenXr, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,16"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- Falcon BMS startup behavior. -->
+        <Border Grid.Row="2"
+                Grid.Column="0"
+                Style="{StaticResource DashboardCardStyle}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="18"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal">
+                    <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                        <ContentControl Style="{StaticResource DashboardBadgeLaunchIconStyle}"/>
+                    </Border>
+
+                    <TextBlock Text="Startup"
+                               Style="{StaticResource DashboardTitleStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2">
+                    <CheckBox Content="Skip Videos"
+                              IsChecked="{Binding Main.LaunchNoMovie, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Does not play the startup or campaign videos."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,18"/>
+
+                    <CheckBox Content="Debug Mode"
+                              IsChecked="{Binding Main.LaunchDebug, Mode=TwoWay}"
+                              FontWeight="Bold"
+                              Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Starts Falcon BMS with additional diagnostic information for troubleshooting."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,0"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- Launcher appearance. -->
+        <Border Grid.Row="2"
+                Grid.Column="2"
+                Style="{StaticResource DashboardCardStyle}">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="18"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal">
+                    <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                        <ContentControl Style="{StaticResource DashboardBadgeGearIconStyle}"/>
+                    </Border>
+
+                    <TextBlock Text="Launcher Theme"
+                               Style="{StaticResource DashboardTitleStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Row="2">
+                    <RadioButton Content="Auto"
+                                 GroupName="DisplayLauncherTheme"
+                                 IsChecked="{Binding Main.LauncherThemeAuto, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Automatically follows your operating system's light or dark appearance."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
+
+                    <RadioButton Content="Light"
+                                 GroupName="DisplayLauncherTheme"
+                                 IsChecked="{Binding Main.LauncherThemeLight, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Always uses the Launcher's light theme."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
+
+                    <RadioButton Content="Dark"
+                                 GroupName="DisplayLauncherTheme"
+                                 IsChecked="{Binding Main.LauncherThemeDark, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,4"/>
+
+                    <TextBlock Text="Always uses the Launcher's dark theme."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,0"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

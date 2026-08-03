@@ -29,11 +29,17 @@
                     Grid.Column="0"
                     Style="{StaticResource DashboardCardStyle}">
                 <StackPanel>
-                    <CheckBox Content="Use Roll Axis for Steering while on the Ground"
+                    <CheckBox Content="Use Roll Axis for Steering While on the Ground"
                               IsChecked="{Binding UseRollAxisForNws, Mode=TwoWay}"
+                              FontWeight="Bold"
                               Margin="0,0,0,10"/>
 
-                    <TextBlock Text="When enabled, moving the stick left or right will cause the nose wheel to turn when the aircraft is on the ground. This option disables the yaw axis."
+                    <TextBlock Text="Moving the stick left or right will cause the nose wheel to turn when the aircraft is on the ground."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,8"/>
+
+                    <TextBlock Text="This option disables the yaw axis."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -43,11 +49,11 @@
                     Grid.Column="2"
                     Style="{StaticResource DashboardCardStyle}">
                 <StackPanel>
-                    <TextBlock Text="TrackIR Mode"
+                    <TextBlock Text="Head Tracking Mode"
                                Style="{StaticResource SubheadingTextBlockStyle}"
                                Margin="0,0,0,10"/>
 
-                    <TextBlock Text="Choose how TrackIR/head-tracking forward movement is interpreted."
+                    <TextBlock Text="Choose what happens when you lean forward or backward while using head tracking."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,12"/>
@@ -55,22 +61,24 @@
                     <RadioButton Content="Head Forward"
                                  GroupName="TrackIrMode"
                                  IsChecked="{Binding IsTrackIrHeadForward, Mode=TwoWay}"
+                                FontWeight="Bold"
                                  Margin="0,0,0,6"/>
 
-                    <TextBlock Text="Uses forward/backward head movement as a direct forward/backward head position movement."
+                    <TextBlock Text="Leaning forward moves your virtual head closer to the cockpit instruments and controls, just as if you were physically leaning toward them."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,10"/>
+                               Margin="26,0,0,10"/>
 
                     <RadioButton Content="Zoom FOV"
                                  GroupName="TrackIrMode"
                                  IsChecked="{Binding IsTrackIrZoomFov, Mode=TwoWay}"
+                                FontWeight="Bold"
                                  Margin="0,0,0,6"/>
 
-                    <TextBlock Text="Uses forward head movement to adjust the field of view, creating a zoom effect when you lean in."
+                    <TextBlock Text="Leaning forward zooms the entire view like a camera lens, making distant objects appear closer."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"
-                               Margin="20,0,0,0"/>
+                               Margin="26,0,0,0"/>
                 </StackPanel>
             </Border>
 
@@ -80,6 +88,7 @@
                 <StackPanel>
                     <CheckBox Content="External Mouse Look"
                               IsChecked="{Binding ExternalMouseLook, Mode=TwoWay}"
+                              FontWeight="Bold"
                               Margin="0,0,0,10"/>
 
                     <TextBlock Text="Allows the mouse to control the camera in external views."
@@ -87,7 +96,7 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,8"/>
 
-                    <TextBlock Text="When this is enabled, the POV hat will no longer control the external camera view."
+                    <TextBlock Text="This option disables the POV hat camera control."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -99,14 +108,15 @@
                 <StackPanel>
                     <CheckBox Content="Natural Head Movement"
                               IsChecked="{Binding NaturalHeadMovement, Mode=TwoWay}"
+                              FontWeight="Bold"
                               Margin="0,0,0,10"/>
 
-                    <TextBlock Text="Makes rearward head movement feel more realistic when looking behind you."
+                    <TextBlock Text="Makes rearward head movement feel more realistic when looking behind yourself."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,8"/>
 
-                    <TextBlock Text="When looking back toward your six o'clock position, this settings accounts for the natural torso movement needed to turn your head that far. This works with or without a head-tracking device."
+                    <TextBlock Text="When looking rearward, your virtual pilot twists and leans naturally to see past the seat instead of simply rotating the view in place. This works with or without a head-tracking device."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -118,6 +128,7 @@
                 <StackPanel>
                     <CheckBox Content="Pilot Model"
                               IsChecked="{Binding PilotModel, Mode=TwoWay}"
+                              FontWeight="Bold"
                               Margin="0,0,0,10"/>
 
                     <TextBlock Text="Shows the pilot body inside the 3D cockpit."
@@ -125,7 +136,7 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,8"/>
 
-                    <TextBlock Text="This includes the visible pilot model and kneeboards while flying from the cockpit view."
+                    <TextBlock Text="This includes the visible pilot model and kneeboards from the cockpit view."
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -137,6 +148,7 @@
                 <StackPanel>
                     <CheckBox Content="Smart Scaling"
                               IsChecked="{Binding SmartScalingEnabled, Mode=TwoWay}"
+                              FontWeight="Bold"
                               Margin="0,0,0,10"/>
 
                     <TextBlock Text="Makes distant aircraft easier to see and identify during visual-range combat."
