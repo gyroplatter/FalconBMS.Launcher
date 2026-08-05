@@ -32,7 +32,8 @@ public sealed class ControlsViewModel : ViewModelBase
 
     public ObservableCollection<BindingAircraftProfile> Profiles { get; } = new();
     public ObservableCollection<string> Categories { get; } = new();
-    public ObservableCollection<ControlGridRowViewModel> Rows { get; } = new();
+
+    public BulkObservableCollection<ControlGridRowViewModel> Rows { get; } = new();
 
     public ObservableCollection<DeviceBindingProfile> DeviceColumns { get; } = new();
 
@@ -610,30 +611,35 @@ public sealed class ControlsViewModel : ViewModelBase
             return;
         }
 
-        Rows.Clear();
+        bool isFiltering =
+            !string.IsNullOrWhiteSpace(FilterText) ||
+            (!string.IsNullOrWhiteSpace(SelectedCategory) &&
+             !string.Equals(
+                 SelectedCategory,
+                 AllActionsLabel,
+                 StringComparison.OrdinalIgnoreCase));
 
-        bool isFiltering = !string.IsNullOrWhiteSpace(FilterText) ||
-                           (!string.IsNullOrWhiteSpace(SelectedCategory) &&
-                            !string.Equals(SelectedCategory, AllActionsLabel, StringComparison.OrdinalIgnoreCase));
+        List<ControlGridRowViewModel> visibleRows;
 
         if (!isFiltering)
         {
-            // No filter active: show everything as-is, headers included
-            foreach (var row in _allRows)
-                Rows.Add(row);
+            // No filter is active, so the complete existing row list can be
+            // passed to the UI in one collection update.
+            visibleRows = new List<ControlGridRowViewModel>(_allRows);
         }
         else
         {
-            // Collect the data rows that pass both filters
-            var matchingRows = _allRows
+            // Determine which normal rows match before rebuilding the visible list.
+            HashSet<ControlGridRowViewModel> matchingRows = _allRows
                 .Where(row => !row.IsCategoryHeader && !row.IsSectionHeader)
                 .Where(PassesCategoryFilter)
                 .Where(PassesTextFilter)
                 .ToHashSet();
 
-            // Walk _allRows in order. For each header, check whether any row
-            // that follows it (before the next same-level header) is in the match set.
-            // If so, emit the header so results always have section context.
+            visibleRows = new List<ControlGridRowViewModel>();
+
+            // Hold headers until a matching row is found beneath them.
+            // This preserves the existing category and section context.
             ControlGridRowViewModel? pendingCategoryHeader = null;
             ControlGridRowViewModel? pendingSectionHeader = null;
 
@@ -641,7 +647,6 @@ public sealed class ControlsViewModel : ViewModelBase
             {
                 if (row.IsCategoryHeader)
                 {
-                    // Hold the category header: emit it only when a match appears beneath it
                     pendingCategoryHeader = row;
                     pendingSectionHeader = null;
                     continue;
@@ -649,7 +654,6 @@ public sealed class ControlsViewModel : ViewModelBase
 
                 if (row.IsSectionHeader)
                 {
-                    // Hold the section header: emit it only when a match appears beneath it
                     pendingSectionHeader = row;
                     continue;
                 }
@@ -657,45 +661,58 @@ public sealed class ControlsViewModel : ViewModelBase
                 if (!matchingRows.Contains(row))
                     continue;
 
-                // This row matched: flush any pending headers before adding it
                 if (pendingCategoryHeader is not null)
                 {
-                    Rows.Add(pendingCategoryHeader);
+                    visibleRows.Add(pendingCategoryHeader);
                     pendingCategoryHeader = null;
                 }
 
                 if (pendingSectionHeader is not null)
                 {
-                    Rows.Add(pendingSectionHeader);
+                    visibleRows.Add(pendingSectionHeader);
                     pendingSectionHeader = null;
                 }
 
-                Rows.Add(row);
+                visibleRows.Add(row);
             }
         }
+
+        ControlGridRowViewModel? previouslySelectedRow = SelectedRow;
+
+        // Replace the visible collection once instead of raising a separate
+        // WPF collection-change event for every individual row.
+        Rows.ReplaceAll(visibleRows);
+
+        // Keep the selected row when it remains part of the filtered results.
+        SelectedRow =
+            previouslySelectedRow is not null &&
+            visibleRows.Contains(previouslySelectedRow)
+                ? previouslySelectedRow
+                : null;
 
         OnPropertyChanged(nameof(SummaryText));
     }
 
     private void RebuildUnassignedKeyRows()
     {
-        Rows.Clear();
+        List<ControlGridRowViewModel> visibleRows =
+            _unassignedKeyboardKeyService
+                .BuildRows(SelectedProfileRows, FilterText)
+                .Select(candidate => new ControlGridRowViewModel
+                {
+                    RowKind = BindingRowKind.Remark,
+                    IsUnassignedKeyRow = true,
+                    UnassignedKey = candidate.DisplayText,
+                    UnassignedModifier = candidate.ModifierDisplayName,
+                    UnassignedBaseKey = candidate.BaseKeyDisplayName,
+                    UnassignedKeySortKey = candidate.KeySortKey,
+                    UnassignedModifierSortKey = candidate.ModifierSortKey,
+                    UnassignedBaseKeySortKey = candidate.BaseKeySortKey
+                })
+                .ToList();
 
-        foreach (UnassignedKeyboardKeyCandidate candidate in
-                 _unassignedKeyboardKeyService.BuildRows(SelectedProfileRows, FilterText))
-        {
-            Rows.Add(new ControlGridRowViewModel
-            {
-                RowKind = BindingRowKind.Remark,
-                IsUnassignedKeyRow = true,
-                UnassignedKey = candidate.DisplayText,
-                UnassignedModifier = candidate.ModifierDisplayName,
-                UnassignedBaseKey = candidate.BaseKeyDisplayName,
-                UnassignedKeySortKey = candidate.KeySortKey,
-                UnassignedModifierSortKey = candidate.ModifierSortKey,
-                UnassignedBaseKeySortKey = candidate.BaseKeySortKey
-            });
-        }
+        Rows.ReplaceAll(visibleRows);
+        SelectedRow = null;
     }
 
     private bool PassesCategoryFilter(ControlGridRowViewModel row)
