@@ -12,33 +12,41 @@
         <StackPanel Background="{DynamicResource AppWindowBackgroundBrush}"
                 Style="{StaticResource ViewContentRootStyle}">
 
-            <TextBlock Text=""
-           Style="{StaticResource HeadingTextBlockStyle}"
-                       Margin="0,0,0,10"/>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <TextBlock Text="Debug-only style guide for previewing launcher UI elements in one place."
-                       Margin="0,0,0,12"/>
+                <TextBlock Grid.Column="0"
+               Text="Debug-only style guide for previewing launcher UI elements in one place."
+               HorizontalAlignment="Left"
+               VerticalAlignment="Center"/>
 
-            <TextBlock Text="Launcher Theme"
-                       FontWeight="SemiBold"
-                       Margin="0,0,0,6"/>
+                <StackPanel Grid.Column="1"
+                HorizontalAlignment="Right">
+                    <TextBlock Text="Launcher Theme"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Right"
+                   Margin="0,0,0,6"/>
 
-            <WrapPanel Margin="0,0,0,16">
-                <RadioButton Content="Auto"
-                             GroupName="LauncherThemeModeFromStyles"
-                             IsChecked="{Binding DataContext.Main.LauncherThemeAuto, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
+                    <WrapPanel HorizontalAlignment="Right">
+                        <RadioButton Content="Auto"
+                         GroupName="LauncherThemeModeFromStyles"
+                         IsChecked="{Binding DataContext.Main.LauncherThemeAuto, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                         Margin="0,0,16,0"/>
 
-                <RadioButton Content="Light"
-                             GroupName="LauncherThemeModeFromStyles"
-                             IsChecked="{Binding DataContext.Main.LauncherThemeLight, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
+                        <RadioButton Content="Light"
+                         GroupName="LauncherThemeModeFromStyles"
+                         IsChecked="{Binding DataContext.Main.LauncherThemeLight, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
+                         Margin="0,0,16,0"/>
 
-                <RadioButton Content="Dark"
-                             GroupName="LauncherThemeModeFromStyles"
-                             IsChecked="{Binding DataContext.Main.LauncherThemeDark, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
-                             Margin="0,0,16,8"/>
-            </WrapPanel>
+                        <RadioButton Content="Dark"
+                         GroupName="LauncherThemeModeFromStyles"
+                         IsChecked="{Binding DataContext.Main.LauncherThemeDark, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Grid>
 
             <Border Padding="16"
                     Margin="0,0,0,16"

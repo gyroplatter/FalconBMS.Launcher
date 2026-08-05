@@ -81,7 +81,7 @@
 
     <!-- Primary CTA -->
     <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FBB040"/>
-    <SolidColorBrush x:Key="AppPrimaryHoverBrush" Color="#E6FBB040"/>
+    <SolidColorBrush x:Key="AppPrimaryHoverBrush" Color="#F79605"/>
     <SolidColorBrush x:Key="AppPrimaryForegroundBrush" Color="#163546"/>
 
     <!-- Secondary CTA -->

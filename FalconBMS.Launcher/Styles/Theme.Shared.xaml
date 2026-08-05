@@ -11,8 +11,8 @@
     <!-- Typography tokens. Keep this scale intentionally small -->
     <FontFamily x:Key="AppFontFamily">pack://application:,,,/Assets/Fonts/#Inter 18pt, Liberation Sans, Arial, Sans Serif</FontFamily>
 
-    <System:Double x:Key="FontSizeSmall">12</System:Double>
-    <System:Double x:Key="FontSizeMedium">13</System:Double>
+    <System:Double x:Key="FontSizeSmall">13</System:Double>
+    <System:Double x:Key="FontSizeMedium">14</System:Double>
     <System:Double x:Key="FontSizeLarge">18</System:Double>
     <System:Double x:Key="FontSizeXLarge">22</System:Double>
 
@@ -132,6 +132,26 @@
            BasedOn="{StaticResource DashboardCardStyle}">
         <Setter Property="Background" Value="{DynamicResource LaunchDashboardCardBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource LaunchDashboardCardBorderBrush}"/>
+    </Style>
+
+    <!-- Title used inside the three launch workflow cards on the Main dashboard -->
+    <Style x:Key="DashboardLaunchOptionTitleStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource DashboardTitleStyle}">
+        <Setter Property="FontSize" Value="{StaticResource FontSizeLarge}"/>
+        <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+
+    <!-- Explanations used below each Main tab workflow card title -->
+    <Style x:Key="DashboardLaunchOptionDescriptionStyle"
+       TargetType="TextBlock"
+       BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground"
+            Value="{DynamicResource AppMutedForegroundBrush}"/>
+        <Setter Property="TextWrapping"
+            Value="Wrap"/>
+        <Setter Property="Width"
+            Value="300"/>
     </Style>
 
     <!--
@@ -275,7 +295,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="#EAF2FF"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
         <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}"/>
         <Setter Property="FontSize" Value="{StaticResource FontSizeXLarge}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -1469,8 +1489,8 @@
 
     <!-- Icons used for Tools and Quick Links sections -->
     <Style x:Key="LinkIconBaseStyle" TargetType="ContentControl">
-        <Setter Property="Width" Value="26"/>
-        <Setter Property="Height" Value="26"/>
+        <Setter Property="Width" Value="30"/>
+        <Setter Property="Height" Value="30"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -1916,6 +1936,59 @@
                             <Path Fill="{DynamicResource AppAccentBrush}"
                                   Data="M12,52 L27,33 L36,43 L43,35 L52,52 Z"/>
                         </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Stacked symbol used by the BMS Version dashboard card -->
+    <Style x:Key="DashboardBadgeVersionIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Canvas Width="48"
+                                Height="48">
+                            <Path Fill="{DynamicResource DashboardBadgeIconBrush}"
+                                  Data="M8,12 L34,12 L34,18 L8,18 Z
+                                        M14,21 L40,21 L40,27 L14,27 Z
+                                        M8,30 L34,30 L34,36 L8,36 Z"/>
+                        </Canvas>
+                    </Viewbox>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Globe symbol used by the Theater dashboard card -->
+    <Style x:Key="DashboardBadgeTheaterIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <Viewbox Stretch="Uniform">
+                        <Grid Width="48"
+                              Height="48">
+                            <Ellipse Width="34"
+                                     Height="34"
+                                     Stroke="{DynamicResource DashboardBadgeIconBrush}"
+                                     StrokeThickness="4"/>
+
+                            <Ellipse Width="16"
+                                     Height="34"
+                                     Stroke="{DynamicResource DashboardBadgeIconBrush}"
+                                     StrokeThickness="3"/>
+
+                            <Rectangle Width="32"
+                                       Height="3"
+                                       Fill="{DynamicResource DashboardBadgeIconBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
                     </Viewbox>
                 </ControlTemplate>
             </Setter.Value>
