@@ -4,6 +4,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 
 namespace FalconBMS.Launcher;
@@ -30,6 +31,10 @@ public partial class MainWindow : Window
         Closed += MainWindow_Closed;
 
         ThemeService.EffectiveDarkThemeChanged += ThemeService_EffectiveDarkThemeChanged;
+
+        #if DEBUG
+                PreviewKeyDown += MainWindow_DebugPreviewKeyDown;
+        #endif
 
         DebugDiagnosticsService.Info("MainWindow constructed.");
     }
@@ -98,6 +103,42 @@ public partial class MainWindow : Window
         }
     }
 
+#if DEBUG
+    private void MainWindow_DebugPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+            return;
+
+        // Debug shortcuts are intentionally active only while the Main tab is selected.
+        if (viewModel.CurrentTab != Models.LauncherTab.Main)
+            return;
+
+        // A toggles directly between the effective Light and Dark themes.
+        if (e.Key == Key.A && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            var newThemeMode = ThemeService.IsCurrentEffectiveThemeDark()
+                ? Models.LauncherThemeModes.Light
+                : Models.LauncherThemeModes.Dark;
+
+            // Use the MainViewModel properties so its theme radio-button state stays synchronized.
+            if (newThemeMode == Models.LauncherThemeModes.Light)
+                viewModel.Main.LauncherThemeLight = true;
+            else
+                viewModel.Main.LauncherThemeDark = true;
+
+            e.Handled = true;
+            return;
+        }
+
+        // Ctrl+W closes the Launcher through the normal window Closing pipeline.
+        if (e.Key == Key.W && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            e.Handled = true;
+            Close();
+        }
+    }
+#endif
+
     private void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
         if (DataContext is not MainWindowViewModel viewModel)
@@ -109,6 +150,10 @@ public partial class MainWindow : Window
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
         ThemeService.EffectiveDarkThemeChanged -= ThemeService_EffectiveDarkThemeChanged;
+
+    #if DEBUG
+            PreviewKeyDown -= MainWindow_DebugPreviewKeyDown;
+    #endif
     }
 
     private sealed class ModalOverlayScope : IDisposable
