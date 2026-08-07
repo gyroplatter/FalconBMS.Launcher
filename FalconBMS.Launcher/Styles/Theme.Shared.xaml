@@ -9,7 +9,7 @@
     -->
 
     <!-- Typography tokens. Keep this scale intentionally small -->
-    <FontFamily x:Key="AppFontFamily">pack://application:,,,/Assets/Fonts/#Inter 18pt, Liberation Sans, Arial, Sans Serif</FontFamily>
+    <FontFamily x:Key="AppFontFamily">pack://application:,,,/Assets/Fonts/#Open Sans, Liberation Sans, Arial, Sans Serif</FontFamily>
 
     <System:Double x:Key="FontSizeSmall">13</System:Double>
     <System:Double x:Key="FontSizeMedium">14</System:Double>
@@ -110,9 +110,9 @@
     <!-- Shared circular accent badge used beside dashboard-style card titles. -->
     <Style x:Key="DashboardIconBadgeStyle"
            TargetType="Border">
-        <Setter Property="Width" Value="34"/>
-        <Setter Property="Height" Value="34"/>
-        <Setter Property="CornerRadius" Value="17"/>
+        <Setter Property="Width" Value="40"/>
+        <Setter Property="Height" Value="40"/>
+        <Setter Property="CornerRadius" Value="20"/>
         <Setter Property="Background" Value="{DynamicResource AppAccentBrush}"/>
         <Setter Property="Margin" Value="0,0,12,0"/>
     </Style>
@@ -1944,18 +1944,20 @@
 
     <!-- Stacked symbol used by the BMS Version dashboard card -->
     <Style x:Key="DashboardBadgeVersionIconStyle"
-           TargetType="ContentControl"
-           BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+       TargetType="ContentControl"
+       BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
                     <Viewbox Stretch="Uniform">
                         <Canvas Width="48"
-                                Height="48">
+                            Height="48">
                             <Path Fill="{DynamicResource DashboardBadgeIconBrush}"
-                                  Data="M8,12 L34,12 L34,18 L8,18 Z
-                                        M14,21 L40,21 L40,27 L14,27 Z
-                                        M8,30 L34,30 L34,36 L8,36 Z"/>
+                              Data="M8,12 L34,12 L34,18 L8,18 Z
+                                    M14,21 L40,21 L40,27 L14,27 Z
+                                    M8,30 L34,30 L34,36 L8,36 Z"/>
                         </Canvas>
                     </Viewbox>
                 </ControlTemplate>
@@ -1965,29 +1967,31 @@
 
     <!-- Globe symbol used by the Theater dashboard card -->
     <Style x:Key="DashboardBadgeTheaterIconStyle"
-           TargetType="ContentControl"
-           BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+       TargetType="ContentControl"
+       BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
                     <Viewbox Stretch="Uniform">
                         <Grid Width="48"
-                              Height="48">
+                          Height="48">
                             <Ellipse Width="34"
-                                     Height="34"
-                                     Stroke="{DynamicResource DashboardBadgeIconBrush}"
-                                     StrokeThickness="4"/>
+                                 Height="34"
+                                 Stroke="{DynamicResource DashboardBadgeIconBrush}"
+                                 StrokeThickness="4"/>
 
                             <Ellipse Width="16"
-                                     Height="34"
-                                     Stroke="{DynamicResource DashboardBadgeIconBrush}"
-                                     StrokeThickness="3"/>
+                                 Height="34"
+                                 Stroke="{DynamicResource DashboardBadgeIconBrush}"
+                                 StrokeThickness="3"/>
 
                             <Rectangle Width="32"
-                                       Height="3"
-                                       Fill="{DynamicResource DashboardBadgeIconBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                                   Height="3"
+                                   Fill="{DynamicResource DashboardBadgeIconBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
                         </Grid>
                     </Viewbox>
                 </ControlTemplate>
@@ -1998,6 +2002,8 @@
     <Style x:Key="DashboardBadgeLaunchIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
@@ -2017,6 +2023,8 @@
     <Style x:Key="DashboardBadgeGearIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="28"/>
+        <Setter Property="Height" Value="28"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
@@ -2034,6 +2042,8 @@
     <Style x:Key="DashboardBadgeToolsIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
@@ -2051,6 +2061,8 @@
     <Style x:Key="DashboardBadgeFolderIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="24"/>
+        <Setter Property="Height" Value="24"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">
@@ -2068,6 +2080,8 @@
     <Style x:Key="DashboardBadgeNewsIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource DashboardBadgeIconBaseStyle}">
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="26"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContentControl">

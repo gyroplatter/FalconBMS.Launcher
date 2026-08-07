@@ -58,6 +58,16 @@
 	  <None Remove="Assets\Fonts\Inter_18pt-Medium.ttf" />
 	  <None Remove="Assets\Fonts\Inter_18pt-Regular.ttf" />
 	  <None Remove="Assets\Fonts\Inter_18pt-SemiBold.ttf" />
+	  <None Remove="Assets\Fonts\NotoSans-Bold.ttf" />
+	  <None Remove="Assets\Fonts\NotoSans-Italic.ttf" />
+	  <None Remove="Assets\Fonts\NotoSans-Medium.ttf" />
+	  <None Remove="Assets\Fonts\NotoSans-Regular.ttf" />
+	  <None Remove="Assets\Fonts\NotoSans-SemiBold.ttf" />
+	  <None Remove="Assets\Fonts\OpenSans-Bold.ttf" />
+	  <None Remove="Assets\Fonts\OpenSans-Italic.ttf" />
+	  <None Remove="Assets\Fonts\OpenSans-Medium.ttf" />
+	  <None Remove="Assets\Fonts\OpenSans-Regular.ttf" />
+	  <None Remove="Assets\Fonts\OpenSans-SemiBold.ttf" />
 	  <None Remove="Assets\icon-folder.png" />
 	  <None Remove="Assets\icon-gear.png" />
 	  <None Remove="Assets\icon-launch.png" />
@@ -151,6 +161,21 @@
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </Resource>
 	  <Resource Include="Assets\Fonts\Inter_18pt-SemiBold.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\OpenSans-Bold.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\OpenSans-Italic.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\OpenSans-Medium.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\OpenSans-Regular.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Fonts\OpenSans-SemiBold.ttf">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </Resource>
 	</ItemGroup>
