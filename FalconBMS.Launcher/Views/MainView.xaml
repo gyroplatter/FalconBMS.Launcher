@@ -148,9 +148,9 @@
               ClipToBounds="True">
 
             <Grid.RowDefinitions>
-                <RowDefinition Height="150"/>
+                <RowDefinition Height="170"/>
                 <RowDefinition Height="12"/>
-                <RowDefinition Height="305"/>
+                <RowDefinition Height="285"/>
                 <RowDefinition Height="12"/>
                 <RowDefinition Height="105"/>
             </Grid.RowDefinitions>
@@ -167,12 +167,13 @@
 
                 <!-- BMS version selection -->
                 <Border Grid.Column="0"
-                    Style="{StaticResource DashboardCardStyle}">
+        Style="{StaticResource LaunchOptionDashboardCardStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="20"/>
                             <RowDefinition Height="42"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0"
@@ -195,12 +196,36 @@
                               ItemsSource="{Binding Installs}"
                               SelectedItem="{Binding SelectedInstall, Mode=TwoWay}"
                               DisplayMemberPath="DisplayName"/>
+
+                        <Button Grid.Row="3"
+        Command="{Binding UpdateCommand}"
+        Width="300"
+        HorizontalAlignment="Center"
+        HorizontalContentAlignment="Left"
+        Margin="0,10,0,0"
+        Padding="0"
+        Background="Transparent"
+        BorderThickness="0"
+        Cursor="Hand">
+                            <StackPanel Orientation="Horizontal">
+                                <ContentControl Style="{StaticResource LinkUpdaterIconStyle}"
+                        Width="18"
+                        Height="18"
+                        Margin="0,0,6,0"/>
+
+                                <TextBlock Text="Check for Updates"
+                   Foreground="{DynamicResource AppAccentBrush}"
+                   FontSize="{StaticResource FontSizeMedium}"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </Grid>
                 </Border>
 
                 <!-- Theater selection -->
                 <Border Grid.Column="2"
-                    Style="{StaticResource DashboardCardStyle}">
+        Style="{StaticResource LaunchOptionDashboardCardStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -237,7 +262,7 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="20"/>
                             <RowDefinition Height="58"/>
                         </Grid.RowDefinitions>
 
@@ -277,210 +302,34 @@
                 <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="12"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="0"/>
-                            <RowDefinition Height="84"/>
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="0"/>
+                            <RowDefinition Height="18"/>
                             <RowDefinition Height="86"/>
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
-                            <ContentControl Style="{StaticResource DashboardBadgeToolsIconStyle}"/>
-                        </Border>
-                        <TextBlock Text="Tools" Style="{StaticResource DashboardTitleStyle}"/>
-                    </StackPanel>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="2"
-                               Text="Falcon BMS Tools"
-                               Style="{StaticResource DashboardSectionLabelStyle}"/>
+                            <Border Grid.Column="0"
+            Style="{StaticResource DashboardIconBadgeStyle}">
+                                <ContentControl Style="{StaticResource DashboardBadgeToolsIconStyle}"/>
+                            </Border>
 
-                    <ItemsControl Grid.Row="4" ItemsSource="{Binding FirstPartyItems}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Style="{StaticResource DashboardTileButtonStyle}"
-                                        Width="86"
-                                        Height="70"
-                                        Margin="0,0,8,0"
-                                        Command="{Binding DataContext.LaunchFirstPartyCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding Id}">
-                                    <StackPanel>
-                                        <Grid Margin="0,0,0,2">
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkPlaceholderIconStyle}">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="updater">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="config">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="display-config">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="rtt-client">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="rtt-server">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="ivc-client">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="ivc-server">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="avionics-configurator">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Id}" Value="editor">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
+                            <StackPanel Grid.Column="1"
+                VerticalAlignment="Center">
+                                <TextBlock Text="Tools &amp; Utilities "
+                   Style="{StaticResource DashboardTitleStyle}"/>
 
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkUpdaterIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="updater">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
+                                <TextBlock Text="Create and organize shortcuts to other apps."
+                   Style="{StaticResource DashboardLaunchOptionDescriptionStyle}"
+                   HorizontalAlignment="Left"
+                   TextWrapping="NoWrap"/>
+                            </StackPanel>
+                        </Grid>
 
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkConfigIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="config">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkDisplayIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="display-config">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkRttClientIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="rtt-client">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkRttServerIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="rtt-server">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkIvcClientIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="ivc-client">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkIvcServerIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="ivc-server">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkAvionicsIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="avionics-configurator">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-
-                                            <ContentControl>
-                                                <ContentControl.Style>
-                                                    <Style TargetType="ContentControl" BasedOn="{StaticResource LinkEditorIconStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Id}" Value="editor">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ContentControl.Style>
-                                            </ContentControl>
-                                        </Grid>
-                                            <TextBlock Text="{Binding Label}"
-                                                Style="{StaticResource DashboardToolNameTextStyle}"/>
-                                        </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Grid.Row="6"
-                               Text="Community Tools"
-                               Style="{StaticResource DashboardSectionLabelStyle}"/>
-
-                        <ScrollViewer Grid.Row="8"
+                        <ScrollViewer Grid.Row="2"
                                   HorizontalScrollBarVisibility="Auto"
                                   VerticalScrollBarVisibility="Disabled"
                                   CanContentScroll="False">
@@ -828,26 +677,28 @@
 
             <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="12"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="0"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="18"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal">
-                        <Border Style="{StaticResource DashboardIconBadgeStyle}">
-                            <ContentControl Style="{StaticResource DashboardBadgeFolderIconStyle}"/>
-                        </Border>
-                        <TextBlock Text="Quick Access" Style="{StaticResource DashboardTitleStyle}"/>
-                    </StackPanel>
+                        <StackPanel Grid.Row="0"
+            Orientation="Horizontal">
+                            <Border Style="{StaticResource DashboardIconBadgeStyle}">
+                                <ContentControl Style="{StaticResource DashboardBadgeFolderIconStyle}"/>
+                            </Border>
 
-                    <TextBlock Grid.Row="2"
-                               Text="Shortcuts"
-                               Style="{StaticResource DashboardSectionLabelStyle}"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Quick Links"
+                   Style="{StaticResource DashboardTitleStyle}"/>
 
-                    <Grid Grid.Row="4">
+                                <TextBlock Text="Open useful Falcon BMS resources."
+                   Style="{StaticResource DashboardLaunchOptionDescriptionStyle}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Grid Grid.Row="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="12"/>

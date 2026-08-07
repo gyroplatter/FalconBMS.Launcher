@@ -134,6 +134,14 @@
         <Setter Property="BorderBrush" Value="{DynamicResource LaunchDashboardCardBorderBrush}"/>
     </Style>
 
+    <!-- Version and Theater cards -->
+    <Style x:Key="LaunchOptionDashboardCardStyle"
+       TargetType="Border"
+       BasedOn="{StaticResource DashboardCardStyle}">
+        <Setter Property="Background" Value="{DynamicResource LaunchOptionCardBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource LaunchOptionCardBorderBrush}"/>
+    </Style>
+
     <!-- Title used inside the three launch workflow cards on the Main dashboard -->
     <Style x:Key="DashboardLaunchOptionTitleStyle"
            TargetType="TextBlock"

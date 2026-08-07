@@ -105,11 +105,13 @@
 
         <!-- Row 3: footer -->
         <Border Grid.Row="3"
-                Padding="10"
-                BorderThickness="0,1,0,0"
-                BorderBrush="{DynamicResource AppBorderBrush}"
-                Background="{DynamicResource AppSurfaceBrush}">
-            <TextBlock Text="{Binding Main.LauncherVersion}" />
+            Padding="10"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource AppBorderBrush}"
+            Background="{DynamicResource AppSurfaceBrush}">
+                <TextBlock Text="{Binding Main.LauncherVersion}"
+                   Foreground="{DynamicResource AppMutedForegroundBrush}"
+                   FontSize="{StaticResource FontSizeSmall}"/>
         </Border>
 
         <!-- Modal overlay shown behind popup windows. -->

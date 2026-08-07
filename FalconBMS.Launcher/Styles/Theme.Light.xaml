@@ -16,8 +16,12 @@
     <SolidColorBrush x:Key="AppHeaderSeparatorBrush" Color="#2F8DF2"/>
 
     <!-- Launch panel background -->
-    <SolidColorBrush x:Key="LaunchDashboardCardBrush" Color="#EEF6FF"/>
-    <SolidColorBrush x:Key="LaunchDashboardCardBorderBrush" Color="#AFC8E8"/>
+    <SolidColorBrush x:Key="LaunchDashboardCardBrush" Color="#fef9f3"/>
+    <SolidColorBrush x:Key="LaunchDashboardCardBorderBrush" Color="#f99d2a"/>
+
+    <!-- Launch option panel background -->
+    <SolidColorBrush x:Key="LaunchOptionCardBrush" Color="#EEF6FF"/>
+    <SolidColorBrush x:Key="LaunchOptionCardBorderBrush" Color="#AFC8E8"/>
 
     <!-- Used by DialogCardStyle -->
     <SolidColorBrush x:Key="AppDialogCardBorderBrush" Color="#33384A"/>
