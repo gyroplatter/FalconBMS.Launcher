@@ -9,6 +9,7 @@
     <SolidColorBrush x:Key="AppForegroundBrush" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="AppMutedForegroundBrush" Color="#959CB1"/>
     <SolidColorBrush x:Key="AppAccentBrush" Color="#7CA9E6"/>
+    <SolidColorBrush x:Key="AppAccentHoverBrush" Color="#A9C8F0"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
     <SolidColorBrush x:Key="AppModalOverlayBrush" Color="#B0000000"/>
 
