@@ -10,24 +10,6 @@
         Foreground="{DynamicResource AppForegroundBrush}"
         Loaded="Window_Loaded">
 
-    <Window.Resources>
-        <Style x:Key="DashboardTitleStyle"
-               TargetType="TextBlock"
-               BasedOn="{StaticResource SubheadingTextBlockStyle}">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Margin" Value="0"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <Style x:Key="DashboardSectionLabelStyle"
-               TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="{StaticResource FontSizeMedium}"/>
-            <Setter Property="Margin" Value="0,0,0,7"/>
-        </Style>
-    </Window.Resources>
-
     <Grid ClipToBounds="True">
         <!-- Callsign-window-only background image. Keep the image full opacity;
              this window controls how faded it appears with the overlay below. -->
