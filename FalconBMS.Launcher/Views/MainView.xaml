@@ -84,7 +84,7 @@
             <Setter Property="BorderThickness" Value="0"/>
 
             <Setter Property="Foreground"
-                    Value="{DynamicResource AppForegroundBrush}"/>
+                    Value="{DynamicResource AppAccentBrush}"/>
             <Setter Property="FontSize"
                     Value="{StaticResource FontSizeMedium}"/>
             <Setter Property="FontWeight"
@@ -456,8 +456,8 @@
                                                         </ContentControl>
 
                                                         <Image Source="{Binding IconSource}"
-                                                               Width="34"
-                                                               Height="34"
+                                                               Width="38"
+                                                               Height="38"
                                                                Stretch="Uniform"
                                                                HorizontalAlignment="Center"
                                                                VerticalAlignment="Center"/>
@@ -715,11 +715,11 @@
                             <StackPanel>
                                 <ContentControl Style="{StaticResource LinkManualIconStyle}"
                                                 Margin="0,0,0,3"/>
-                                <TextBlock Text="Manuals &amp; Docs"
-                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                    <TextBlock Text="Manuals &amp; Docs"
+                                           Foreground="{DynamicResource AppAccentBrush}"
                                            FontWeight="SemiBold"
                                            TextAlignment="Center"/>
-                            </StackPanel>
+                                </StackPanel>
                         </Button>
 
                         <Button Grid.Row="0"
@@ -731,11 +731,11 @@
                             <StackPanel>
                                 <ContentControl Style="{StaticResource LinkUserFolderIconStyle}"
                                                 Margin="0,0,0,3"/>
-                                <TextBlock Text="User Folder"
-                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                    <TextBlock Text="User Folder"
+                                           Foreground="{DynamicResource AppAccentBrush}"
                                            FontWeight="SemiBold"
                                            TextAlignment="Center"/>
-                            </StackPanel>
+                                </StackPanel>
                         </Button>
 
                             <Button Grid.Row="2"
@@ -747,11 +747,11 @@
                             <StackPanel>
                                 <ContentControl Style="{StaticResource LinkForumIconStyle}"
                                                 Margin="0,0,0,3"/>
-                                <TextBlock Text="BMS Forum"
-                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                    <TextBlock Text="BMS Forum"
+                                           Foreground="{DynamicResource AppAccentBrush}"
                                            FontWeight="SemiBold"
                                            TextAlignment="Center"/>
-                            </StackPanel>
+                                </StackPanel>
                         </Button>
 
 
@@ -766,7 +766,7 @@
                                     <ContentControl Style="{StaticResource LinkScreenshotsIconStyle}"
                                                 Margin="0,0,0,3"/>
                                     <TextBlock Text="Screenshots"
-                                           Foreground="{DynamicResource AppForegroundBrush}"
+                                           Foreground="{DynamicResource AppAccentBrush}"
                                            FontWeight="SemiBold"
                                            TextAlignment="Center"/>
                                 </StackPanel>
