@@ -7,31 +7,6 @@
              d:DesignWidth="1248"
              d:DesignHeight="680">
 
-    <UserControl.Resources>
-        <Style x:Key="ControlsNavHeadingTextBlockStyle"
-               TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
-            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="0,0,0,6"/>
-        </Style>
-
-        <Style x:Key="ControlsNavListBoxStyle"
-               TargetType="ListBox">
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
-        </Style>
-
-        <Style x:Key="ControlsNavListBoxItemStyle"
-               TargetType="ListBoxItem">
-            <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="Margin" Value="0,1"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        </Style>
-    </UserControl.Resources>
-
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
           Style="{StaticResource ViewContentRootStyle}">
         <Grid.RowDefinitions>

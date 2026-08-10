@@ -124,6 +124,8 @@
         <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
         <Setter Property="Padding" Value="8"/>
         <Setter Property="MinHeight" Value="52"/>
+        <Setter Property="Height" Value="70"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -151,6 +153,18 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Main dashboard Quick Links label -->
+    <Style x:Key="DashboardTileLabelStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground"
+                Value="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"/>
+        <Setter Property="FontWeight"
+                Value="SemiBold"/>
+        <Setter Property="TextAlignment"
+                Value="Center"/>
     </Style>
 
     <!--
@@ -315,6 +329,132 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Community Tool tile cursor while edit mode is active. -->
+    <Style x:Key="CommunityToolEditableTileButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource CommunityToolTileButtonStyle}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
+                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
+                         Value="True">
+                <Setter Property="Cursor"
+                        Value="SizeAll"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Community Tool drag handle visibility while edit mode is active. -->
+    <Style x:Key="CommunityToolDragHandleStyle"
+           TargetType="Border">
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
+                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Community Tool delete button visibility and template. -->
+    <Style x:Key="CommunityToolDeleteButtonStyle"
+           TargetType="Button">
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+        <Setter Property="Background"
+                Value="{DynamicResource AppWarningTextBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="9">
+                        <Path Width="8"
+                              Height="8"
+                              Stretch="Fill"
+                              Stroke="White"
+                              StrokeThickness="1.8"
+                              StrokeStartLineCap="Round"
+                              StrokeEndLineCap="Round"
+                              Data="M0,0 L8,8 M8,0 L0,8"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
+                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Customize is visible only when Community Tools edit mode is off. -->
+    <Style x:Key="CommunityToolCustomizeButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource CommunityToolControlTileButtonStyle}">
+        <Setter Property="Visibility"
+                Value="Visible"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsEditingCommunityTools}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Collapsed"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Add and Done are visible only while Community Tools edit mode is active. -->
+    <Style x:Key="CommunityToolEditActionButtonStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource CommunityToolControlTileButtonStyle}">
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsEditingCommunityTools}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- News item spacing and divider behavior for the three-column feed. -->
+    <Style x:Key="NewsItemBorderStyle"
+           TargetType="Border">
+        <!-- Keep all three columns visually equal -->
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Padding" Value="18,0,18,0"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+
+        <!-- First item should align closer to the News heading -->
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                         Value="0">
+                <Setter Property="Padding" Value="0,0,18,0"/>
+            </DataTrigger>
+
+            <!-- Items 2 and 3 get only a left divider-->
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                         Value="1">
+                <Setter Property="BorderThickness" Value="1,0,0,0"/>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                         Value="2">
+                <Setter Property="BorderThickness" Value="1,0,0,0"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Shared circular accent badge used beside dashboard-style card titles. -->
     <Style x:Key="DashboardIconBadgeStyle"
            TargetType="Border">
@@ -457,6 +597,23 @@
        BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="Foreground" Value="{DynamicResource AppWarningTextBrush}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- Warning text that hides itself when there is no message to display -->
+    <Style x:Key="DialogConditionalWarningTextBlockStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource DialogWarningTextBlockStyle}">
+        <Setter Property="Visibility" Value="Visible"/>
+
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </Trigger>
+
+            <Trigger Property="Text" Value="{x:Null}">
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Setting/control labels, such as "Shift State:", "Deadzone", or "Saturation" -->
@@ -730,6 +887,33 @@
                 </Setter>
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+
+    <!-- Controls view navigation heading -->
+    <Style x:Key="ControlsNavHeadingTextBlockStyle"
+           TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource AppMutedForegroundBrush}"/>
+        <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+
+    <!-- Controls view category navigation list -->
+    <Style x:Key="ControlsNavListBoxStyle"
+           TargetType="ListBox">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+    </Style>
+
+    <!-- Controls view category navigation item -->
+    <Style x:Key="ControlsNavListBoxItemStyle"
+           TargetType="ListBoxItem">
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Margin" Value="0,1"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
     </Style>
 
     <!-- Controls table: shared DataGrid styling. Brush values come from the active light/dark theme. -->
@@ -2006,6 +2190,45 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- Generic fallback icon for Community Tools without an application icon. -->
+    <Style x:Key="CommunityToolFallbackIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkThirdPartyIconStyle}">
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IconSource}"
+                               Value="{x:Null}"/>
+
+                    <Condition Binding="{Binding IsBuiltInF4Wx}"
+                               Value="False"/>
+                </MultiDataTrigger.Conditions>
+
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Built-in F4Wx icon visibility for Community Tools. -->
+    <Style x:Key="CommunityToolF4WxIconStyle"
+           TargetType="ContentControl"
+           BasedOn="{StaticResource LinkF4WxIconStyle}">
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsBuiltInF4Wx}"
+                         Value="True">
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Manual icon -->

@@ -78,25 +78,9 @@
                     </Grid>
 
                     <TextBlock Grid.Row="2"
-           Text="{Binding KeyboardConflictText}"
-           Margin="0,14,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="{x:Type TextBlock}"
-               BasedOn="{StaticResource DialogWarningTextBlockStyle}">
-                                <Setter Property="Visibility" Value="Visible"/>
-
-                                <Style.Triggers>
-                                    <Trigger Property="Text" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </Trigger>
-
-                                    <Trigger Property="Text" Value="{x:Null}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                               Text="{Binding KeyboardConflictText}"
+                               Margin="0,14,0,0"
+                               Style="{StaticResource DialogConditionalWarningTextBlockStyle}"/>
                 </Grid>
             </ContentControl>
 
@@ -199,25 +183,9 @@
                     </Grid>
 
                     <TextBlock Grid.Row="3"
-                       Text="{Binding DxConflictText}"
-                       Margin="0,14,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="{x:Type TextBlock}"
-                                BasedOn="{StaticResource DialogWarningTextBlockStyle}">
-                                <Setter Property="Visibility" Value="Visible"/>
-
-                                <Style.Triggers>
-                                    <Trigger Property="Text" Value="">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </Trigger>
-
-                                    <Trigger Property="Text" Value="{x:Null}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                               Text="{Binding DxConflictText}"
+                               Margin="0,14,0,0"
+                               Style="{StaticResource DialogConditionalWarningTextBlockStyle}"/>
                 </Grid>
             </ContentControl>
 

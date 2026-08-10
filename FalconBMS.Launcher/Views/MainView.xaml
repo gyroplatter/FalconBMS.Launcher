@@ -214,74 +214,19 @@
                                             <Grid Width="88"
                                                   Margin="0,0,8,0">
 
-                                                <!--
-                                                    The entire tile is now the mouse target:
-                                                    icon, label, and surrounding blank space.
-                                                -->
                                                 <Button Tag="{Binding DisplayName}"
+                                                        Style="{StaticResource CommunityToolEditableTileButtonStyle}"
                                                         PreviewMouseLeftButtonDown="CommunityToolTile_PreviewMouseLeftButtonDown"
                                                         PreviewMouseMove="CommunityToolTile_PreviewMouseMove"
                                                         PreviewMouseLeftButtonUp="CommunityToolTile_PreviewMouseLeftButtonUp">
 
-                                                    <Button.Style>
-                                                        <Style TargetType="Button"
-                                                               BasedOn="{StaticResource CommunityToolTileButtonStyle}">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
-                                                                                               RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                             Value="True">
-                                                                    <Setter Property="Cursor"
-                                                                            Value="SizeAll"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-
                                                     <Grid>
 
                                                         <!-- Generic fallback for an application with no icon -->
-                                                        <ContentControl>
-                                                            <ContentControl.Style>
-                                                                <Style TargetType="ContentControl"
-                                                                       BasedOn="{StaticResource LinkThirdPartyIconStyle}">
-                                                                    <Setter Property="Visibility"
-                                                                            Value="Collapsed"/>
+                                                        <ContentControl Style="{StaticResource CommunityToolFallbackIconStyle}"/>
 
-                                                                    <Style.Triggers>
-                                                                        <MultiDataTrigger>
-                                                                            <MultiDataTrigger.Conditions>
-                                                                                <Condition Binding="{Binding IconSource}"
-                                                                                           Value="{x:Null}"/>
-
-                                                                                <Condition Binding="{Binding IsBuiltInF4Wx}"
-                                                                                           Value="False"/>
-                                                                            </MultiDataTrigger.Conditions>
-
-                                                                            <Setter Property="Visibility"
-                                                                                    Value="Visible"/>
-                                                                        </MultiDataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </ContentControl.Style>
-                                                        </ContentControl>
-
-                                                        <ContentControl>
-                                                            <ContentControl.Style>
-                                                                <Style TargetType="ContentControl"
-                                                                       BasedOn="{StaticResource LinkF4WxIconStyle}">
-                                                                    <Setter Property="Visibility"
-                                                                            Value="Collapsed"/>
-
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsBuiltInF4Wx}"
-                                                                                     Value="True">
-                                                                            <Setter Property="Visibility"
-                                                                                    Value="Visible"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </ContentControl.Style>
-                                                        </ContentControl>
+                                                        <!-- Built-in F4Wx uses its shared vector icon -->
+                                                        <ContentControl Style="{StaticResource CommunityToolF4WxIconStyle}"/>
 
                                                         <Image Source="{Binding IconSource}"
                                                                Width="38"
@@ -306,22 +251,8 @@
                                                         BorderBrush="{DynamicResource AppBorderBrush}"
                                                         BorderThickness="1"
                                                         CornerRadius="8"
-                                                        IsHitTestVisible="False">
-                                                    <Border.Style>
-                                                        <Style TargetType="Border">
-                                                            <Setter Property="Visibility"
-                                                                    Value="Collapsed"/>
-
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
-                                                                                               RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                             Value="True">
-                                                                    <Setter Property="Visibility"
-                                                                            Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
+                                                        IsHitTestVisible="False"
+                                                        Style="{StaticResource CommunityToolDragHandleStyle}">
 
                                                     <UniformGrid Width="7"
                                                                  Height="10"
@@ -350,56 +281,19 @@
                                                     </UniformGrid>
                                                 </Border>
 
-                                                <!--
-                                                    Delete remains its own independent button.
-
-                                                    Margin moved inward so the close button sits
-                                                    closer to the icon.
-                                                -->
+                                                <!-- Delete button -->
                                                 <Button Width="18"
                                                         Height="18"
                                                         Margin="0,4,5,0"
                                                         Padding="0"
                                                         HorizontalAlignment="Right"
                                                         VerticalAlignment="Top"
-                                                        Background="#C0392B"
                                                         BorderThickness="0"
                                                         Cursor="Hand"
+                                                        Style="{StaticResource CommunityToolDeleteButtonStyle}"
                                                         Command="{Binding DataContext.RemoveThirdPartyToolCommand,
                                                                           RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}">
-                                                    <Button.Style>
-                                                        <Style TargetType="Button">
-                                                            <Setter Property="Visibility"
-                                                                    Value="Collapsed"/>
-
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding DataContext.IsEditingCommunityTools,
-                                                                                               RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                             Value="True">
-                                                                    <Setter Property="Visibility"
-                                                                            Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-
-                                                    <Button.Template>
-                                                        <ControlTemplate TargetType="Button">
-                                                            <Border Background="{TemplateBinding Background}"
-                                                                    CornerRadius="9">
-                                                                <Path Width="8"
-                                                                      Height="8"
-                                                                      Stretch="Fill"
-                                                                      Stroke="White"
-                                                                      StrokeThickness="1.8"
-                                                                      StrokeStartLineCap="Round"
-                                                                      StrokeEndLineCap="Round"
-                                                                      Data="M0,0 L8,8 M8,0 L0,8"/>
-                                                            </Border>
-                                                        </ControlTemplate>
-                                                    </Button.Template>
-                                                </Button>
+                                                        CommandParameter="{Binding}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -408,23 +302,8 @@
                                 <!-- Normal mode -->
                                 <Button Tag="Customize"
                                         Margin="0,0,8,0"
+                                        Style="{StaticResource CommunityToolCustomizeButtonStyle}"
                                         Command="{Binding ToggleCommunityToolsEditCommand}">
-                                    <Button.Style>
-                                        <Style TargetType="Button"
-                                               BasedOn="{StaticResource CommunityToolControlTileButtonStyle}">
-                                            <Setter Property="Visibility"
-                                                    Value="Visible"/>
-
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEditingCommunityTools}"
-                                                             Value="True">
-                                                    <Setter Property="Visibility"
-                                                            Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-
                                     <ContentControl Style="{StaticResource LinkCustomizeIconStyle}"
                                                     Width="30"
                                                     Height="30"/>
@@ -433,23 +312,8 @@
                                 <!-- Modify/Add -->
                                 <Button Tag="Add"
                                         Margin="0,0,8,0"
+                                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
                                         Command="{Binding AddThirdPartyToolCommand}">
-                                    <Button.Style>
-                                        <Style TargetType="Button"
-                                               BasedOn="{StaticResource CommunityToolControlTileButtonStyle}">
-                                            <Setter Property="Visibility"
-                                                    Value="Collapsed"/>
-
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEditingCommunityTools}"
-                                                             Value="True">
-                                                    <Setter Property="Visibility"
-                                                            Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-
                                     <Path Width="20"
                                           Height="20"
                                           Stretch="Uniform"
@@ -463,23 +327,8 @@
                                 <!-- Modify Done -->
                                 <Button Tag="Done"
                                         Margin="0,0,8,0"
+                                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
                                         Command="{Binding ToggleCommunityToolsEditCommand}">
-                                    <Button.Style>
-                                        <Style TargetType="Button"
-                                               BasedOn="{StaticResource CommunityToolControlTileButtonStyle}">
-                                            <Setter Property="Visibility"
-                                                    Value="Collapsed"/>
-
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsEditingCommunityTools}"
-                                                             Value="True">
-                                                    <Setter Property="Visibility"
-                                                            Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-
                                     <Path Width="21"
                                           Height="17"
                                           Stretch="Uniform"
@@ -519,81 +368,63 @@
                         </StackPanel>
 
                         <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="76"/>
-                            <RowDefinition Height="10"/>
-                            <RowDefinition Height="76"/>
-                        </Grid.RowDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="76"/>
+                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="76"/>
+                            </Grid.RowDefinitions>
 
-                        <Button Grid.Row="0"
+                            <Button Grid.Row="0"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="70"
-                                    VerticalAlignment="Top"
                                     Command="{Binding OpenDocsCommand}">
-                            <StackPanel>
-                                <ContentControl Style="{StaticResource LinkManualIconStyle}"
-                                                Margin="0,0,0,3"/>
+                                <StackPanel>
+                                    <ContentControl Style="{StaticResource LinkManualIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="Manuals &amp; Docs"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           FontWeight="SemiBold"
-                                           TextAlignment="Center"/>
+                                               Style="{StaticResource DashboardTileLabelStyle}"/>
                                 </StackPanel>
-                        </Button>
+                            </Button>
 
-                        <Button Grid.Row="0"
+                            <Button Grid.Row="0"
                                     Grid.Column="2"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="70"
-                                    VerticalAlignment="Top"
                                     Command="{Binding OpenUserCommand}">
-                            <StackPanel>
-                                <ContentControl Style="{StaticResource LinkUserFolderIconStyle}"
-                                                Margin="0,0,0,3"/>
+                                <StackPanel>
+                                    <ContentControl Style="{StaticResource LinkUserFolderIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="User Folder"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           FontWeight="SemiBold"
-                                           TextAlignment="Center"/>
+                                               Style="{StaticResource DashboardTileLabelStyle}"/>
                                 </StackPanel>
-                        </Button>
+                            </Button>
 
                             <Button Grid.Row="2"
                                     Grid.Column="0"
                                     Style="{StaticResource DashboardTileButtonStyle}"
-                                    Height="70"
-                                    VerticalAlignment="Top"
                                     Command="{Binding OpenForumCommand}">
-                            <StackPanel>
-                                <ContentControl Style="{StaticResource LinkForumIconStyle}"
-                                                Margin="0,0,0,3"/>
+                                <StackPanel>
+                                    <ContentControl Style="{StaticResource LinkForumIconStyle}"
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="BMS Forum"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           FontWeight="SemiBold"
-                                           TextAlignment="Center"/>
+                                               Style="{StaticResource DashboardTileLabelStyle}"/>
                                 </StackPanel>
-                        </Button>
-
-
+                            </Button>
 
                             <Button Grid.Row="2"
-                                Grid.Column="2"
-                                Style="{StaticResource DashboardTileButtonStyle}"
-                                Height="70"
-                                VerticalAlignment="Top"
-                                Command="{Binding OpenScreenshotsCommand}">
+                                    Grid.Column="2"
+                                    Style="{StaticResource DashboardTileButtonStyle}"
+                                    Command="{Binding OpenScreenshotsCommand}">
                                 <StackPanel>
                                     <ContentControl Style="{StaticResource LinkScreenshotsIconStyle}"
-                                                Margin="0,0,0,3"/>
+                                                    Margin="0,0,0,3"/>
                                     <TextBlock Text="Screenshots"
-                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
-                                           FontWeight="SemiBold"
-                                           TextAlignment="Center"/>
+                                               Style="{StaticResource DashboardTileLabelStyle}"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -636,38 +467,10 @@
 
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border ClipToBounds="True">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <!-- Keep all three columns visually equal -->
-                                                <Setter Property="Margin" Value="0"/>
-                                                <Setter Property="Padding" Value="18,0,18,0"/>
-                                                <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}"/>
-                                                <Setter Property="BorderThickness" Value="0"/>
-
-                                                <!-- First item should align closer to the News heading -->
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
-                                                                 Value="0">
-                                                        <Setter Property="Padding" Value="0,0,18,0"/>
-                                                    </DataTrigger>
-
-                                                    <!-- Items 2 and 3 get only a left divider-->
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
-                                                                 Value="1">
-                                                        <Setter Property="BorderThickness" Value="1,0,0,0"/>
-                                                    </DataTrigger>
-
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
-                                                                 Value="2">
-                                                        <Setter Property="BorderThickness" Value="1,0,0,0"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding PublishedDisplay}"
+                                        <Border ClipToBounds="True"
+                                            Style="{StaticResource NewsItemBorderStyle}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding PublishedDisplay}"
                                                        Foreground="{DynamicResource AppMutedForegroundBrush}"
                                                        FontSize="{StaticResource FontSizeSmall}"
                                                        Margin="0,0,0,2"/>
@@ -676,14 +479,16 @@
                                                        TextWrapping="NoWrap"
                                                        TextTrimming="CharacterEllipsis"
                                                        Margin="0,0,0,2">
-                                            <Hyperlink NavigateUri="{Binding Link}"
+                                                <Hyperlink NavigateUri="{Binding Link}"
                                                            RequestNavigate="Hyperlink_RequestNavigate"
-                                                           Style="{StaticResource NewsHeadlineHyperlinkStyle}">
+                                                           Foreground="{DynamicResource AppAccentBrush}"
+                                                           TextDecorations="{x:Null}">
                                                     <Run Text="{Binding Title}"/>
                                                 </Hyperlink>
                                             </TextBlock>
 
-                                            <TextBlock Text="{Binding Description}"
+                                                <TextBlock Text="{Binding Description}"
+                                                       FontSize="{StaticResource FontSizeSmall}"
                                                        TextWrapping="Wrap"
                                                        TextTrimming="CharacterEllipsis"
                                                        MaxHeight="30"/>
