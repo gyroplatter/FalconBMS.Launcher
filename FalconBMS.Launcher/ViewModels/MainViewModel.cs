@@ -27,6 +27,7 @@ public sealed class MainViewModel : ViewModelBase
     private readonly RegistryService _registry = new();
     private readonly CallsignService _callsign = new();
     private readonly TheaterDiscoveryService _theaterDiscovery = new();
+    private readonly TheaterBackgroundService _theaterBackground = new();
     private readonly FirstPartyLauncherStripService _firstPartyStrip = new();
     private readonly ThirdPartyLauncherStripService _thirdPartyStrip = new();
     private readonly KeyCatalogService _keyCatalogService = new();
@@ -132,12 +133,8 @@ public sealed class MainViewModel : ViewModelBase
     private string? _selectedTheater;
     private bool _isLoadingTheater;
 
-    public bool IsHellasTheater =>
-    string.Equals(_selectedTheater, "hellas", StringComparison.OrdinalIgnoreCase);
-    public bool IsIsraelTheater =>
-    string.Equals(_selectedTheater, "israel", StringComparison.OrdinalIgnoreCase);
-    public bool IsBalkansTheater =>
-    string.Equals(_selectedTheater, "balkans", StringComparison.OrdinalIgnoreCase);
+    public string MainBackgroundImage =>
+        _theaterBackground.GetBackgroundImage(_selectedTheater);
 
     public string? SelectedTheater
     {
@@ -146,21 +143,32 @@ public sealed class MainViewModel : ViewModelBase
         {
             if (!Set(ref _selectedTheater, value)) return;
 
-            // The Main background artwork depends on the selected theater.
-            OnPropertyChanged(nameof(IsHellasTheater));
-            OnPropertyChanged(nameof(IsIsraelTheater));
-            OnPropertyChanged(nameof(IsBalkansTheater));
+            // Update the Main background whenever the selected theater changes.
+            OnPropertyChanged(nameof(MainBackgroundImage));
 
             if (_isLoadingTheater) return;
             if (SelectedInstall is null) return;
             if (string.IsNullOrWhiteSpace(value)) return;
 
-            var current = _registry.ReadString(SelectedInstall.RegistryKeyName, "curTheater");
+            // DEBUG-only preview entries change the artwork but must never
+            // be written into BMS's actual theater setting.
+            if (_theaterBackground.IsDebugOnlyTheater(value))
+                return;
+
+            var current = _registry.ReadString(
+                SelectedInstall.RegistryKeyName,
+                "curTheater");
+
             if (string.Equals(current, value, StringComparison.Ordinal))
                 return;
 
-            DebugDiagnosticsService.Info($"Writing theater selection: {value}");
-            _registry.WriteString(SelectedInstall.RegistryKeyName, "curTheater", value!);
+            DebugDiagnosticsService.Info(
+                $"Writing theater selection: {value}");
+
+            _registry.WriteString(
+                SelectedInstall.RegistryKeyName,
+                "curTheater",
+                value!);
         }
     }
 
@@ -671,21 +679,37 @@ public sealed class MainViewModel : ViewModelBase
             if (SelectedInstall is null) return;
 
             var theaters = _theaterDiscovery.PopulateAndSave(SelectedInstall.BaseDir);
+
             foreach (var t in theaters)
                 Theaters.Add(t);
 
-            var cur = _registry.ReadString(SelectedInstall.RegistryKeyName, "curTheater");
+            // In DEBUG builds, add preview entries for custom theater
+            // backgrounds when those theaters are not actually installed.
+            _theaterBackground.AddDebugPreviewTheaters(Theaters);
+
+            var cur = _registry.ReadString(
+                SelectedInstall.RegistryKeyName,
+                "curTheater");
 
             if (!string.IsNullOrWhiteSpace(cur))
             {
-                if (!Theaters.Any(x => string.Equals(x, cur, StringComparison.Ordinal)))
+                if (!Theaters.Any(
+                        x => string.Equals(
+                            x,
+                            cur,
+                            StringComparison.Ordinal)))
+                {
                     Theaters.Insert(0, cur!);
+                }
 
                 SelectedTheater = cur;
             }
             else
             {
-                SelectedTheater = Theaters.Count > 0 ? Theaters[0] : null;
+                SelectedTheater =
+                    Theaters.Count > 0
+                        ? Theaters[0]
+                        : null;
             }
         }
         finally

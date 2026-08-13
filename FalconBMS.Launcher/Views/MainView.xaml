@@ -10,45 +10,14 @@
     <!-- Outer Grid: Solid theme background and fixed background image -->
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
 
-        <Image Stretch="UniformToFill"
+        <Image Source="{Binding MainBackgroundImage}"
+               Stretch="UniformToFill"
                HorizontalAlignment="Center"
                VerticalAlignment="Bottom"
                Margin="0,0,0,-100"
                IsHitTestVisible="False"
                Opacity="{DynamicResource MainBackgroundArtworkOpacity}"
-               OpacityMask="{StaticResource MainBackgroundArtworkFadeBrush}">
-
-            <Image.Style>
-                <Style TargetType="Image">
-                    <!-- Default theater background image -->
-                    <Setter Property="Source"
-                            Value="/Assets/background-main.jpg"/>
-
-                    <Style.Triggers>
-                        <!-- Hellas theater background image -->
-                        <DataTrigger Binding="{Binding IsHellasTheater}"
-                                     Value="True">
-                            <Setter Property="Source"
-                                    Value="/Assets/background-main-hellas.jpg"/>
-                        </DataTrigger>
-
-                        <!-- Israel theater background image -->
-                        <DataTrigger Binding="{Binding IsIsraelTheater}"
-                                     Value="True">
-                            <Setter Property="Source"
-                                    Value="/Assets/background-main-israel.jpg"/>
-                        </DataTrigger>
-
-                        <!-- Balkans theater background image -->
-                        <DataTrigger Binding="{Binding IsBalkansTheater}"
-                                     Value="True">
-                            <Setter Property="Source"
-                                    Value="/Assets/background-main-balkans.jpg"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Image.Style>
-        </Image>
+               OpacityMask="{StaticResource MainBackgroundArtworkFadeBrush}"/>
 
         <ScrollViewer Background="Transparent"
                   VerticalScrollBarVisibility="Auto"

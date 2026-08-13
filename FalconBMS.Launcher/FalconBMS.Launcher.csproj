@@ -44,8 +44,11 @@
 	  <None Remove="Assets\background-main-balkans.jpg" />
 	  <None Remove="Assets\background-main-hellas.jpg" />
 	  <None Remove="Assets\background-main-israel.jpg" />
+	  <None Remove="Assets\background-main-korea.jpg" />
+	  <None Remove="Assets\background-main-korea1.jpg" />
+	  <None Remove="Assets\background-main-korea2.jpg" />
+	  <None Remove="Assets\background-main-korea3.jpg" />
 	  <None Remove="Assets\background-main.jpg" />
-	  <None Remove="Assets\background-main.png" />
 	  <None Remove="Assets\background-window-axispair.jpg" />
 	  <None Remove="Assets\background-window-callsign.jpg" />
 	  <None Remove="Assets\background-window-keymapping.jpg" />
@@ -129,6 +132,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\background-main-israel.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-main-korea.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\background-main.jpg">
