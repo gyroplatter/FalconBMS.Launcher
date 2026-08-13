@@ -90,6 +90,14 @@
         <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
     </Style>
 
+    <!-- Fade mask for the Main view's background image -->
+    <LinearGradientBrush x:Key="MainBackgroundArtworkFadeBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#00000000" Offset="0.0"/>
+        <GradientStop Color="#00000000" Offset="0.35"/>
+        <GradientStop Color="#FF000000" Offset="0.85"/>
+        <GradientStop Color="#FF000000" Offset="1.0"/>
+    </LinearGradientBrush>
+
     <!--
         View Layout: standard perimeter spacing for top-level view content.
         Apply this only to the first layout container inside a View.

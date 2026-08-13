@@ -7,18 +7,61 @@
              d:DesignWidth="1248"
              d:DesignHeight="680">
 
-    <ScrollViewer Background="{DynamicResource AppWindowBackgroundBrush}"
+    <!-- Outer Grid: Solid theme background and fixed background image -->
+    <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
+
+        <Image Stretch="UniformToFill"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Bottom"
+               Margin="0,0,0,-100"
+               IsHitTestVisible="False"
+               Opacity="{DynamicResource MainBackgroundArtworkOpacity}"
+               OpacityMask="{StaticResource MainBackgroundArtworkFadeBrush}">
+
+            <Image.Style>
+                <Style TargetType="Image">
+                    <!-- Default theater background image -->
+                    <Setter Property="Source"
+                            Value="/Assets/background-main.jpg"/>
+
+                    <Style.Triggers>
+                        <!-- Hellas theater background image -->
+                        <DataTrigger Binding="{Binding IsHellasTheater}"
+                                     Value="True">
+                            <Setter Property="Source"
+                                    Value="/Assets/background-main-hellas.jpg"/>
+                        </DataTrigger>
+
+                        <!-- Israel theater background image -->
+                        <DataTrigger Binding="{Binding IsIsraelTheater}"
+                                     Value="True">
+                            <Setter Property="Source"
+                                    Value="/Assets/background-main-israel.jpg"/>
+                        </DataTrigger>
+
+                        <!-- Balkans theater background image -->
+                        <DataTrigger Binding="{Binding IsBalkansTheater}"
+                                     Value="True">
+                            <Setter Property="Source"
+                                    Value="/Assets/background-main-balkans.jpg"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Image.Style>
+        </Image>
+
+        <ScrollViewer Background="Transparent"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled"
                   CanContentScroll="False">
-        <Grid Background="{DynamicResource AppWindowBackgroundBrush}"
+            <Grid Background="Transparent"
               Style="{StaticResource ViewContentRootStyle}"
               ClipToBounds="True">
 
-            <Grid.RowDefinitions>
+                <Grid.RowDefinitions>
                 <RowDefinition Height="170"/>
                 <RowDefinition Height="12"/>
-                <RowDefinition Height="285"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="12"/>
                 <RowDefinition Height="105"/>
             </Grid.RowDefinitions>
@@ -387,7 +430,7 @@
                                 <StackPanel>
                                     <ContentControl Style="{StaticResource LinkManualIconStyle}"
                                                     Margin="0,0,0,3"/>
-                                    <TextBlock Text="Manuals &amp; Docs"
+                                    <TextBlock Text="Manuals"
                                                Style="{StaticResource DashboardTileLabelStyle}"/>
                                 </StackPanel>
                             </Button>
@@ -494,13 +537,14 @@
                                                        MaxHeight="30"/>
                                         </StackPanel>
                                     </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
             </Grid>
-            </Border>
-        </Grid>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

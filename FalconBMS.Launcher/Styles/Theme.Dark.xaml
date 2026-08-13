@@ -1,5 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- Dark mode -->
     <SolidColorBrush x:Key="AppWindowBackgroundBrush" Color="#11161D"/>
@@ -12,6 +13,9 @@
     <SolidColorBrush x:Key="AppAccentHoverBrush" Color="#A9C8F0"/>
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#0D1218"/>
     <SolidColorBrush x:Key="AppModalOverlayBrush" Color="#B0000000"/>
+    
+    <!-- Opacity for the fixed background artwork behind the cards on Main -->
+    <sys:Double x:Key="MainBackgroundArtworkOpacity">0.26</sys:Double>
 
     <!-- Header/body separator line -->
     <SolidColorBrush x:Key="AppHeaderSeparatorBrush" Color="#4EA1FF"/>

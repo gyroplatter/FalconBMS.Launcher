@@ -132,12 +132,25 @@ public sealed class MainViewModel : ViewModelBase
     private string? _selectedTheater;
     private bool _isLoadingTheater;
 
+    public bool IsHellasTheater =>
+    string.Equals(_selectedTheater, "hellas", StringComparison.OrdinalIgnoreCase);
+    public bool IsIsraelTheater =>
+    string.Equals(_selectedTheater, "israel", StringComparison.OrdinalIgnoreCase);
+    public bool IsBalkansTheater =>
+    string.Equals(_selectedTheater, "balkans", StringComparison.OrdinalIgnoreCase);
+
     public string? SelectedTheater
     {
         get => _selectedTheater;
         set
         {
             if (!Set(ref _selectedTheater, value)) return;
+
+            // The Main background artwork depends on the selected theater.
+            OnPropertyChanged(nameof(IsHellasTheater));
+            OnPropertyChanged(nameof(IsIsraelTheater));
+            OnPropertyChanged(nameof(IsBalkansTheater));
+
             if (_isLoadingTheater) return;
             if (SelectedInstall is null) return;
             if (string.IsNullOrWhiteSpace(value)) return;
