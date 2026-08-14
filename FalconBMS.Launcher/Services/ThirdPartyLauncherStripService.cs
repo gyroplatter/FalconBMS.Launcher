@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Models;
+using Microsoft.Win32;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
@@ -19,8 +20,6 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class ThirdPartyLauncherStripService
 {
-    public const string F4WxDownloadUrl =
-        "https://forum.falcon-bms.com/topic/8267/f4wx-real-weather-converter";
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern uint ExtractIconEx(
@@ -69,8 +68,7 @@ public sealed class ThirdPartyLauncherStripService
     /// Loads saved applications in display order.
     ///
     /// When no JSON exists, this creates a new list containing only the
-    /// built-in F4Wx item. It does not read or migrate files from any earlier
-    /// failed implementation.
+    /// seeded, initially-unmapped TrackIR item.
     /// </summary>
     public IReadOnlyList<ThirdPartyToolItem> LoadTools()
     {
@@ -80,12 +78,11 @@ public sealed class ThirdPartyLauncherStripService
             {
                 new()
                 {
-                    Id = "f4wx",
-                    DisplayName = "F4Wx",
-                    ExecutablePath =
-                        Properties.Settings.Default.ThirdPartyF4WxExePath ?? "",
+                    Id = "trackir",
+                    DisplayName = "TrackIR",
+                    ExecutablePath = "",
                     IconCacheFileName = null,
-                    IsBuiltInF4Wx = true
+                    IsSeededTrackIr = true
                 }
             };
 
@@ -213,7 +210,7 @@ public sealed class ThirdPartyLauncherStripService
                     executablePath,
                 IconCacheFileName =
                     iconCacheFileName,
-                IsBuiltInF4Wx =
+                IsSeededTrackIr =
                     false
             };
 
@@ -293,7 +290,6 @@ public sealed class ThirdPartyLauncherStripService
 
     /// <summary>
     /// Deletes the cached PNG owned by a removed user application.
-    /// F4Wx has no cached PNG because it uses its existing built-in icon.
     /// </summary>
     public void DeleteCachedIcon(
         ThirdPartyToolItem tool)
@@ -319,21 +315,143 @@ public sealed class ThirdPartyLauncherStripService
         }
     }
 
-    public void SaveF4WxExecutablePath(
-        string executablePath)
+    /// <summary>
+    /// Tries only targeted TrackIR locations. This intentionally does not
+    /// enumerate installed applications or search the filesystem.
+    /// </summary>
+    public string? TryFindTrackIrExecutable()
     {
-        Properties.Settings.Default.ThirdPartyF4WxExePath =
-            executablePath;
+        string? registryCandidate =
+            TryReadTrackIrExecutableFromRegistry();
 
-        Properties.Settings.Default.Save();
+        if (!string.IsNullOrWhiteSpace(registryCandidate))
+            return registryCandidate;
+
+        string[] programFilesRoots =
+        {
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.ProgramFilesX86),
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.ProgramFiles)
+        };
+
+        foreach (string root in programFilesRoots
+                     .Where(path => !string.IsNullOrWhiteSpace(path))
+                     .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            string candidate =
+                Path.Combine(
+                    root,
+                    "NaturalPoint",
+                    "TrackIR5",
+                    "TrackIR5.exe");
+
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
     }
 
-    public void ClearF4WxExecutablePath()
+    /// <summary>
+    /// Maps only the seeded TrackIR tile. TrackIR added later through Customize
+    /// never calls this path and remains a normal custom tool.
+    /// </summary>
+    public bool TryMapSeededTrackIr(
+        ThirdPartyToolItem tool,
+        string executablePath,
+        out string? errorMessage)
     {
-        Properties.Settings.Default.ThirdPartyF4WxExePath =
-            "";
+        errorMessage = null;
 
-        Properties.Settings.Default.Save();
+        if (!tool.IsSeededTrackIr)
+        {
+            errorMessage =
+                "Only the default TrackIR shortcut can use automatic setup.";
+
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(executablePath) ||
+            !File.Exists(executablePath))
+        {
+            errorMessage =
+                "The TrackIR executable could not be found.";
+
+            return false;
+        }
+
+        if (!string.Equals(
+                Path.GetFileName(executablePath),
+                "TrackIR5.exe",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            errorMessage =
+                "Select TrackIR5.exe.";
+
+            return false;
+        }
+
+        DeleteCachedIcon(tool);
+
+        tool.ExecutablePath =
+            executablePath;
+
+        tool.IconCacheFileName =
+            ExtractAndCacheIcon(
+                executablePath,
+                tool.Id);
+
+        LoadCachedIcon(tool);
+
+        return true;
+    }
+
+    public void ClearSeededTrackIrMapping(
+        ThirdPartyToolItem tool)
+    {
+        DeleteCachedIcon(tool);
+
+        tool.ExecutablePath = "";
+        tool.IconCacheFileName = null;
+        tool.IconSource = null;
+    }
+
+    private static string? TryReadTrackIrExecutableFromRegistry()
+    {
+        try
+        {
+            using RegistryKey? key =
+                Registry.CurrentUser.OpenSubKey(
+                    @"SOFTWARE\NaturalPoint\NATURALPOINT\NPClient Location",
+                    writable: false);
+
+            string? installDirectory =
+                key?.GetValue("Path") as string;
+
+            if (installDirectory == null ||
+                string.IsNullOrWhiteSpace(installDirectory))
+            {
+                return null;
+            }
+
+            string candidate =
+                Path.Combine(
+                    installDirectory.Trim().Trim('"'),
+                    "TrackIR5.exe");
+
+            return File.Exists(candidate)
+                ? candidate
+                : null;
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                "TrackIR registry detection failed");
+
+            return null;
+        }
     }
 
     private static string ReadDisplayName(

@@ -2200,7 +2200,38 @@
         </Setter>
     </Style>
 
-    <!-- Generic fallback icon for Community Tools without an application icon. -->
+    <!-- Show only for the original unmapped TrackIR shortcut -->
+    <Style x:Key="CommunityToolSeededTrackIrIconStyle"
+           TargetType="Image">
+        <Setter Property="Width"
+                Value="38"/>
+        <Setter Property="Height"
+                Value="38"/>
+        <Setter Property="Stretch"
+                Value="Uniform"/>
+        <Setter Property="HorizontalAlignment"
+                Value="Center"/>
+        <Setter Property="VerticalAlignment"
+                Value="Center"/>
+        <Setter Property="Visibility"
+                Value="Collapsed"/>
+
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsSeededTrackIr}"
+                               Value="True"/>
+                    <Condition Binding="{Binding ExecutablePath}"
+                               Value=""/>
+                </MultiDataTrigger.Conditions>
+
+                <Setter Property="Visibility"
+                        Value="Visible"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Generic fallback icon for Tool shortcuts without an application icon -->
     <Style x:Key="CommunityToolFallbackIconStyle"
            TargetType="ContentControl"
            BasedOn="{StaticResource LinkThirdPartyIconStyle}">
@@ -2212,30 +2243,13 @@
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding IconSource}"
                                Value="{x:Null}"/>
-
-                    <Condition Binding="{Binding IsBuiltInF4Wx}"
+                    <Condition Binding="{Binding IsSeededTrackIr}"
                                Value="False"/>
                 </MultiDataTrigger.Conditions>
 
                 <Setter Property="Visibility"
                         Value="Visible"/>
             </MultiDataTrigger>
-        </Style.Triggers>
-    </Style>
-
-    <!-- Built-in F4Wx icon visibility for Community Tools. -->
-    <Style x:Key="CommunityToolF4WxIconStyle"
-           TargetType="ContentControl"
-           BasedOn="{StaticResource LinkF4WxIconStyle}">
-        <Setter Property="Visibility"
-                Value="Collapsed"/>
-
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding IsBuiltInF4Wx}"
-                         Value="True">
-                <Setter Property="Visibility"
-                        Value="Visible"/>
-            </DataTrigger>
         </Style.Triggers>
     </Style>
 

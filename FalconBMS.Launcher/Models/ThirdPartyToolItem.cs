@@ -29,10 +29,10 @@ public sealed class ThirdPartyToolItem
     public string? IconCacheFileName { get; set; }
 
     /// <summary>
-    /// Identifies the original built-in F4Wx entry.
-    /// This entry preserves the launcher's existing picker and website behavior.
+    /// Identifies the TrackIR tile seeded only when a new Tools list is created.
+    /// A TrackIR tool added later through Customize is a normal custom tool.
     /// </summary>
-    public bool IsBuiltInF4Wx { get; set; }
+    public bool IsSeededTrackIr { get; set; }
 
     /// <summary>
     /// Runtime-only image loaded from the cached PNG.

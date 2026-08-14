@@ -1146,9 +1146,9 @@ public sealed class MainViewModel : ViewModelBase
         if (parameter is not ThirdPartyToolItem item)
             return;
 
-        if (item.IsBuiltInF4Wx)
+        if (item.IsSeededTrackIr)
         {
-            LaunchBuiltInF4Wx(item);
+            LaunchSeededTrackIr(item);
             return;
         }
 
@@ -1180,21 +1180,29 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private void LaunchBuiltInF4Wx(
+    private void LaunchSeededTrackIr(
         ThirdPartyToolItem item)
     {
         try
         {
             string executablePath =
-                Properties.Settings.Default.ThirdPartyF4WxExePath ?? "";
+                item.ExecutablePath;
 
+            // A previously mapped TrackIR executable disappeared.
+            // Return the seeded tile to its unmapped state and try again.
             if (!string.IsNullOrWhiteSpace(executablePath) &&
                 !File.Exists(executablePath))
             {
-                _thirdPartyStrip.ClearF4WxExecutablePath();
+                DebugDiagnosticsService.Warn(
+                    $"TrackIR saved executable is missing | Path={executablePath}");
+
+                _thirdPartyStrip.ClearSeededTrackIrMapping(
+                    item);
 
                 executablePath = "";
-                item.ExecutablePath = "";
+
+                RefreshThirdPartyTool(
+                    item);
 
                 _thirdPartyStrip.SaveTools(
                     ThirdPartyItems,
@@ -1203,36 +1211,119 @@ public sealed class MainViewModel : ViewModelBase
 
             if (string.IsNullOrWhiteSpace(executablePath))
             {
-                var dialog =
-                    new OpenFileDialog
-                    {
-                        Title = "Locate F4Wx",
-                        Filter = "Executable files (*.exe)|*.exe",
-                        CheckFileExists = true,
-                        Multiselect = false,
-                        FileName = "F4Wx.exe"
-                    };
+                // Detection runs only because this is the original seeded
+                // TrackIR tile with no working executable mapping.
+                string? detectedPath =
+                    _thirdPartyStrip.TryFindTrackIrExecutable();
 
-                if (dialog.ShowDialog() != true)
+                if (detectedPath != null &&
+                    !string.IsNullOrWhiteSpace(detectedPath))
                 {
-                    _proc.OpenUrl(
-                        ThirdPartyLauncherStripService.F4WxDownloadUrl);
+                    if (!_thirdPartyStrip.TryMapSeededTrackIr(
+                            item,
+                            detectedPath,
+                            out string? mapError))
+                    {
+                        MessageBox.Show(
+                            mapError ??
+                            "TrackIR could not be connected to the Launcher.",
+                            "TrackIR",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
 
-                    return;
+                        return;
+                    }
+
+                    executablePath =
+                        detectedPath;
+
+                    if (!_thirdPartyStrip.SaveTools(
+                            ThirdPartyItems,
+                            out string? saveError))
+                    {
+                        _thirdPartyStrip.ClearSeededTrackIrMapping(
+                            item);
+
+                        RefreshThirdPartyTool(
+                            item);
+
+                        MessageBox.Show(
+                            saveError ??
+                            "The TrackIR mapping could not be saved.",
+                            "TrackIR",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+
+                        return;
+                    }
+
+                    RefreshThirdPartyTool(
+                        item);
+
+                    DebugDiagnosticsService.Info(
+                        $"TrackIR auto-detected | Path={executablePath}");
                 }
+                else
+                {
+                    var dialog =
+                        new OpenFileDialog
+                        {
+                            Title =
+                                "Locate TrackIR - Select your TrackIR executable to connect it to the Launcher",
+                            Filter =
+                                "TrackIR executable (TrackIR5.exe)|TrackIR5.exe|Executable files (*.exe)|*.exe",
+                            CheckFileExists = true,
+                            Multiselect = false,
+                            FileName = "TrackIR5.exe"
+                        };
 
-                executablePath =
-                    dialog.FileName;
+                    if (dialog.ShowDialog() != true)
+                        return;
 
-                _thirdPartyStrip.SaveF4WxExecutablePath(
-                    executablePath);
+                    if (!_thirdPartyStrip.TryMapSeededTrackIr(
+                            item,
+                            dialog.FileName,
+                            out string? mapError))
+                    {
+                        MessageBox.Show(
+                            mapError ??
+                            "TrackIR could not be connected to the Launcher.",
+                            "Locate TrackIR",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
 
-                item.ExecutablePath =
-                    executablePath;
+                        return;
+                    }
 
-                _thirdPartyStrip.SaveTools(
-                    ThirdPartyItems,
-                    out _);
+                    executablePath =
+                        dialog.FileName;
+
+                    if (!_thirdPartyStrip.SaveTools(
+                            ThirdPartyItems,
+                            out string? saveError))
+                    {
+                        _thirdPartyStrip.ClearSeededTrackIrMapping(
+                            item);
+
+                        RefreshThirdPartyTool(
+                            item);
+
+                        MessageBox.Show(
+                            saveError ??
+                            "The TrackIR mapping could not be saved.",
+                            "TrackIR",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+
+                        return;
+                    }
+
+                    RefreshThirdPartyTool(
+                        item);
+
+                    DebugDiagnosticsService.Info(
+                        $"TrackIR located manually | Path={executablePath}");
+                }
             }
 
             _proc.StartExecutable(
@@ -1247,6 +1338,17 @@ public sealed class MainViewModel : ViewModelBase
                 MessageBoxImage.Error);
         }
     }
+
+    private void RefreshThirdPartyTool(
+        ThirdPartyToolItem item)
+    {
+        int index =
+            ThirdPartyItems.IndexOf(item);
+
+        if (index >= 0)
+            ThirdPartyItems[index] = item;
+    }
+
 
     private void AddThirdPartyTool()
     {

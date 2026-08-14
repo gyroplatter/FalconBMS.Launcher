@@ -234,19 +234,20 @@
 
                                                     <Grid>
 
-                                                        <!-- Generic fallback for an application with no icon -->
-                                                        <ContentControl Style="{StaticResource CommunityToolFallbackIconStyle}"/>
+                                                            <!-- Seeded TrackIR icon before its executable is mapped -->
+                                                            <Image Source="/Assets/trackir.png"
+                                                                   Style="{StaticResource CommunityToolSeededTrackIrIconStyle}"/>
 
-                                                        <!-- Built-in F4Wx uses its shared vector icon -->
-                                                        <ContentControl Style="{StaticResource CommunityToolF4WxIconStyle}"/>
+                                                            <!-- Generic fallback for an application with no icon -->
+                                                            <ContentControl Style="{StaticResource CommunityToolFallbackIconStyle}"/>
 
-                                                        <Image Source="{Binding IconSource}"
-                                                               Width="38"
-                                                               Height="38"
-                                                               Stretch="Uniform"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"/>
-                                                    </Grid>
+                                                            <Image Source="{Binding IconSource}"
+                                                                   Width="38"
+                                                                   Height="38"
+                                                                   Stretch="Uniform"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                        </Grid>
                                                 </Button>
 
                                                 <!--
