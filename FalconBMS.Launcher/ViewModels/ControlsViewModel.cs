@@ -1194,7 +1194,7 @@ public sealed class ControlsViewModel : ViewModelBase
         }
     }
 
-    private static string GetPovDirectionName(int direction)
+    public static string GetPovDirectionName(int direction)
     {
         return direction switch
         {

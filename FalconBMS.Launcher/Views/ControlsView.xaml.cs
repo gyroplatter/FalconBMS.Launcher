@@ -28,6 +28,31 @@ public partial class ControlsView : UserControl
     private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
     private readonly Dictionary<string, int[]> _previousPovsByDeviceKey = new();
 
+    // Last Input axis detection uses the same basic jitter protections as axis
+    // assignment, but with a lower movement threshold
+    private const int LastInputAxisSettleMs = 600;
+    private const int LastInputAxisStableHitsRequired = 3;
+    private const double LastInputAxisDominantRatio = 1.5;
+
+    private static readonly int LastInputAxisMovementThreshold =
+        (DetentPosition.MaxAxisValue - DetentPosition.MinAxisValue) / 16;
+
+    private readonly Dictionary<string, int[]> _lastInputAxisBaselineByDeviceKey = new();
+    private readonly Dictionary<string, int> _lastInputAxisStableHitsByCandidate = new();
+
+    private DateTime _lastInputAxisCaptureStartedUtc;
+
+    private sealed class LastInputAxisCandidate
+    {
+        public required DeviceBindingProfile Device { get; init; }
+        public required int AxisIndex { get; init; }
+        public required int CurrentValue { get; init; }
+        public required int Delta { get; init; }
+
+        public string CandidateKey =>
+            Device.DurableDeviceKey + ":" + AxisIndex;
+    }
+
     // Tracks which dynamic device column belongs to which DurableDeviceKey.
     // This keeps double-click mapping correct even after the user reorders columns.
     private readonly Dictionary<DataGridColumn, string> _deviceKeyByColumn = new();
@@ -342,14 +367,7 @@ public partial class ControlsView : UserControl
 
     private static object GetDeviceColumnHeader(DeviceBindingProfile deviceProfile)
     {
-        string displayName;
-
-        if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
-            displayName = deviceProfile.ProductName;
-        else if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
-            displayName = deviceProfile.InstanceName;
-        else
-            displayName = deviceProfile.DurableDeviceKey;
+        string displayName = GetDeviceDisplayName(deviceProfile);
 
         if (deviceProfile.IsConnected)
             return displayName;
@@ -371,6 +389,30 @@ public partial class ControlsView : UserControl
         });
 
         return panel;
+    }
+
+    private static string GetDeviceDisplayName(DeviceBindingProfile deviceProfile)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceProfile.ProductName))
+            return deviceProfile.ProductName;
+
+        if (!string.IsNullOrWhiteSpace(deviceProfile.InstanceName))
+            return deviceProfile.InstanceName;
+
+        return deviceProfile.DurableDeviceKey;
+    }
+
+    private void UpdateLastInput(string deviceName, string inputName)
+    {
+        // Avoid unnecessary WPF property changes while an input remains active
+        if (LastInputDeviceText.Text == deviceName &&
+            LastInputValueText.Text == inputName)
+        {
+            return;
+        }
+
+        LastInputDeviceText.Text = deviceName;
+        LastInputValueText.Text = inputName;
     }
 
     private static DataTemplate CreateDeviceCellTemplate(
@@ -796,6 +838,12 @@ public partial class ControlsView : UserControl
     {
         StopKeyboardSearchCapture();
 
+        // Establish fresh axis baselines whenever Controls input polling starts.
+        // This does not add another polling loop, last Input uses the existing timer.
+        _lastInputAxisCaptureStartedUtc = DateTime.UtcNow;
+        _lastInputAxisBaselineByDeviceKey.Clear();
+        _lastInputAxisStableHitsByCandidate.Clear();
+
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromMilliseconds(30)
@@ -892,6 +940,19 @@ public partial class ControlsView : UserControl
 
         if (caught == DiKey.Unknown)
             return;
+
+        string keyDisplayName = caught.ToString();
+
+        if (shift)
+            keyDisplayName = "Shift + " + keyDisplayName;
+
+        if (ctrl)
+            keyDisplayName = "Ctrl + " + keyDisplayName;
+
+        if (alt)
+            keyDisplayName = "Alt + " + keyDisplayName;
+
+        UpdateLastInput("Keyboard", keyDisplayName);
 
         string assignmentStatus = KeyAssgn.GetKeyAssignmentStatus(
             "0x" + ((int)caught).ToString("X"),
@@ -1010,6 +1071,15 @@ public partial class ControlsView : UserControl
 
                 bool isRelease = wasPressed && !isPressed;
 
+                // Last Input reports the physical press. Releasing a button should
+                // not replace the useful information the user just saw.
+                if (!wasPressed && isPressed)
+                {
+                    UpdateLastInput(
+                        GetDeviceDisplayName(deviceProfile),
+                        "DX" + (buttonIndex + 1));
+                }
+
                 selectedMatch = viewModel.SelectFirstVisibleDxMatch(
                     deviceProfile.DurableDeviceKey,
                     buttonIndex,
@@ -1033,6 +1103,11 @@ public partial class ControlsView : UserControl
 
                 if (!direction.HasValue)
                     continue;
+
+                UpdateLastInput(
+                    GetDeviceDisplayName(deviceProfile),
+                    "POV" + (povIndex + 1) + " " +
+                    ControlsViewModel.GetPovDirectionName(direction.Value));
 
                 selectedMatch = viewModel.SelectFirstVisiblePovMatch(
                     deviceProfile.DurableDeviceKey,
@@ -1086,6 +1161,9 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
+        var lastInputCandidates =
+            new List<LastInputAxisCandidate>();
+
         foreach (DeviceBindingProfile deviceProfile in
                  viewModel.DeviceColumns.Where(device =>
                      device.IsConnected &&
@@ -1109,6 +1187,13 @@ public partial class ControlsView : UserControl
             {
                 continue;
             }
+
+            // Reuse the axis state that was already read for the live mapping bars.
+            // No additional DirectInput polling is required for Last Input.
+            AddLastInputAxisCandidates(
+                deviceProfile,
+                axisValues,
+                lastInputCandidates);
 
             foreach (ControlGridRowViewModel row in
                      viewModel.Rows.Where(row =>
@@ -1173,6 +1258,143 @@ public partial class ControlsView : UserControl
                         cell.Invert);
             }
         }
+
+        UpdateLastInputFromAxisCandidates(
+            lastInputCandidates);
+    }
+
+    private void AddLastInputAxisCandidates(
+        DeviceBindingProfile deviceProfile,
+        int[] axisValues,
+        List<LastInputAxisCandidate> candidates)
+    {
+        // For the first short period after polling starts, continually refresh
+        // the baseline. This prevents startup state/noise from being mistaken
+        // for intentional movement.
+        if ((DateTime.UtcNow - _lastInputAxisCaptureStartedUtc).TotalMilliseconds <
+            LastInputAxisSettleMs)
+        {
+            _lastInputAxisBaselineByDeviceKey[deviceProfile.DurableDeviceKey] =
+                (int[])axisValues.Clone();
+
+            return;
+        }
+
+        if (!_lastInputAxisBaselineByDeviceKey.TryGetValue(
+                deviceProfile.DurableDeviceKey,
+                out int[]? baseline))
+        {
+            _lastInputAxisBaselineByDeviceKey[deviceProfile.DurableDeviceKey] =
+                (int[])axisValues.Clone();
+
+            return;
+        }
+
+        int axisLimit = Math.Min(
+            Math.Min(axisValues.Length, baseline.Length),
+            Math.Max(0, deviceProfile.AxisCount));
+
+        for (int axisIndex = 0;
+             axisIndex < axisLimit;
+             axisIndex++)
+        {
+            int delta = Math.Abs(
+                axisValues[axisIndex] -
+                baseline[axisIndex]);
+
+            if (delta < LastInputAxisMovementThreshold)
+                continue;
+
+            candidates.Add(
+                new LastInputAxisCandidate
+                {
+                    Device = deviceProfile,
+                    AxisIndex = axisIndex,
+                    CurrentValue = axisValues[axisIndex],
+                    Delta = delta
+                });
+        }
+    }
+
+    private void UpdateLastInputFromAxisCandidates(
+        List<LastInputAxisCandidate> candidates)
+    {
+        if (candidates.Count == 0)
+        {
+            _lastInputAxisStableHitsByCandidate.Clear();
+            return;
+        }
+
+        LastInputAxisCandidate best =
+            candidates
+                .OrderByDescending(candidate => candidate.Delta)
+                .First();
+
+        LastInputAxisCandidate? secondBest =
+            candidates
+                .Where(candidate =>
+                    !string.Equals(
+                        candidate.CandidateKey,
+                        best.CandidateKey,
+                        StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(candidate => candidate.Delta)
+                .FirstOrDefault();
+
+        // Same principle used by axis assignment:
+        // if two axes are moving by similar amounts, do not guess which one
+        // the user intended to move.
+        if (secondBest is not null &&
+            best.Delta <
+            secondBest.Delta * LastInputAxisDominantRatio)
+        {
+            _lastInputAxisStableHitsByCandidate.Clear();
+            return;
+        }
+
+        foreach (string key in
+                 _lastInputAxisStableHitsByCandidate.Keys.ToList())
+        {
+            if (!string.Equals(
+                    key,
+                    best.CandidateKey,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _lastInputAxisStableHitsByCandidate[key] = 0;
+            }
+        }
+
+        int stableHits =
+            _lastInputAxisStableHitsByCandidate.TryGetValue(
+                best.CandidateKey,
+                out int currentHits)
+                ? currentHits + 1
+                : 1;
+
+        _lastInputAxisStableHitsByCandidate[best.CandidateKey] =
+            stableHits;
+
+        if (stableHits < LastInputAxisStableHitsRequired)
+            return;
+
+        UpdateLastInput(
+            GetDeviceDisplayName(best.Device),
+            PhysicalAxisNameService.GetDisplayName(best.AxisIndex) +
+            " Axis");
+
+        // The movement has now been recognized. Move this axis reference
+        // position to its current location so holding the control there does
+        // not repeatedly trigger the same Last Input event.
+        if (_lastInputAxisBaselineByDeviceKey.TryGetValue(
+                best.Device.DurableDeviceKey,
+                out int[]? baseline) &&
+            best.AxisIndex >= 0 &&
+            best.AxisIndex < baseline.Length)
+        {
+            baseline[best.AxisIndex] =
+                best.CurrentValue;
+        }
+
+        _lastInputAxisStableHitsByCandidate.Clear();
     }
 
     private JoystickSession? EnsureJoystickOpened(DeviceBindingProfile deviceProfile, IntPtr hwnd)
