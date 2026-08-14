@@ -14,6 +14,13 @@
     <SolidColorBrush x:Key="AppHeaderBackgroundBrush" Color="#1E232E"/>
     <SolidColorBrush x:Key="AppModalOverlayBrush" Color="#99000000"/>
 
+    <!-- Theme-specific header artwork. -->
+    <BitmapImage x:Key="AppHeaderLogoImage"
+                 UriSource="/Assets/bms-logo-dark.png"/>
+
+    <BitmapImage x:Key="AppHeaderBackgroundImage"
+                 UriSource="/Assets/background-header-light.jpg"/>
+
     <!-- Opacity for the fixed background artwork behind the cards on Main. The lower the number, 
     the more transparent. 1.0 is no transparency -->
     <sys:Double x:Key="MainBackgroundArtworkOpacity">0.55</sys:Double>
