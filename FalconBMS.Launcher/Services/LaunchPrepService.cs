@@ -40,11 +40,14 @@ public sealed class LaunchPrepService
         // same in-memory binding model.
         _deviceJsonWriter.Write(baseDir, bindingModel.DeviceProfiles);
 
-        _legacyAutoKeyWriter.Write(baseDir, bindingModel);
-
         IReadOnlyList<DeviceBindingProfile> connectedDeviceProfiles = bindingModel.DeviceProfiles
             .Where(profile => profile.IsConnected)
             .ToList();
+
+        // All BMS legacy output must use the same current connected-device list.
+        // Offline profiles remain preserved in JSON, but must not affect BMS device
+        // slot numbering or shifted DX offsets.
+        _legacyAutoKeyWriter.Write(baseDir, bindingModel, connectedDeviceProfiles);
 
         IReadOnlyList<DeviceBindingProfile> offlineConfiguredDeviceProfiles = bindingModel.DeviceProfiles
             .Where(profile => !profile.IsConnected && HasAnyAssignedBinding(profile))

@@ -25,7 +25,10 @@ public sealed class LegacyAutoKeyWriterService
     private static readonly Regex OldNameSanitizeRx =
         new(@"[^A-Za-z0-9\~\`\[\]\{\}\-_\=\'\x20]", RegexOptions.Compiled);
 
-    public void Write(string baseDir, BindingModel bindingModel)
+    public void Write(
+        string baseDir,
+        BindingModel bindingModel,
+        System.Collections.Generic.IReadOnlyList<DeviceBindingProfile> connectedDeviceProfiles)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("KEYOUT");
         DebugDiagnosticsService.Info($"Legacy AUTO key write begin. | ActionId={actionId}");
@@ -36,6 +39,7 @@ public sealed class LegacyAutoKeyWriterService
         WriteProfile(
             configDir,
             bindingModel,
+            connectedDeviceProfiles,
             aircraftProfile: "F-16",
             fileName: "BMS - Auto.key",
             actionId: actionId);
@@ -43,6 +47,7 @@ public sealed class LegacyAutoKeyWriterService
         WriteProfile(
             configDir,
             bindingModel,
+            connectedDeviceProfiles,
             aircraftProfile: "F-15ABCD",
             fileName: "BMS - Auto-F15ABCD.key",
             actionId: actionId);
@@ -53,6 +58,7 @@ public sealed class LegacyAutoKeyWriterService
     private static void WriteProfile(
         string configDir,
         BindingModel bindingModel,
+        System.Collections.Generic.IReadOnlyList<DeviceBindingProfile> connectedDeviceProfiles,
         string aircraftProfile,
         string fileName,
         string actionId)
@@ -68,7 +74,10 @@ public sealed class LegacyAutoKeyWriterService
 
         string path = Path.Combine(configDir, fileName);
         string beforeSignature = DebugDiagnosticsService.GetFileSignature(path);
-        string content = BuildProfileContent(profile, bindingModel.DeviceProfiles, aircraftProfile);
+
+        // Use the same connected-device list as every other BMS legacy output.
+        // This keeps normal and shifted DX numbering aligned with DeviceSorting.txt.
+        string content = BuildProfileContent(profile, connectedDeviceProfiles, aircraftProfile);
 
         if (File.Exists(path))
             File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
