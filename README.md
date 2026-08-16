@@ -9,7 +9,7 @@ The goal of this project is to modernize the Launcher codebase and redesign the 
 
 This new Launcher serves as a bridge between the current Falcon BMS file system and possible future enhancements. Falcon BMS 4.38 still depends on several existing file formats, and some third-party tools still read those files directly. To avoid breaking those workflows, this Launcher continues to generate the required legacy files, but those files are treated as compatibility outputs rather than the primary editing model.
 
-On startup, the Launcher builds its working model from current BMS input files and saved Launcher JSON files:
+On startup, the Launcher builds its working model from current BMS input files and prior-run Launcher JSON files:
 
 - For first launch, the new Launcher checks the selected Falcon BMS installation for existing v2 Launcher control files. If found, it automatically backs them up to a new folder, imports the old controls into the new JSON-based binding format, and shows a confirmation with the backup location. This check only runs once, and the new Launcher uses the generated JSON binding files going forward.
 
@@ -46,26 +46,28 @@ This project uses the following NuGet packages:
 ## Current Status
 
 ### Completed
-- Install discovery
+- Falcon BMS install discovery and selection
+- Theater discovery and selection
 - Device discovery, sorting, and mapping (DirectInput)
-- XML file loading
-- KEY file loading
 - In-memory model
-- v2 Launcher file import
-- JSON file loading, editing, and saving
+- v2 Launcher file backup and import
+- XML file loading and saving
+- KEY file loading and saving
+- JSON file loading and saving
+- Key and DX editing
+- Controls import/export
 - Falcon BMS User.cfg override handling
 - Callsign/name registry updates
 - POP and LBK file generation
+- User editable program shortcuts 
+- Light, dark, and system theme handling
 - Launcher_Log.txt diagnostic output
 
 ---
 
 ### In Progress
 
-- UI and styling refinements
 - Launcher bypass
-- Control export
-- Performance optimizations
 
 ---
 
@@ -130,7 +132,8 @@ The Launcher does not treat JSON loading as an all-or-nothing step. Keyboard and
 11. If device JSON exists, load that device profile from JSON
 12. If device JSON does not exist, build that device profile from matched stock XML
 13. If no stock XML exists for that device, build an empty device profile
-14. Build the complete in-memory binding model
+14. Retain saved profiles for devices that are currently offline
+15. Build the complete in-memory binding model
 
 
 ### Save and Launch Flow
