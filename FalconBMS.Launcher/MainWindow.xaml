@@ -57,7 +57,7 @@
                 <Image Source="{DynamicResource AppHeaderBackgroundImage}"
                        Stretch="UniformToFill"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
+                       VerticalAlignment="Top"
                        RenderOptions.BitmapScalingMode="HighQuality"/>
 
                 <!-- Header content -->
