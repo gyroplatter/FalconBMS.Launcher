@@ -53,6 +53,7 @@
 	  <None Remove="Assets\background-main-korea2.jpg" />
 	  <None Remove="Assets\background-main-korea3.jpg" />
 	  <None Remove="Assets\background-main.jpg" />
+	  <None Remove="Assets\background-v2-import.jpg" />
 	  <None Remove="Assets\background-window-axispair.jpg" />
 	  <None Remove="Assets\background-window-callsign.jpg" />
 	  <None Remove="Assets\background-window-keymapping.jpg" />
@@ -148,6 +149,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\background-main.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\background-v2-import.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\background-window-axispair.jpg">

@@ -11,72 +11,88 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource AppWindowBackgroundBrush}">
 
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Grid ClipToBounds="True">
 
-        <TextBlock x:Name="HeaderTextBlock"
-                   Grid.Row="0"
-                   FontSize="22"
-                   FontWeight="SemiBold"
-                   Text="Welcome to the new BMS Launcher"/>
+        <!-- V2 import window background -->
+        <Image Source="/Assets/background-v2-import.jpg"
+               Stretch="UniformToFill"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               RenderOptions.BitmapScalingMode="HighQuality"/>
 
-        <TextBlock x:Name="IntroTextBlock"
-                   Grid.Row="1"
-                   Margin="0,14,0,0"
-                   TextWrapping="Wrap"
-                   Style="{StaticResource BodyTextBlockStyle}"
-                   Text="Your old Launcher control setup was found and imported into this new Launcher."/>
+        <!-- Fade the artwork into the current light/dark window background
+             so the text remains readable in both themes -->
+        <Border Background="{DynamicResource AppWindowBackgroundBrush}"
+                Opacity="0.80"
+                IsHitTestVisible="False"/>
 
-        <TextBlock x:Name="BackupTextBlock"
-                   Grid.Row="2"
-                   Margin="0,12,0,0"
-                   TextWrapping="Wrap"
-                   Style="{StaticResource BodyTextBlockStyle}">
-            <Run x:Name="BackupIntroRun"
-                 Text="A backup of your original setup was created in your BMS installation folder:"/>
-            <LineBreak/>
-            <Run x:Name="BackupFolderRun"
-                 FontWeight="SemiBold"
-                 Text="User\Config\Launcher-Backups\V2-to-V3-Import"/>
-        </TextBlock>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <StackPanel x:Name="ImportMessagesPanel"
-                    Grid.Row="3"
-                    Margin="0,20,0,0">
-
-            <TextBlock x:Name="ImportMessagesHeaderTextBlock"
-                       FontSize="16"
+            <TextBlock x:Name="HeaderTextBlock"
+                       Grid.Row="0"
+                       FontSize="22"
                        FontWeight="SemiBold"
-                       Style="{StaticResource DialogSectionLabelStyle}"
-                       Text="Import Messages"/>
+                       Text="Welcome to the new BMS Launcher"/>
 
-            <TextBox x:Name="ImportMessagesTextBox"
-                     Height="120"
-                     Padding="10"
-                     IsReadOnly="True"
-                     IsReadOnlyCaretVisible="False"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Disabled"
-                     Text="Controls that could not be imported"/>
-        </StackPanel>
+            <TextBlock x:Name="IntroTextBlock"
+                       Grid.Row="1"
+                       Margin="0,14,0,0"
+                       TextWrapping="Wrap"
+                       Style="{StaticResource BodyTextBlockStyle}"
+                       Text="Your old Launcher control setup was found and imported into this new Launcher."/>
 
-        <Button x:Name="ContinueButton"
-                Grid.Row="4"
-                Width="120"
-                Height="34"
-                Margin="0,22,0,0"
-                HorizontalAlignment="Right"
-                IsDefault="True"
-                Style="{StaticResource TertiaryButtonStyle}"
-                Content="Continue"
-                Click="ContinueButton_Click"/>
+            <TextBlock x:Name="BackupTextBlock"
+                       Grid.Row="2"
+                       Margin="0,12,0,0"
+                       TextWrapping="Wrap"
+                       Style="{StaticResource BodyTextBlockStyle}">
+                <Run x:Name="BackupIntroRun"
+                     Text="A backup of your original setup was created in your BMS installation folder:"/>
+                <LineBreak/>
+                <Run x:Name="BackupFolderRun"
+                     FontWeight="SemiBold"
+                     Text="User\Config\Launcher-Backups\V2-to-V3-Import"/>
+            </TextBlock>
+
+            <StackPanel x:Name="ImportMessagesPanel"
+                        Grid.Row="3"
+                        Margin="0,20,0,0">
+
+                <TextBlock x:Name="ImportMessagesHeaderTextBlock"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Style="{StaticResource DialogSectionLabelStyle}"
+                           Text="Import Messages"/>
+
+                <TextBox x:Name="ImportMessagesTextBox"
+                         Height="120"
+                         Padding="10"
+                         IsReadOnly="True"
+                         IsReadOnlyCaretVisible="False"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Disabled"
+                         Text="Controls that could not be imported"/>
+            </StackPanel>
+
+            <Button x:Name="ContinueButton"
+                    Grid.Row="4"
+                    Width="120"
+                    Height="34"
+                    Margin="0,22,0,0"
+                    HorizontalAlignment="Right"
+                    IsDefault="True"
+                    Style="{StaticResource TertiaryButtonStyle}"
+                    Content="Continue"
+                    Click="ContinueButton_Click"/>
+        </Grid>
     </Grid>
 </Window>
