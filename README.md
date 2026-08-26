@@ -19,7 +19,7 @@ On startup, the Launcher builds its working model from current BMS input files a
 
 - For devices, the Launcher discovers DirectInput hardware, checks for matching JSON binding files, and falls back to stock XML templates or empty device profiles when no JSON exists. This keeps existing user bindings intact while still allowing the Launcher to pick up new or changed control definitions from BMS over time.
 
-On BMS launch or Launcher close, the in-memory model writes updated JSON files first, then generates the legacy compatibility outputs that Falcon BMS and older tools still expect.
+On normal BMS launch or Launcher close, the in-memory model writes updated JSON files first, then generates the legacy compatibility outputs that Falcon BMS and older tools still expect. When 'Launch without applying control changes' is selected, the Launcher skips applying the current control changes for that launch so Falcon BMS continues using the control files already present in User\Config.
 
 This Launcher is currently only compatible with **Falcon BMS 4.38**.
 
@@ -60,14 +60,9 @@ This project uses the following NuGet packages:
 - Callsign/name registry updates
 - POP and LBK file generation
 - User editable program shortcuts 
+- Launch without applying control changes
 - Light, dark, and system theme handling
 - Launcher_Log.txt diagnostic output
-
----
-
-### In Progress
-
-- Launcher bypass
 
 ---
 
@@ -134,6 +129,9 @@ The Launcher does not treat JSON loading as an all-or-nothing step. Keyboard and
 13. If no stock XML exists for that device, build an empty device profile
 14. Retain saved profiles for devices that are currently offline
 15. Build the complete in-memory binding model
+
+The **Launch without applying control changes** option allows Falcon BMS to be started without writing the Launcher's current control configuration to the BMS compatibility files. In this mode, Falcon BMS continues using the control files that are already present in `User\Config`.
+
 
 
 ### Save and Launch Flow
