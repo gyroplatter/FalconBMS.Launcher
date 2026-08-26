@@ -14,7 +14,10 @@ public sealed class PopFileService
 {
     private readonly CallsignService _callsign = new();
 
-    public void SavePop(string baseDir, string installKeyName)
+    public void SavePop(
+        string baseDir,
+        string installKeyName,
+        bool applyKeyFileOverride)
     {
         string pilotCallsign = _callsign.ReadPilotCallsign(installKeyName);
         string configDir = Path.Combine(baseDir, "User", "Config");
@@ -38,16 +41,24 @@ public sealed class PopFileService
 
         byte[] bs = File.ReadAllBytes(filename);
 
-        byte[] keyFileName = Encoding.ASCII.GetBytes("BMS - Auto");
-        for (int i = 0; i <= 15; i++)
+        // The normal Launcher workflow selects BMS - Auto as the active key profile.
+        // During a control-override bypass, preserve whatever key profile is already
+        // stored in the POP file.
+        if (applyKeyFileOverride)
         {
-            if (i >= keyFileName.Length)
-            {
-                bs[336 + i] = 0x00;
-                continue;
-            }
+            byte[] keyFileName =
+                Encoding.ASCII.GetBytes("BMS - Auto");
 
-            bs[336 + i] = keyFileName[i];
+            for (int i = 0; i <= 15; i++)
+            {
+                if (i >= keyFileName.Length)
+                {
+                    bs[336 + i] = 0x00;
+                    continue;
+                }
+
+                bs[336 + i] = keyFileName[i];
+            }
         }
 
         // 4.37+ / 4.38 POP layout used by the original launcher:
@@ -87,9 +98,13 @@ public sealed class PopFileService
             actionId);
 
         DebugDiagnosticsService.Info(
-            $"POP saved | ActionId={actionId} | File={Path.GetFileName(filename)} | Path={filename} | PilotCallsign={pilotCallsign} | ActiveKeyFile={activeKeyFile}");
+            $"POP saved | ActionId={actionId} | File={Path.GetFileName(filename)} | Path={filename} | PilotCallsign={pilotCallsign} | ActiveKeyFile={activeKeyFile} | ApplyKeyFileOverride={applyKeyFileOverride}");
 
-        if (!string.Equals(activeKeyFile, "BMS - Auto", StringComparison.Ordinal))
+        if (applyKeyFileOverride &&
+            !string.Equals(
+                activeKeyFile,
+                "BMS - Auto",
+                StringComparison.Ordinal))
         {
             DebugDiagnosticsService.Warn(
                 $"POP active key file did not verify as BMS - Auto. Actual='{activeKeyFile}' | Path={filename} | ActionId={actionId}");

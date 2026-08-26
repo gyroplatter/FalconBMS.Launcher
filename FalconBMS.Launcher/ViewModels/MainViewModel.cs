@@ -285,6 +285,22 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
+    private bool _launchWithoutControlOverrides =
+    Properties.Settings.Default.LaunchWithoutControlOverrides;
+
+    public bool LaunchWithoutControlOverrides
+    {
+        get => _launchWithoutControlOverrides;
+        set
+        {
+            if (!Set(ref _launchWithoutControlOverrides, value))
+                return;
+
+            Properties.Settings.Default.LaunchWithoutControlOverrides = value;
+            Properties.Settings.Default.Save();
+        }
+    }
+
     private bool _exportRttTextures = Properties.Settings.Default.Misc_bExportRTTTextures;
     public bool ExportRttTextures
     {
@@ -830,7 +846,8 @@ public sealed class MainViewModel : ViewModelBase
                 SelectedInstall.RegistryKeyName,
                 ExportRttTextures,
                 vrEnabled,
-                CurrentBindingModel);
+                CurrentBindingModel,
+                LaunchWithoutControlOverrides);
 
             _needsKeyboardJsonCatalogSync = false;
             _needsDeviceJsonSync = false;
@@ -894,6 +911,26 @@ public sealed class MainViewModel : ViewModelBase
                 return;
             }
 
+            if (LaunchWithoutControlOverrides)
+            {
+                MessageBoxResult bypassResult = MessageBox.Show(
+                    "Your current control changes will not be applied to Falcon BMS for this launch.\n\n" +
+                    "Falcon BMS will continue using the control files that were previsouly saved.\n\n" +
+                    "Other Launcher settings will still be applied normally.",
+                    "Launch Without Applying Control Changes?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (bypassResult != MessageBoxResult.Yes)
+                {
+                    DebugDiagnosticsService.Info(
+                        "Launch canceled at control change bypass warning.");
+
+                    StatusText = "Launch canceled.";
+                    return;
+                }
+            }
+
             StatusText = "Launching…";
 
             DebugDiagnosticsService.Info("PrepareForLaunch start.");
@@ -905,7 +942,8 @@ public sealed class MainViewModel : ViewModelBase
                 SelectedInstall.RegistryKeyName,
                 ExportRttTextures,
                 vrEnabled,
-                CurrentBindingModel);
+                CurrentBindingModel,
+                LaunchWithoutControlOverrides);
 
             DebugDiagnosticsService.Info("PrepareForLaunch complete.");
 
