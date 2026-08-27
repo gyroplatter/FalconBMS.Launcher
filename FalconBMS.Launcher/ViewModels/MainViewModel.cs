@@ -297,7 +297,7 @@ public sealed class MainViewModel : ViewModelBase
 
     // Keep the -nocontrols launch warning code available, but do not show it
     // set false to disable popup, true to have it appear
-    private const bool ShowNoControlsLaunchWarning = true;
+    private const bool ShowNoControlsLaunchWarning = false;
 
     private bool _exportRttTextures = Properties.Settings.Default.Misc_bExportRTTTextures;
     public bool ExportRttTextures
