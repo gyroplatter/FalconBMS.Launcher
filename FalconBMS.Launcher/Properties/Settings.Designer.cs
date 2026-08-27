@@ -310,17 +310,5 @@ namespace FalconBMS.Launcher.Properties {
                 this["LegacyImportPromptHandled"] = value;
             }
         }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool LaunchWithoutControlOverrides {
-            get {
-                return ((bool)(this["LaunchWithoutControlOverrides"]));
-            }
-            set {
-                this["LaunchWithoutControlOverrides"] = value;
-            }
-        }
     }
 }

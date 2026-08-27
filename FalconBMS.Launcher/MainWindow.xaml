@@ -107,14 +107,14 @@
                            FontSize="{StaticResource FontSizeSmall}"
                            VerticalAlignment="Center"/>
 
-                <CheckBox Grid.Column="2"
-                          IsChecked="{Binding Main.LaunchWithoutControlOverrides}"
-                          VerticalAlignment="Center"
-                          HorizontalAlignment="Right">
-                                 <TextBlock Text="Launch without applying control changes"
-                                     Foreground="{DynamicResource AppMutedForegroundBrush}"
-                                     FontSize="{StaticResource FontSizeSmall}"/>
-                 </CheckBox>
+                <TextBlock Grid.Column="2"
+                           Text="Control KEY and XML files will not be generated"
+                           Foreground="{DynamicResource AppWarningTextBrush}"
+                           FontSize="{StaticResource FontSizeSmall}"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Right"
+                           Visibility="{Binding Main.NoControlsMode,
+                           Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </Grid>
         </Border>
 

@@ -285,21 +285,19 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private bool _launchWithoutControlOverrides =
-    Properties.Settings.Default.LaunchWithoutControlOverrides;
+    // Look for -nocontrols parameter
+    public bool NoControlsMode { get; } =
+        Environment.GetCommandLineArgs()
+            .Skip(1)
+            .Any(arg =>
+                string.Equals(
+                    arg,
+                    "-nocontrols",
+                    StringComparison.OrdinalIgnoreCase));
 
-    public bool LaunchWithoutControlOverrides
-    {
-        get => _launchWithoutControlOverrides;
-        set
-        {
-            if (!Set(ref _launchWithoutControlOverrides, value))
-                return;
-
-            Properties.Settings.Default.LaunchWithoutControlOverrides = value;
-            Properties.Settings.Default.Save();
-        }
-    }
+    // Keep the -nocontrols launch warning code available, but do not show it
+    // set false to disable popup, true to have it appear
+    private const bool ShowNoControlsLaunchWarning = true;
 
     private bool _exportRttTextures = Properties.Settings.Default.Misc_bExportRTTTextures;
     public bool ExportRttTextures
@@ -847,7 +845,7 @@ public sealed class MainViewModel : ViewModelBase
                 ExportRttTextures,
                 vrEnabled,
                 CurrentBindingModel,
-                LaunchWithoutControlOverrides);
+                NoControlsMode);
 
             _needsKeyboardJsonCatalogSync = false;
             _needsDeviceJsonSync = false;
@@ -911,12 +909,12 @@ public sealed class MainViewModel : ViewModelBase
                 return;
             }
 
-            if (LaunchWithoutControlOverrides)
+            if (NoControlsMode && ShowNoControlsLaunchWarning)
             {
                 MessageBoxResult bypassResult = MessageBox.Show(
                     "Your current control changes will not be applied to Falcon BMS for this launch.\n\n" +
-                    "Falcon BMS will continue using the control files that were previsouly saved.\n\n" +
-                    "Other Launcher settings will still be applied normally.",
+                    "Falcon BMS will continue using the control files that are already in place.\n\n" +
+                    "Your Launcher control settings will still be saved and remembered. Other Launcher settings will still be applied normally.",
                     "Launch Without Applying Control Changes?",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
@@ -924,7 +922,7 @@ public sealed class MainViewModel : ViewModelBase
                 if (bypassResult != MessageBoxResult.Yes)
                 {
                     DebugDiagnosticsService.Info(
-                        "Launch canceled at control change bypass warning.");
+                        "Launch canceled because -nocontrols mode was active.");
 
                     StatusText = "Launch canceled.";
                     return;
@@ -943,7 +941,7 @@ public sealed class MainViewModel : ViewModelBase
                 ExportRttTextures,
                 vrEnabled,
                 CurrentBindingModel,
-                LaunchWithoutControlOverrides);
+                NoControlsMode);
 
             DebugDiagnosticsService.Info("PrepareForLaunch complete.");
 
