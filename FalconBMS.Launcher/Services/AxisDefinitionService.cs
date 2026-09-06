@@ -38,7 +38,7 @@ public static class AxisDefinitionService
 
     private static readonly List<DeviceAxisDefinition> _capabilities = new()
     {
-        FlightAxis(0,  "Pitch",                   "Pitch",               "Down",            "Up"),
+        FlightAxis(0,  "Pitch",                   "Pitch",               "Back",            "Forward"),
         FlightAxis(1,  "Roll",                    "Roll",                "Left",            "Right"),
         FlightAxis(2,  "Yaw",                     "Rudder / Yaw",        "Left",            "Right"),
 

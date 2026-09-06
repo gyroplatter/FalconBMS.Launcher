@@ -448,7 +448,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 Primary,
                 RawAxisToSigned(
                     primaryValue,
-                    Primary.LogicalAxisName));
+                    Primary.LogicalAxisName,
+                    isVerticalAxis: !IsHorizontalAxis(Primary)));
 
             updated = true;
         }
@@ -464,7 +465,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 Secondary,
                 RawAxisToSigned(
                     secondaryValue,
-                    Secondary.LogicalAxisName));
+                    Secondary.LogicalAxisName,
+                    isVerticalAxis: !IsHorizontalAxis(Secondary)));
 
             updated = true;
         }
@@ -1044,7 +1046,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private static double RawAxisToSigned(
         int rawValue,
-        string logicalAxisName)
+        string logicalAxisName,
+        bool isVerticalAxis)
     {
         double displayed =
             AxisAssignViewModel.NormalizeAxisValue(
@@ -1052,7 +1055,23 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 logicalAxisName,
                 invert: false);
 
-        return (displayed - 0.5) * 2.0;
+        double signed = (displayed - 0.5) * 2.0;
+
+        // The vertical axis in a two-axis control pair uses the opposite
+        // direction from this window's plot convention, where +1 is drawn
+        // toward "Up"/"Forward" at the top of the graph. Flip the signed
+        // display value for whichever axis has the Vertical role in the pair
+        // (Pitch in Pitch & Roll, Cursor_Y in Cursor X & Y) so forward
+        // movement moves up and aft/back movement moves down. Horizontal
+        // axes (Roll, Cursor_X) are left unchanged. NormalizeAxisValue is
+        // also unchanged, so axis behavior elsewhere in the Launcher and
+        // saved control output are unaffected.
+        if (isVerticalAxis)
+        {
+            signed = -signed;
+        }
+
+        return signed;
     }
 
     public static double CalculateAxisOutput(
