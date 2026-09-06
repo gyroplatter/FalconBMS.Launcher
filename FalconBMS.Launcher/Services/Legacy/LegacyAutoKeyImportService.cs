@@ -9,6 +9,8 @@ namespace FalconBMS.Launcher.Services.Legacy;
 
 public sealed class LegacyAutoKeyImportService
 {
+    private const string KeyComboCallbackName = "CommandsSetKeyCombo";
+
     private static readonly Regex KeyRowRegex = new(
         @"^(?<callback>\S+)\s+" +
         @"(?<sound>-?\d+)\s+" +
@@ -104,6 +106,49 @@ public sealed class LegacyAutoKeyImportService
                 ? previousUseCount
                 : 0;
 
+            if (string.Equals(
+                    callbackName,
+                    KeyComboCallbackName,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                BindingRow templateRow =
+                    matchingRows[Math.Min(useIndex, matchingRows.Count - 1)];
+
+                BindingRow importedRow =
+                    CreateImportedKeyComboRow(
+                        templateRow,
+                        match,
+                        rawLine);
+
+                if (useIndex < matchingRows.Count)
+                {
+                    int rowIndex =
+                        aircraftProfile.Rows.IndexOf(
+                            matchingRows[useIndex]);
+
+                    if (rowIndex >= 0)
+                        aircraftProfile.Rows[rowIndex] = importedRow;
+                }
+                else
+                {
+                    int insertIndex =
+                        aircraftProfile.Rows.FindLastIndex(row =>
+                            string.Equals(
+                                row.CallbackName,
+                                KeyComboCallbackName,
+                                StringComparison.OrdinalIgnoreCase));
+
+                    if (insertIndex >= 0)
+                        aircraftProfile.Rows.Insert(insertIndex + 1, importedRow);
+                    else
+                        aircraftProfile.Rows.Add(importedRow);
+                }
+
+                callbackUseCounts[callbackName] = useIndex + 1;
+                result.AssignmentsImported++;
+                continue;
+            }
+
             BindingRow? targetRow =
                 matchingRows.ElementAtOrDefault(useIndex);
 
@@ -142,6 +187,31 @@ public sealed class LegacyAutoKeyImportService
         }
 
         return result;
+    }
+
+    private static BindingRow CreateImportedKeyComboRow(
+    BindingRow templateRow,
+    Match match,
+    string sourceRawLine)
+    {
+        return new BindingRow
+        {
+            SourceLineNumber = templateRow.SourceLineNumber,
+            SourceRawLine = sourceRawLine,
+            RowKind = templateRow.RowKind,
+            CallbackName = templateRow.CallbackName,
+            SoundId = ParseNumber(match.Groups["sound"].Value),
+            Unused = ParseNumber(match.Groups["unused"].Value),
+            KeyScancode = match.Groups["keyScancode"].Value,
+            KeyModifierFlags = ParseNumber(match.Groups["keyModifierFlags"].Value),
+            ChordScancode = match.Groups["chordScancode"].Value,
+            ChordModifierFlags = ParseNumber(match.Groups["chordModifierFlags"].Value),
+            Visibility = ParseNumber(match.Groups["visibility"].Value),
+            Description = match.Groups["description"].Value,
+            CategoryName = templateRow.CategoryName,
+            SectionName = templateRow.SectionName,
+            IsModified = true
+        };
     }
 
     private static bool BindingDiffersFromFull(

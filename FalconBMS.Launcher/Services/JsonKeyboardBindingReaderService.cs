@@ -20,6 +20,8 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class JsonKeyboardBindingReaderService
 {
+    private const string KeyComboCallbackName = "CommandsSetKeyCombo";
+
     public bool Apply(string baseDir, BindingModel bindingModel)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("JSONREAD");
@@ -135,6 +137,11 @@ public sealed class JsonKeyboardBindingReaderService
 
         var matchedRows = new HashSet<BindingRow>();
 
+        List<BindingRow> keyComboCatalogRows = profile.Rows
+            .Where(row => IsKeyComboCallback(row.CallbackName))
+            .ToList();
+
+        int keyComboUseIndex = 0;
         int applied = 0;
         int matchedByLine = 0;
         int matchedByCallback = 0;
@@ -151,6 +158,69 @@ public sealed class JsonKeyboardBindingReaderService
             string callbackName = jsonRow.CallbackName ?? "";
             if (callbackName.Length == 0 || string.IsNullOrWhiteSpace(callbackName))
                 continue;
+
+            if (IsKeyComboCallback(callbackName))
+            {
+                BindingRow? fullKeyComboRow =
+                    keyComboCatalogRows.ElementAtOrDefault(keyComboUseIndex);
+
+                keyComboUseIndex++;
+
+                if (fullKeyComboRow is null)
+                {
+                    // Additional CommandsSetKeyCombo rows are user-defined prefix rows.
+                    // They do not need matching rows in the current Full key catalog.
+                    if (jsonRow.IsModified == true)
+                    {
+                        BindingRow restoredRow =
+                            CreateKeyComboRowFromJson(
+                                jsonRow,
+                                keyComboCatalogRows.FirstOrDefault());
+
+                        InsertAfterLastKeyComboRow(profile, restoredRow);
+                        matchedRows.Add(restoredRow);
+                        userModifiedRows++;
+                        applied++;
+                        continue;
+                    }
+
+                    missing++;
+                    continue;
+                }
+
+                bool keyComboIsUserModified =
+                    IsJsonRowUserModified(jsonRow, fullKeyComboRow);
+
+                if (keyComboIsUserModified)
+                {
+                    BindingRow restoredRow =
+                        CreateKeyComboRowFromJson(
+                            jsonRow,
+                            fullKeyComboRow);
+
+                    int rowIndex = profile.Rows.IndexOf(fullKeyComboRow);
+
+                    if (rowIndex >= 0)
+                        profile.Rows[rowIndex] = restoredRow;
+
+                    matchedRows.Add(restoredRow);
+                    userModifiedRows++;
+                }
+                else
+                {
+                    matchedRows.Add(fullKeyComboRow);
+                    fullKeyComboRow.IsModified = false;
+
+                    if (JsonBindingValuesDifferFromFull(fullKeyComboRow, jsonRow))
+                        defaultChangedRows++;
+
+                    if (JsonCatalogMetadataDiffersFromFull(fullKeyComboRow, jsonRow))
+                        metadataChangedRows++;
+                }
+
+                applied++;
+                continue;
+            }
 
             BindingRow? bindingRow = null;
 
@@ -233,6 +303,60 @@ public sealed class JsonKeyboardBindingReaderService
             $"Path={path} | ActionId={actionId}");
 
         return needsCatalogSync;
+    }
+
+    private static bool IsKeyComboCallback(string callbackName)
+    {
+        return string.Equals(
+            callbackName,
+            KeyComboCallbackName,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static BindingRow CreateKeyComboRowFromJson(
+        JsonKeyboardBindingRow jsonRow,
+        BindingRow? templateRow)
+    {
+        BindingRowKind rowKind = templateRow?.RowKind ?? BindingRowKind.EditableCallback;
+
+        if (templateRow is null &&
+            !string.IsNullOrWhiteSpace(jsonRow.RowKind) &&
+            Enum.TryParse(jsonRow.RowKind, ignoreCase: true, out BindingRowKind parsedRowKind))
+        {
+            rowKind = parsedRowKind;
+        }
+
+        return new BindingRow
+        {
+            SourceLineNumber = templateRow?.SourceLineNumber ?? jsonRow.SourceLineNumber,
+            SourceRawLine = "",
+            RowKind = rowKind,
+            CallbackName = KeyComboCallbackName,
+            SoundId = jsonRow.SoundId ?? templateRow?.SoundId ?? -1,
+            Unused = jsonRow.Unused ?? templateRow?.Unused ?? 0,
+            KeyScancode = jsonRow.KeyScancode ?? templateRow?.KeyScancode ?? "0xFFFFFFFF",
+            KeyModifierFlags = jsonRow.KeyModifierFlags ?? templateRow?.KeyModifierFlags ?? 0,
+            ChordScancode = jsonRow.ChordScancode ?? templateRow?.ChordScancode ?? "0",
+            ChordModifierFlags = jsonRow.ChordModifierFlags ?? templateRow?.ChordModifierFlags ?? 0,
+            Visibility = jsonRow.Visibility ?? templateRow?.Visibility ?? 1,
+            Description = jsonRow.Description ?? templateRow?.Description ?? "",
+            CategoryName = templateRow?.CategoryName ?? jsonRow.CategoryName ?? "",
+            SectionName = templateRow?.SectionName ?? jsonRow.SectionName ?? "",
+            IsModified = true
+        };
+    }
+
+    private static void InsertAfterLastKeyComboRow(
+        BindingAircraftProfile profile,
+        BindingRow row)
+    {
+        int insertIndex = profile.Rows.FindLastIndex(existingRow =>
+            IsKeyComboCallback(existingRow.CallbackName));
+
+        if (insertIndex >= 0)
+            profile.Rows.Insert(insertIndex + 1, row);
+        else
+            profile.Rows.Add(row);
     }
 
     private static JsonKeyboardBindingDocument? ReadDocument(string path)
