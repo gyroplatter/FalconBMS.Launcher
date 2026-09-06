@@ -4,6 +4,7 @@ using FalconBMS.Launcher.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Vortice.DirectInput;
@@ -356,6 +357,21 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         if (caught == DiKey.Unknown)
             return;
+        
+        // Reserve keys for BMS and Windows
+        if (ReservedKeyboardBindings.TryGetDisplayText(
+        caught,
+        modifierFlags,
+        out string reservedBinding))
+        {
+            MessageBox.Show(
+                reservedBinding + " is reserved and cannot be reassigned.",
+                "Reserved Key",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+
+            return;
+        }
 
         _tempKeyScancode = "0x" + ((int)caught).ToString("X");
         _tempModifierFlags = modifierFlags;
