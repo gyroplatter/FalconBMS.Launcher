@@ -287,6 +287,19 @@ public sealed class JsonKeyboardBindingReaderService
         int newCatalogRows = profile.Rows.Count - matchedRows.Count;
         int staleJsonRows = missing;
 
+        // User-modified keyboard assignments take precedence over defaults supplied
+        // by the current FULL catalog. Suppression is applied only after the normal
+        // FULL + JSON merge so the complete effective user state is known.
+        //
+        // The conflicting FULL row remains IsModified=false. Its real FULL values are
+        // preserved separately on BindingRow so this automatic suppression cannot be
+        // mistaken for a user clearing that control.
+        int suppressedDuplicateRows =
+            SuppressDuplicateKeyCombosAgainstUserModified(
+                profile.Rows,
+                aircraftProfile,
+                actionId);
+
         bool needsCatalogSync =
             newCatalogRows > 0 ||
             staleJsonRows > 0 ||
@@ -299,10 +312,110 @@ public sealed class JsonKeyboardBindingReaderService
             $"MatchedByLine={matchedByLine} | MatchedByCallback={matchedByCallback} | " +
             $"Missing={missing} | UserModifiedRows={userModifiedRows} | " +
             $"DefaultChangedRows={defaultChangedRows} | MetadataChangedRows={metadataChangedRows} | " +
-            $"NewCatalogRows={newCatalogRows} | StaleJsonRows={staleJsonRows} | NeedsCatalogSync={needsCatalogSync} | " +
+            $"NewCatalogRows={newCatalogRows} | StaleJsonRows={staleJsonRows} | " +
+            $"SuppressedDuplicateRows={suppressedDuplicateRows} | NeedsCatalogSync={needsCatalogSync} | " +
             $"Path={path} | ActionId={actionId}");
 
         return needsCatalogSync;
+    }
+
+    private static int SuppressDuplicateKeyCombosAgainstUserModified(
+        List<BindingRow> rows,
+        string aircraftProfile,
+        string actionId)
+    {
+        var claimedCombos =
+            new Dictionary<string, BindingRow>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (BindingRow row in rows)
+        {
+            if (!row.IsModified ||
+                IsKeyComboCallback(row.CallbackName) ||
+                IsUnboundCombo(row))
+            {
+                continue;
+            }
+
+            string combo = CreateComboKey(row);
+
+            // Existing duplicate user modified rows are not resolved here.
+            // The first user modified claim only establishes ownership against
+            // non-user modified defaults supplied by FULL.
+            if (!claimedCombos.ContainsKey(combo))
+                claimedCombos[combo] = row;
+        }
+
+        int suppressed = 0;
+
+        foreach (BindingRow row in rows)
+        {
+            if (row.IsModified ||
+                IsKeyComboCallback(row.CallbackName) ||
+                IsUnboundCombo(row))
+            {
+                continue;
+            }
+
+            string combo = CreateComboKey(row);
+
+            if (!claimedCombos.TryGetValue(combo, out BindingRow? claimingRow) ||
+                ReferenceEquals(claimingRow, row))
+            {
+                continue;
+            }
+
+            // Preserve the real current FULL assignment before clearing the
+            // effective in-memory value. The writer can then keep this as a
+            // runtime-only suppression rather than persisting a false user clear.
+            row.IsKeyboardDefaultSuppressed = true;
+            row.SuppressedDefaultKeyScancode = row.KeyScancode;
+            row.SuppressedDefaultKeyModifierFlags = row.KeyModifierFlags;
+            row.SuppressedDefaultChordScancode = row.ChordScancode;
+            row.SuppressedDefaultChordModifierFlags = row.ChordModifierFlags;
+
+            DebugDiagnosticsService.Warn(
+                $"Keyboard combo suppressed | Aircraft={aircraftProfile} | " +
+                $"FullRowCallback={row.CallbackName} | ClaimedByCallback={claimingRow.CallbackName} | " +
+                $"KeyScancode={row.KeyScancode} | KeyModifierFlags={row.KeyModifierFlags} | " +
+                $"ChordScancode={row.ChordScancode} | ChordModifierFlags={row.ChordModifierFlags} | " +
+                $"ActionId={actionId}");
+
+            row.KeyScancode = "0xFFFFFFFF";
+            row.KeyModifierFlags = 0;
+            row.ChordScancode = "0";
+            row.ChordModifierFlags = 0;
+
+            suppressed++;
+        }
+
+        return suppressed;
+    }
+
+    private static bool IsUnboundCombo(BindingRow row)
+    {
+        return string.Equals(
+            row.KeyScancode,
+            "0xFFFFFFFF",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string CreateComboKey(BindingRow row)
+    {
+        return CreateComboKey(
+            row.KeyScancode,
+            row.KeyModifierFlags,
+            row.ChordScancode,
+            row.ChordModifierFlags);
+    }
+
+    private static string CreateComboKey(
+        string keyScancode,
+        int keyModifierFlags,
+        string chordScancode,
+        int chordModifierFlags)
+    {
+        return
+            $"{keyScancode}|{keyModifierFlags}|{chordScancode}|{chordModifierFlags}";
     }
 
     private static bool IsKeyComboCallback(string callbackName)

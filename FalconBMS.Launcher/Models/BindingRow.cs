@@ -36,6 +36,25 @@ public sealed class BindingRow
 
     public bool IsModified { get; set; }
 
+    // Runtime-only state used when a current FULL default conflicts with a
+    // user modified keyboard assignment. The effective row is temporarily
+    // cleared, but these values preserve the real FULL default so suppression
+    // is not accidentally stored as a user modification.
+    public bool IsKeyboardDefaultSuppressed { get; set; }
+    public string SuppressedDefaultKeyScancode { get; set; } = "";
+    public int SuppressedDefaultKeyModifierFlags { get; set; }
+    public string SuppressedDefaultChordScancode { get; set; } = "";
+    public int SuppressedDefaultChordModifierFlags { get; set; }
+
+    public void ClearKeyboardDefaultSuppression()
+    {
+        IsKeyboardDefaultSuppressed = false;
+        SuppressedDefaultKeyScancode = "";
+        SuppressedDefaultKeyModifierFlags = 0;
+        SuppressedDefaultChordScancode = "";
+        SuppressedDefaultChordModifierFlags = 0;
+    }
+
     public bool IsHeader =>
         RowKind == BindingRowKind.CategoryHeader ||
         RowKind == BindingRowKind.SectionHeader;

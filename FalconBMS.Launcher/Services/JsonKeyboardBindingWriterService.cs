@@ -1,5 +1,6 @@
 ﻿using FalconBMS.Launcher.Models;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -142,6 +143,12 @@ public sealed class JsonKeyboardBindingWriterService
     {
         var sb = new StringBuilder();
 
+        // Build the current set of combinations actually owned by user-modified
+        // rows. A suppressed FULL default is preserved in JSON only while one
+        // of these current mappings still claims that same combination.
+        HashSet<string> userModifiedCombos =
+            BuildUserModifiedComboSet(profile.Rows);
+
         sb.AppendLine("{");
         WriteProperty(sb, 1, "schema_version", 1, comma: true);
         WriteProperty(sb, 1, "binding_type", "keyboard", comma: true);
@@ -167,10 +174,47 @@ public sealed class JsonKeyboardBindingWriterService
             WriteProperty(sb, 3, "section_name", row.SectionName, comma: true);
 
             WriteProperty(sb, 3, "sound_id", row.SoundId, comma: true);
-            WriteProperty(sb, 3, "key_scancode", row.KeyScancode, comma: true);
-            WriteProperty(sb, 3, "key_modifier_flags", row.KeyModifierFlags, comma: true);
-            WriteProperty(sb, 3, "chord_scancode", row.ChordScancode, comma: true);
-            WriteProperty(sb, 3, "chord_modifier_flags", row.ChordModifierFlags, comma: true);
+
+            // While a user-modified row still owns the conflicting combination,
+            // preserve the real FULL assignment in JSON. This keeps suppression
+            // runtime-only and prevents the automatically blank row from becoming
+            // a permanent user clear.
+            //
+            // If the user frees that combination during this session, keep the
+            // row visually suppressed for the remainder of the session but write
+            // its temporary blank value with is_modified=false. On next startup,
+            // the normal "unmodified JSON loses to FULL" rule restores the FULL
+            // default and schedules the normal catalog/output synchronization.
+            bool usePreservedFullDefault =
+                row.IsKeyboardDefaultSuppressed &&
+                !row.IsModified &&
+                userModifiedCombos.Contains(
+                    CreateComboKey(
+                        row.SuppressedDefaultKeyScancode,
+                        row.SuppressedDefaultKeyModifierFlags,
+                        row.SuppressedDefaultChordScancode,
+                        row.SuppressedDefaultChordModifierFlags));
+
+            string jsonKeyScancode = usePreservedFullDefault
+                ? row.SuppressedDefaultKeyScancode
+                : row.KeyScancode;
+
+            int jsonKeyModifierFlags = usePreservedFullDefault
+                ? row.SuppressedDefaultKeyModifierFlags
+                : row.KeyModifierFlags;
+
+            string jsonChordScancode = usePreservedFullDefault
+                ? row.SuppressedDefaultChordScancode
+                : row.ChordScancode;
+
+            int jsonChordModifierFlags = usePreservedFullDefault
+                ? row.SuppressedDefaultChordModifierFlags
+                : row.ChordModifierFlags;
+
+            WriteProperty(sb, 3, "key_scancode", jsonKeyScancode, comma: true);
+            WriteProperty(sb, 3, "key_modifier_flags", jsonKeyModifierFlags, comma: true);
+            WriteProperty(sb, 3, "chord_scancode", jsonChordScancode, comma: true);
+            WriteProperty(sb, 3, "chord_modifier_flags", jsonChordModifierFlags, comma: true);
 
             WriteProperty(sb, 3, "unused", row.Unused, comma: true);
             WriteProperty(sb, 3, "visibility", row.Visibility, comma: true);
@@ -191,6 +235,48 @@ public sealed class JsonKeyboardBindingWriterService
         sb.AppendLine("}");
 
         return sb.ToString();
+    }
+
+    private static HashSet<string> BuildUserModifiedComboSet(
+        IReadOnlyList<BindingRow> rows)
+    {
+        var claimedCombos =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (BindingRow row in rows)
+        {
+            if (!row.IsModified ||
+                string.Equals(
+                    row.CallbackName,
+                    "CommandsSetKeyCombo",
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    row.KeyScancode,
+                    "0xFFFFFFFF",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            claimedCombos.Add(
+                CreateComboKey(
+                    row.KeyScancode,
+                    row.KeyModifierFlags,
+                    row.ChordScancode,
+                    row.ChordModifierFlags));
+        }
+
+        return claimedCombos;
+    }
+
+    private static string CreateComboKey(
+        string keyScancode,
+        int keyModifierFlags,
+        string chordScancode,
+        int chordModifierFlags)
+    {
+        return
+            $"{keyScancode}|{keyModifierFlags}|{chordScancode}|{chordModifierFlags}";
     }
 
     private static void WriteProperty(StringBuilder sb, int indentLevel, string name, string value, bool comma)
