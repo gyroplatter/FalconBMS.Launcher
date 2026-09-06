@@ -974,14 +974,20 @@ public partial class ControlsView : UserControl
         if (!selectedMatch)
             return;
 
-        if (viewModel.SelectedRow is null)
+        ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
+
+        if (selectedRow is null)
             return;
 
         Dispatcher.BeginInvoke(() =>
         {
+            // Filtering can change the visible rows before this deferred scroll runs
+            if (!viewModel.Rows.Contains(selectedRow))
+                return;
+
             ControlsGrid.UpdateLayout();
-            ControlsGrid.SelectedItem = viewModel.SelectedRow;
-            ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
+            ControlsGrid.SelectedItem = selectedRow;
+            ControlsGrid.ScrollIntoView(selectedRow);
         }, DispatcherPriority.Background);
     }
 
@@ -1118,13 +1124,19 @@ public partial class ControlsView : UserControl
                 break;
             }
 
-            if (selectedMatch && viewModel.SelectedRow is not null)
+            ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
+
+            if (selectedMatch && selectedRow is not null)
             {
                 Dispatcher.BeginInvoke(() =>
                 {
+                    // Filtering can change the visible rows before this deferred scroll runs.
+                    if (!viewModel.Rows.Contains(selectedRow))
+                        return;
+
                     ControlsGrid.UpdateLayout();
-                    ControlsGrid.SelectedItem = viewModel.SelectedRow;
-                    ControlsGrid.ScrollIntoView(viewModel.SelectedRow);
+                    ControlsGrid.SelectedItem = selectedRow;
+                    ControlsGrid.ScrollIntoView(selectedRow);
                 }, DispatcherPriority.Background);
             }
 
@@ -1484,7 +1496,7 @@ public partial class ControlsView : UserControl
         if (!IsCategoryTextSearchKey(e.Key))
             return;
 
-        // Prevent WPF ListBox text-search from changing categories.
+        // Prevent WPF's ListBox text search from changing categories.
         // DirectInput polling still sees the key press and can jump the table row.
         e.Handled = true;
     }
