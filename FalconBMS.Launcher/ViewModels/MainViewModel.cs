@@ -48,6 +48,11 @@ public sealed class MainViewModel : ViewModelBase
     // during startup and need to be written back on close or launch.
     private bool _needsDeviceJsonSync;
 
+    // Set after a successful v2-to-v3 import. The import creates the new Launcher
+    // JSON files, but the generated BMS KEY/XML outputs still need one normal
+    // PrepareForLaunch pass so they reflect the newly imported/current FULL model.
+    private bool _needsControlOutputSync;
+
     // Set when a keyboard/device JSON file failed to read during startup.
     // When true, output writes are blocked so fallback/partial in-memory data
     // cannot overwrite the user's broken JSON file or generated outputs.
@@ -79,6 +84,10 @@ public sealed class MainViewModel : ViewModelBase
         set
         {
             if (!Set(ref _selectedInstall, value)) return;
+
+            // Output-sync state belongs to the currently selected BMS install.
+            // A successful legacy import below will set this back to true.
+            _needsControlOutputSync = false;
 
             if (value is not null)
             {
@@ -547,6 +556,14 @@ public sealed class MainViewModel : ViewModelBase
         ApplyImportedLauncherSettings(
             importResult);
 
+        // The import creates current Launcher JSONs, but BMS - Auto.key and
+        // the generated device XML files have not yet been regenerated from
+        // that imported V3 model. Force one normal output pass on close/launch.
+        _needsControlOutputSync = true;
+
+        DebugDiagnosticsService.Info(
+            "Legacy import completed. Generated BMS control outputs require an initial sync on close or launch.");
+
         ShowLegacyImportCompleteMessage(
             importResult);
 
@@ -812,6 +829,7 @@ public sealed class MainViewModel : ViewModelBase
         bool hasUserBindingChanges = ControlsViewModel?.IsDirty == true;
         bool needsKeyboardJsonCatalogSync = _needsKeyboardJsonCatalogSync;
         bool needsDeviceJsonSync = _needsDeviceJsonSync;
+        bool needsControlOutputSync = _needsControlOutputSync;
 
         if (IsOutputSaveBlockedByJsonReadFailure())
         {
@@ -821,22 +839,31 @@ public sealed class MainViewModel : ViewModelBase
             return;
         }
 
-        // Skip the full write pipeline only when there are no user binding edits
-        // and no startup-discovered FULL-key catalog differences that need to be synced to JSON.
-        // The individual writers also SHA1-diff before touching disk, but skipping the
-        // entire pass avoids opening every file unnecessarily on close.
-        if (!hasUserBindingChanges && !needsKeyboardJsonCatalogSync && !needsDeviceJsonSync)
+        // Skip the full write pipeline only when there are no user binding edits,
+        // no JSON catalog/device synchronization work, and no generated BMS
+        // control outputs waiting for their initial post-import refresh
+        //
+        // The individual writers also SHA1-diff before touching disk, but skipping
+        // the entire pass avoids opening every file unnecessarily on close
+        if (!hasUserBindingChanges &&
+            !needsKeyboardJsonCatalogSync &&
+            !needsDeviceJsonSync &&
+            !needsControlOutputSync)
         {
-            DebugDiagnosticsService.Info("SaveOutputsForClose skipped: no binding changes and no JSON sync required.");
+            DebugDiagnosticsService.Info(
+                "SaveOutputsForClose skipped: no binding changes, JSON sync, or control output sync required.");
+
             return;
         }
 
         try
         {
             DebugDiagnosticsService.InitializeForInstall(SelectedInstall.BaseDir);
-            DebugDiagnosticsService.Info($"Launcher close requested output save for install: {SelectedInstall.RegistryKeyName}");
             DebugDiagnosticsService.Info(
-                $"PrepareForLaunch on close start. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={needsKeyboardJsonCatalogSync} | DeviceJsonSync={needsDeviceJsonSync}");
+                $"Launcher close requested output save for install: {SelectedInstall.RegistryKeyName}");
+
+            DebugDiagnosticsService.Info(
+                $"PrepareForLaunch on close start. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={needsKeyboardJsonCatalogSync} | DeviceJsonSync={needsDeviceJsonSync} | ControlOutputSync={needsControlOutputSync}");
 
             bool vrEnabled = VrSteamVr || VrOpenXr;
 
@@ -850,6 +877,7 @@ public sealed class MainViewModel : ViewModelBase
 
             _needsKeyboardJsonCatalogSync = false;
             _needsDeviceJsonSync = false;
+            _needsControlOutputSync = false;
             ControlsViewModel?.ResetDirty();
 
             DebugDiagnosticsService.Info("PrepareForLaunch on close complete.");
@@ -951,6 +979,7 @@ public sealed class MainViewModel : ViewModelBase
             // while BMS is running.
             _needsKeyboardJsonCatalogSync = false;
             _needsDeviceJsonSync = false;
+            _needsControlOutputSync = false;
             ControlsViewModel?.ResetDirty();
 
             var arguments = BuildFalconArguments();
