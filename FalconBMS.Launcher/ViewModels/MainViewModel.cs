@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 
 namespace FalconBMS.Launcher.ViewModels;
@@ -1616,8 +1617,20 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    public string LauncherVersion =>
-        $"Falcon BMS Launcher v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}";
+    public string LauncherVersion
+    {
+        get
+        {
+            var assembly = Assembly.GetExecutingAssembly();
+            string version = assembly
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion
+                ?? assembly.GetName().Version?.ToString()
+                ?? "unknown";
+
+            return $"Falcon BMS Launcher v{version}";
+        }
+    }
 
     private void RaiseCommandStates()
     {

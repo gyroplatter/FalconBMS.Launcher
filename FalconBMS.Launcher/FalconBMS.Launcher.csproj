@@ -11,6 +11,8 @@
 	<ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
 	<Platforms>AnyCPU</Platforms>
 
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>  
+
     <!-- Controls the company/app identity used by .NET user-scoped settings. -->
     <Company>Benchmark Sims</Company>
     <Product>Falcon BMS Launcher</Product>
@@ -25,7 +27,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<Version>3.0.0.0</Version>
+		<Version>3.0.0-beta-15</Version>
+		<InformationalVersion>3.0.0-beta-15</InformationalVersion>
 		<AssemblyVersion>3.0.0.0</AssemblyVersion>
 		<FileVersion>3.0.0.0</FileVersion>
 

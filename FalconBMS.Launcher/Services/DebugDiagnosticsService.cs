@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -50,6 +51,13 @@ public static class DebugDiagnosticsService
                 AutoFlush = true
             };
 
+            string launcherVersion = Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                .InformationalVersion
+                ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+                ?? "unknown";
+
+            WriteLineLocked("INFO", $"Falcon BMS Launcher {launcherVersion}");
             WriteLineLocked("INFO", $"Launcher log initialized: {logPath}");
 
             if (_buffer.Count > 0)
