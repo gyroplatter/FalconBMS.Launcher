@@ -243,6 +243,6 @@ public sealed class LegacyDeviceSetupXmlWriterService
         if (string.IsNullOrWhiteSpace(value))
             return "";
 
-        return OldNameSanitizeRx.Replace(value, "").Trim();
+        return OldNameSanitizeRx.Replace(value, "");
     }
 }
