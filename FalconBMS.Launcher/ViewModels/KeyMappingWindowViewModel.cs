@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Threading;
 using Vortice.DirectInput;
 using DiKey = Vortice.DirectInput.Key;
 
@@ -27,19 +26,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private readonly Action _closeWindow;
     private readonly DirectInputManager _di = new();
 
-    private KeyboardSession? _keyboard;
-    private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
-    private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
-    private readonly Dictionary<string, int[]> _previousPovsByDeviceKey = new();
-    private DispatcherTimer? _timer;
-    private HashSet<DiKey> _previousPressedKeys = new();
-
-    // A DirectInput session is opened when the popup opens, so use the first
-    // few polling ticks to learn held/latching switch positions before capturing input.
-    // Increase the DxNeutralWarmupPolls to increase this delay, but that also
-    // can make the window miss the first real DX press.
-    private const int DxNeutralWarmupPolls = 6;
-    private int _dxNeutralWarmupPollsRemaining;
+    private DirectInputCaptureSession? _captureSession;
 
     private string _tempKeyScancode;
     private int _tempModifierFlags;
@@ -177,10 +164,9 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             _pendingDxButtons.Clear();
             _pendingDxPovs.Clear();
 
-            // After Clear DX, ignore anything currently held so latching switches
-            // or held POV hats do not immediately add themselves back.
-            StartDxNeutralWarmup();
-
+            // Buffered DirectInput only reports changes. A button or POV that
+            // was already held when Clear DX was clicked does not generate a
+            // second DOWN event, so no polling warmup/baseline reset is needed
             UpdateAssignmentPreviewTexts();
             UpdateConflict();
         });
@@ -238,134 +224,110 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     {
         StopCapture();
 
+        _captureSession =
+            new DirectInputCaptureSession(
+                _di,
+                Application.Current.Dispatcher,
+                hwnd);
+
+        _captureSession.KeyboardInput +=
+            CaptureSession_KeyboardInput;
+
+        _captureSession.JoystickButtonInput +=
+            CaptureSession_JoystickButtonInput;
+
+        _captureSession.JoystickPovInput +=
+            CaptureSession_JoystickPovInput;
+
         try
         {
-            _keyboard = _di.OpenKeyboard(hwnd);
+            _captureSession.OpenKeyboard();
         }
         catch
         {
-            _keyboard = null;
+            // Keep DX capture working even if the keyboard cannot be opened.
         }
 
-        foreach (DeviceBindingProfile deviceProfile in _deviceProfiles.Where(device =>
+        foreach (DeviceBindingProfile deviceProfile
+                 in _deviceProfiles.Where(device =>
                      device.IsConnected &&
-                     (device.ButtonCount > 0 || device.PovCount > 0)))
+                     (device.ButtonCount > 0 ||
+                      device.PovCount > 0)))
         {
             try
             {
-                _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] =
-                    _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
+                _captureSession.OpenJoystick(
+                    deviceProfile.DurableDeviceKey,
+                    deviceProfile.InstanceGuid);
             }
             catch
             {
-                // Keep keyboard capture working even if one controller cannot be opened.
+                // Keep the remaining devices working if one controller
+                // cannot be opened.
             }
         }
-
-        StartDxNeutralWarmup();
-
-        _timer = new DispatcherTimer(DispatcherPriority.Background)
-        {
-            Interval = TimeSpan.FromMilliseconds(30)
-        };
-
-        _timer.Tick += Timer_Tick;
-        _timer.Start();
     }
 
     public void StopCapture()
     {
-        if (_timer is not null)
-        {
-            _timer.Stop();
-            _timer.Tick -= Timer_Tick;
-            _timer = null;
-        }
-
-        if (_keyboard is not null)
-        {
-            try { _keyboard.Dispose(); } catch { }
-            _keyboard = null;
-        }
-
-        foreach (JoystickSession session in _joystickSessionsByDeviceKey.Values)
-        {
-            try { session.Dispose(); } catch { }
-        }
-
-        _joystickSessionsByDeviceKey.Clear();
-        _previousButtonsByDeviceKey.Clear();
-        _previousPovsByDeviceKey.Clear();
-        _previousPressedKeys.Clear();
-    }
-
-    private void Timer_Tick(object? sender, EventArgs e)
-    {
-        PollKeyboard();
-        PollJoystickInputs();
-    }
-
-    private void PollKeyboard()
-    {
-        if (_keyboard is null)
+        if (_captureSession is null)
             return;
 
-        KeyboardState state;
+        _captureSession.KeyboardInput -=
+            CaptureSession_KeyboardInput;
+
+        _captureSession.JoystickButtonInput -=
+            CaptureSession_JoystickButtonInput;
+
+        _captureSession.JoystickPovInput -=
+            CaptureSession_JoystickPovInput;
 
         try
         {
-            state = _keyboard.ReadState();
+            _captureSession.Dispose();
         }
         catch
         {
-            return;
         }
 
-        var currentPressed = new HashSet<DiKey>();
+        _captureSession = null;
+    }
 
-        foreach (DiKey key in Enum.GetValues(typeof(DiKey)))
+    private void CaptureSession_KeyboardInput(
+        object? sender,
+        BufferedKeyboardInputEventArgs e)
+    {
+        // Existing Key Mapping behavior creates an assignment on the
+        // non-modifier key DOWN event. Modifier-only presses do not map.
+        if (!e.IsPressed)
+            return;
+
+        DiKey caught =
+            e.Key;
+
+        if (caught == DiKey.Unknown ||
+            caught == DiKey.LeftShift ||
+            caught == DiKey.RightShift ||
+            caught == DiKey.LeftControl ||
+            caught == DiKey.RightControl ||
+            caught == DiKey.LeftAlt ||
+            caught == DiKey.RightAlt)
         {
-            if (key == DiKey.Unknown)
-                continue;
-
-            if (state.IsPressed(key))
-                currentPressed.Add(key);
+            return;
         }
 
-        var newlyPressed = currentPressed
-            .Where(key => !_previousPressedKeys.Contains(key))
-            .ToList();
+        int modifierFlags =
+            e.ModifierFlags;
 
-        _previousPressedKeys = currentPressed;
-
-        if (newlyPressed.Count == 0)
-            return;
-
-        bool shift = currentPressed.Contains(DiKey.LeftShift) || currentPressed.Contains(DiKey.RightShift);
-        bool ctrl = currentPressed.Contains(DiKey.LeftControl) || currentPressed.Contains(DiKey.RightControl);
-        bool alt = currentPressed.Contains(DiKey.LeftAlt) || currentPressed.Contains(DiKey.RightAlt);
-
-        int modifierFlags = 0;
-        if (shift) modifierFlags |= 1;
-        if (ctrl) modifierFlags |= 2;
-        if (alt) modifierFlags |= 4;
-
-        DiKey caught = newlyPressed.FirstOrDefault(key =>
-            key != DiKey.LeftShift && key != DiKey.RightShift &&
-            key != DiKey.LeftControl && key != DiKey.RightControl &&
-            key != DiKey.LeftAlt && key != DiKey.RightAlt);
-
-        if (caught == DiKey.Unknown)
-            return;
-        
-        // Reserve keys for BMS and Windows
+        // Reserve keys for BMS and Windows.
         if (ReservedKeyboardBindings.TryGetDisplayText(
-        caught,
-        modifierFlags,
-        out string reservedBinding))
+                caught,
+                modifierFlags,
+                out string reservedBinding))
         {
             MessageBox.Show(
-                reservedBinding + " is reserved and cannot be reassigned.",
+                reservedBinding +
+                " is reserved and cannot be reassigned.",
                 "Reserved Key",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -373,130 +335,60 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        _tempKeyScancode = "0x" + ((int)caught).ToString("X");
-        _tempModifierFlags = modifierFlags;
-        _tempChordScancode = "0";
-        _tempChordModifierFlags = 0;
+        _tempKeyScancode =
+            "0x" +
+            ((int)caught).ToString("X");
+
+        _tempModifierFlags =
+            modifierFlags;
+
+        _tempChordScancode =
+            "0";
+
+        _tempChordModifierFlags =
+            0;
 
         UpdateAssignmentPreviewTexts();
         UpdateConflict();
     }
 
-    private void StartDxNeutralWarmup()
+    private void CaptureSession_JoystickButtonInput(
+        object? sender,
+        BufferedJoystickButtonEventArgs e)
     {
-        _previousButtonsByDeviceKey.Clear();
-        _previousPovsByDeviceKey.Clear();
-        _dxNeutralWarmupPollsRemaining = DxNeutralWarmupPolls;
-    }
-
-    private bool IsDxNeutralWarmupActive()
-    {
-        if (_dxNeutralWarmupPollsRemaining <= 0)
-            return false;
-
-        foreach (KeyValuePair<string, JoystickSession> pair in _joystickSessionsByDeviceKey)
-        {
-            JoystickState state;
-
-            try
-            {
-                state = pair.Value.ReadState();
-            }
-            catch
-            {
-                continue;
-            }
-
-            bool[] buttons = state.Buttons ?? Array.Empty<bool>();
-            int[] povs = state.PointOfViewControllers ?? Array.Empty<int>();
-
-            // Keep replacing the baseline during warmup. The final warmup poll becomes
-            // the neutral state used when real DX capture begins.
-            _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
-            _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
-        }
-
-        _dxNeutralWarmupPollsRemaining--;
-        return true;
-    }
-
-    private void PollJoystickInputs()
-    {
-        if (IsDxNeutralWarmupActive())
+        // The physical event identifies the DX button. Shifted/Unshifted
+        // and Press/Release remain manual choices in the popup.
+        if (!e.IsPressed)
             return;
 
-        foreach (KeyValuePair<string, JoystickSession> pair in _joystickSessionsByDeviceKey)
-        {
-            JoystickState state;
+        AddPendingDxButton(
+            e.DeviceKey,
+            e.ButtonIndex);
 
-            try
-            {
-                state = pair.Value.ReadState();
-            }
-            catch
-            {
-                continue;
-            }
+        UpdateAssignmentPreviewTexts();
+        UpdateConflict();
+    }
 
-            bool[] buttons = state.Buttons ?? Array.Empty<bool>();
-            int[] povs = state.PointOfViewControllers ?? Array.Empty<int>();
+    private void CaptureSession_JoystickPovInput(
+        object? sender,
+        BufferedJoystickPovEventArgs e)
+    {
+        int? direction =
+            NormalizeDirectInputPovDirection(
+                e.Value);
 
-            bool hasPreviousButtons = _previousButtonsByDeviceKey.TryGetValue(pair.Key, out bool[]? previousButtons);
-            bool hasPreviousPovs = _previousPovsByDeviceKey.TryGetValue(pair.Key, out int[]? previousPovs);
+        // Ignore the centered/released POV event. A new directional event
+        // will arrive the next time the hat is moved.
+        if (!direction.HasValue)
+            return;
 
-            if (!hasPreviousButtons && !hasPreviousPovs)
-            {
-                _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
-                _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
-                continue;
-            }
+        AddPendingDxPov(
+            e.DeviceKey,
+            e.PovIndex,
+            direction.Value);
 
-            previousButtons ??= Array.Empty<bool>();
-            previousPovs ??= Array.Empty<int>();
-
-            bool capturedInput = false;
-
-            int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
-
-            for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
-            {
-                if (!buttons[buttonIndex] || previousButtons[buttonIndex])
-                    continue;
-
-                AddPendingDxButton(pair.Key, buttonIndex);
-                capturedInput = true;
-                break;
-            }
-
-            int povLimit = Math.Min(povs.Length, previousPovs.Length);
-
-            for (int povIndex = 0; !capturedInput && povIndex < povLimit; povIndex++)
-            {
-                int previousDirectionValue = previousPovs[povIndex];
-                int currentDirectionValue = povs[povIndex];
-
-                if (previousDirectionValue == currentDirectionValue)
-                    continue;
-
-                int? direction = NormalizeDirectInputPovDirection(currentDirectionValue);
-
-                if (!direction.HasValue)
-                    continue;
-
-                AddPendingDxPov(pair.Key, povIndex, direction.Value);
-                capturedInput = true;
-                break;
-            }
-
-            if (capturedInput)
-            {
-                UpdateAssignmentPreviewTexts();
-                UpdateConflict();
-            }
-
-            _previousButtonsByDeviceKey[pair.Key] = (bool[])buttons.Clone();
-            _previousPovsByDeviceKey[pair.Key] = (int[])povs.Clone();
-        }
+        UpdateAssignmentPreviewTexts();
+        UpdateConflict();
     }
 
     private void UpdateConflict()

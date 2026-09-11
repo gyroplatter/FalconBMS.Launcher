@@ -15,7 +15,6 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using static FalconBMS.Launcher.Input.KeyboardSession;
 using DiKey = Vortice.DirectInput.Key;
 
 namespace FalconBMS.Launcher.Views;
@@ -23,10 +22,7 @@ namespace FalconBMS.Launcher.Views;
 public partial class ControlsView : UserControl
 {
     private readonly DirectInputManager _di = new();
-    private KeyboardSession? _keyboard;
-    private readonly Dictionary<string, JoystickSession> _joystickSessionsByDeviceKey = new();
-    private readonly Dictionary<string, bool[]> _previousButtonsByDeviceKey = new();
-    private readonly Dictionary<string, int[]> _previousPovsByDeviceKey = new();
+    private DirectInputCaptureSession? _captureSession;
 
     // Last Input axis detection uses the same basic jitter protections as axis
     // assignment, but with a lower movement threshold
@@ -60,7 +56,6 @@ public partial class ControlsView : UserControl
     // Prevents saving while we are restoring the saved column order.
     private bool _isRestoringDeviceColumnOrder;
 
-    private HashSet<DiKey> _previousPressedKeys = new();
     private DispatcherTimer? _timer;
     private ControlsViewModel? _subscribedViewModel;
 
@@ -838,11 +833,68 @@ public partial class ControlsView : UserControl
     {
         StopKeyboardSearchCapture();
 
-        // Establish fresh axis baselines whenever Controls input polling starts.
-        // This does not add another polling loop, last Input uses the existing timer.
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        Window? window = Window.GetWindow(this);
+        if (window is null)
+            return;
+
+        IntPtr hwnd = new WindowInteropHelper(window).Handle;
+        if (hwnd == IntPtr.Zero)
+            return;
+
+        // Establish fresh axis baselines whenever Controls capture starts.
+        // The 30 ms timer below is now algorithm/UI-only; DirectInput hardware
+        // is fed into the capture session by buffered listeners.
         _lastInputAxisCaptureStartedUtc = DateTime.UtcNow;
         _lastInputAxisBaselineByDeviceKey.Clear();
         _lastInputAxisStableHitsByCandidate.Clear();
+
+        _captureSession =
+            new DirectInputCaptureSession(
+                _di,
+                Dispatcher,
+                hwnd);
+
+        _captureSession.KeyboardInput +=
+            CaptureSession_KeyboardInput;
+
+        _captureSession.JoystickButtonInput +=
+            CaptureSession_JoystickButtonInput;
+
+        _captureSession.JoystickPovInput +=
+            CaptureSession_JoystickPovInput;
+
+        try
+        {
+            _captureSession.OpenKeyboard();
+        }
+        catch
+        {
+            // Controls can still capture joystick input if the keyboard
+            // device cannot be opened.
+        }
+
+        foreach (DeviceBindingProfile deviceProfile in
+                 viewModel.DeviceColumns.Where(device =>
+                     device.IsConnected &&
+                     (device.AxisCount > 0 ||
+                      device.ButtonCount > 0 ||
+                      device.PovCount > 0)))
+        {
+            try
+            {
+                _captureSession.OpenJoystick(
+                    deviceProfile.DurableDeviceKey,
+                    deviceProfile.InstanceGuid);
+            }
+            catch
+            {
+                // Preserve the existing behavior: one device failing to open
+                // must not prevent capture from the remaining devices.
+            }
+        }
 
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -862,84 +914,55 @@ public partial class ControlsView : UserControl
             _timer = null;
         }
 
-        if (_keyboard is not null)
+        if (_captureSession is not null)
         {
-            _keyboard.Dispose();
-            _keyboard = null;
+            _captureSession.KeyboardInput -=
+                CaptureSession_KeyboardInput;
+
+            _captureSession.JoystickButtonInput -=
+                CaptureSession_JoystickButtonInput;
+
+            _captureSession.JoystickPovInput -=
+                CaptureSession_JoystickPovInput;
+
+            _captureSession.Dispose();
+            _captureSession = null;
         }
-
-        foreach (JoystickSession session in _joystickSessionsByDeviceKey.Values)
-            session.Dispose();
-
-        _joystickSessionsByDeviceKey.Clear();
-        _previousButtonsByDeviceKey.Clear();
-        _previousPressedKeys.Clear();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        PollKeyboardSearch();
-        PollDeviceButtonSearch();
+        // The timer remains only for the live axis bars and Last Input axis
+        // stability algorithm. It no longer polls DirectInput hardware.
         PollLiveAxes();
     }
 
-    private void PollKeyboardSearch()
+    private void CaptureSession_KeyboardInput(
+        object? sender,
+        BufferedKeyboardInputEventArgs e)
     {
         if (IsFilterControlFocused())
             return;
 
-        EnsureKeyboardOpened();
-
-        if (_keyboard is null)
+        if (!e.IsPressed)
             return;
 
-        Vortice.DirectInput.KeyboardState state;
+        DiKey caught = e.Key;
 
-        try
-        {
-            state = _keyboard.ReadState();
-        }
-        catch
+        if (caught == DiKey.Unknown ||
+            caught == DiKey.LeftShift ||
+            caught == DiKey.RightShift ||
+            caught == DiKey.LeftControl ||
+            caught == DiKey.RightControl ||
+            caught == DiKey.LeftAlt ||
+            caught == DiKey.RightAlt)
         {
             return;
-        }
-
-        var currentPressed = new HashSet<DiKey>();
-
-        foreach (DiKey key in Enum.GetValues(typeof(DiKey)))
-        {
-            if (key == DiKey.Unknown)
-                continue;
-
-            if (state.IsPressed(key))
-                currentPressed.Add(key);
         }
 
-        var newlyPressed = currentPressed
-            .Where(key => !_previousPressedKeys.Contains(key))
-            .ToList();
-
-        _previousPressedKeys = currentPressed;
-
-        if (newlyPressed.Count == 0)
-            return;
-
-        bool shift = currentPressed.Contains(DiKey.LeftShift) || currentPressed.Contains(DiKey.RightShift);
-        bool ctrl = currentPressed.Contains(DiKey.LeftControl) || currentPressed.Contains(DiKey.RightControl);
-        bool alt = currentPressed.Contains(DiKey.LeftAlt) || currentPressed.Contains(DiKey.RightAlt);
-
-        int modifierFlags = 0;
-        if (shift) modifierFlags |= 1;
-        if (ctrl) modifierFlags |= 2;
-        if (alt) modifierFlags |= 4;
-
-        DiKey caught = newlyPressed.FirstOrDefault(key =>
-            key != DiKey.LeftShift && key != DiKey.RightShift &&
-            key != DiKey.LeftControl && key != DiKey.RightControl &&
-            key != DiKey.LeftAlt && key != DiKey.RightAlt);
-
-        if (caught == DiKey.Unknown)
-            return;
+        bool shift = (e.ModifierFlags & 1) != 0;
+        bool ctrl = (e.ModifierFlags & 2) != 0;
+        bool alt = (e.ModifierFlags & 4) != 0;
 
         string keyDisplayName = caught.ToString();
 
@@ -956,7 +979,7 @@ public partial class ControlsView : UserControl
 
         string assignmentStatus = KeyAssgn.GetKeyAssignmentStatus(
             "0x" + ((int)caught).ToString("X"),
-            modifierFlags,
+            e.ModifierFlags,
             "0",
             0);
 
@@ -971,27 +994,14 @@ public partial class ControlsView : UserControl
                 ? viewModel.SelectFirstVisibleUnassignedKeyMatch(assignmentStatus)
                 : viewModel.SelectFirstVisibleKeyMatch(assignmentStatus);
 
-        if (!selectedMatch)
-            return;
-
-        ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
-
-        if (selectedRow is null)
-            return;
-
-        Dispatcher.BeginInvoke(() =>
-        {
-            // Filtering can change the visible rows before this deferred scroll runs
-            if (!viewModel.Rows.Contains(selectedRow))
-                return;
-
-            ControlsGrid.UpdateLayout();
-            ControlsGrid.SelectedItem = selectedRow;
-            ControlsGrid.ScrollIntoView(selectedRow);
-        }, DispatcherPriority.Background);
+        ScrollSelectedRowIntoView(
+            viewModel,
+            selectedMatch);
     }
 
-    private void PollDeviceButtonSearch()
+    private void CaptureSession_JoystickButtonInput(
+        object? sender,
+        BufferedJoystickButtonEventArgs e)
     {
         if (IsFilterControlFocused())
             return;
@@ -999,150 +1009,147 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        Window? window = Window.GetWindow(this);
-        if (window is null)
+        DeviceBindingProfile? deviceProfile =
+            viewModel.DeviceColumns.FirstOrDefault(device =>
+                string.Equals(
+                    device.DurableDeviceKey,
+                    e.DeviceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (deviceProfile is null)
             return;
 
-        IntPtr hwnd = new WindowInteropHelper(window).Handle;
-        if (hwnd == IntPtr.Zero)
+        // Last Input reports the physical press. Releasing a button should
+        // not replace the useful information the user just saw.
+        if (e.IsPressed)
+        {
+            UpdateLastInput(
+                GetDeviceDisplayName(deviceProfile),
+                "DX" + (e.ButtonIndex + 1));
+        }
+
+        bool isShifted =
+            viewModel.IsDxShiftActive(
+                BuildCurrentButtonsByDeviceKey(viewModel));
+
+        bool selectedMatch =
+            viewModel.SelectFirstVisibleDxMatch(
+                e.DeviceKey,
+                e.ButtonIndex,
+                isRelease: !e.IsPressed,
+                isShifted);
+
+        ScrollSelectedRowIntoView(
+            viewModel,
+            selectedMatch);
+    }
+
+    private void CaptureSession_JoystickPovInput(
+        object? sender,
+        BufferedJoystickPovEventArgs e)
+    {
+        if (IsFilterControlFocused())
             return;
 
-        List<DeviceBindingProfile> connectedDevices = viewModel.DeviceColumns
-            .Where(device => device.IsConnected && (device.ButtonCount > 0 || device.PovCount > 0))
-            .ToList();
+        int? direction =
+            NormalizeDirectInputPovDirection(e.Value);
 
-        var currentButtonsByDeviceKey = new Dictionary<string, bool[]>();
-        var currentPovsByDeviceKey = new Dictionary<string, int[]>();
+        // Returning a POV to center is not a mapping input.
+        if (!direction.HasValue)
+            return;
 
-        // Read every connected device first so DX shift state is based on the
-        // full current controller state, not just the device currently being scanned.
-        // POV hats are captured from the same state read so POV clicks can also
-        // jump the Controls table to the currently mapped callback row.
-        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
+        if (DataContext is not ControlsViewModel viewModel)
+            return;
+
+        DeviceBindingProfile? deviceProfile =
+            viewModel.DeviceColumns.FirstOrDefault(device =>
+                string.Equals(
+                    device.DurableDeviceKey,
+                    e.DeviceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (deviceProfile is null)
+            return;
+
+        UpdateLastInput(
+            GetDeviceDisplayName(deviceProfile),
+            "POV" + (e.PovIndex + 1) + " " +
+            ControlsViewModel.GetPovDirectionName(direction.Value));
+
+        bool isShifted =
+            viewModel.IsDxShiftActive(
+                BuildCurrentButtonsByDeviceKey(viewModel));
+
+        bool selectedMatch =
+            viewModel.SelectFirstVisiblePovMatch(
+                e.DeviceKey,
+                e.PovIndex,
+                direction.Value,
+                isShifted);
+
+        ScrollSelectedRowIntoView(
+            viewModel,
+            selectedMatch);
+    }
+
+    private Dictionary<string, bool[]> BuildCurrentButtonsByDeviceKey(
+        ControlsViewModel viewModel)
+    {
+        var result =
+            new Dictionary<string, bool[]>(
+                StringComparer.OrdinalIgnoreCase);
+
+        if (_captureSession is null)
+            return result;
+
+        foreach (DeviceBindingProfile deviceProfile in
+                 viewModel.DeviceColumns.Where(device =>
+                     device.IsConnected &&
+                     device.ButtonCount > 0))
         {
-            JoystickSession? session = EnsureJoystickOpened(deviceProfile, hwnd);
-            if (session is null)
-                continue;
+            bool[] buttons =
+                new bool[deviceProfile.ButtonCount];
 
-            try
+            for (int buttonIndex = 0;
+                 buttonIndex < buttons.Length;
+                 buttonIndex++)
             {
-                var state = session.ReadState();
-
-                currentButtonsByDeviceKey[deviceProfile.DurableDeviceKey] =
-                    state.Buttons ?? Array.Empty<bool>();
-
-                currentPovsByDeviceKey[deviceProfile.DurableDeviceKey] =
-                    state.PointOfViewControllers ?? Array.Empty<int>();
+                buttons[buttonIndex] =
+                    _captureSession.IsJoystickButtonPressed(
+                        deviceProfile.DurableDeviceKey,
+                        buttonIndex);
             }
-            catch
-            {
-                continue;
-            }
+
+            result[deviceProfile.DurableDeviceKey] =
+                buttons;
         }
 
-        bool isShifted = viewModel.IsDxShiftActive(currentButtonsByDeviceKey);
+        return result;
+    }
 
-        foreach (DeviceBindingProfile deviceProfile in connectedDevices)
+    private void ScrollSelectedRowIntoView(
+        ControlsViewModel viewModel,
+        bool selectedMatch)
+    {
+        if (!selectedMatch)
+            return;
+
+        ControlGridRowViewModel? selectedRow =
+            viewModel.SelectedRow;
+
+        if (selectedRow is null)
+            return;
+
+        Dispatcher.BeginInvoke(() =>
         {
-            currentButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? buttons);
-            currentPovsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out int[]? povs);
+            // Filtering can change the visible rows before this deferred scroll runs.
+            if (!viewModel.Rows.Contains(selectedRow))
+                return;
 
-            buttons ??= Array.Empty<bool>();
-            povs ??= Array.Empty<int>();
-
-            bool hasPreviousButtons = _previousButtonsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out bool[]? previousButtons);
-            bool hasPreviousPovs = _previousPovsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out int[]? previousPovs);
-
-            if (!hasPreviousButtons && !hasPreviousPovs)
-            {
-                _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
-                _previousPovsByDeviceKey[deviceProfile.DurableDeviceKey] = (int[])povs.Clone();
-                continue;
-            }
-
-            previousButtons ??= Array.Empty<bool>();
-            previousPovs ??= Array.Empty<int>();
-
-            bool selectedMatch = false;
-
-            int buttonLimit = Math.Min(buttons.Length, previousButtons.Length);
-
-            for (int buttonIndex = 0; buttonIndex < buttonLimit; buttonIndex++)
-            {
-                bool wasPressed = previousButtons[buttonIndex];
-                bool isPressed = buttons[buttonIndex];
-
-                if (wasPressed == isPressed)
-                    continue;
-
-                bool isRelease = wasPressed && !isPressed;
-
-                // Last Input reports the physical press. Releasing a button should
-                // not replace the useful information the user just saw.
-                if (!wasPressed && isPressed)
-                {
-                    UpdateLastInput(
-                        GetDeviceDisplayName(deviceProfile),
-                        "DX" + (buttonIndex + 1));
-                }
-
-                selectedMatch = viewModel.SelectFirstVisibleDxMatch(
-                    deviceProfile.DurableDeviceKey,
-                    buttonIndex,
-                    isRelease,
-                    isShifted);
-
-                break;
-            }
-
-            int povLimit = Math.Min(povs.Length, previousPovs.Length);
-
-            for (int povIndex = 0; !selectedMatch && povIndex < povLimit; povIndex++)
-            {
-                int previousDirectionValue = previousPovs[povIndex];
-                int currentDirectionValue = povs[povIndex];
-
-                if (previousDirectionValue == currentDirectionValue)
-                    continue;
-
-                int? direction = NormalizeDirectInputPovDirection(currentDirectionValue);
-
-                if (!direction.HasValue)
-                    continue;
-
-                UpdateLastInput(
-                    GetDeviceDisplayName(deviceProfile),
-                    "POV" + (povIndex + 1) + " " +
-                    ControlsViewModel.GetPovDirectionName(direction.Value));
-
-                selectedMatch = viewModel.SelectFirstVisiblePovMatch(
-                    deviceProfile.DurableDeviceKey,
-                    povIndex,
-                    direction.Value,
-                    isShifted);
-
-                break;
-            }
-
-            ControlGridRowViewModel? selectedRow = viewModel.SelectedRow;
-
-            if (selectedMatch && selectedRow is not null)
-            {
-                Dispatcher.BeginInvoke(() =>
-                {
-                    // Filtering can change the visible rows before this deferred scroll runs.
-                    if (!viewModel.Rows.Contains(selectedRow))
-                        return;
-
-                    ControlsGrid.UpdateLayout();
-                    ControlsGrid.SelectedItem = selectedRow;
-                    ControlsGrid.ScrollIntoView(selectedRow);
-                }, DispatcherPriority.Background);
-            }
-
-            _previousButtonsByDeviceKey[deviceProfile.DurableDeviceKey] = (bool[])buttons.Clone();
-            _previousPovsByDeviceKey[deviceProfile.DurableDeviceKey] = (int[])povs.Clone();
-        }
+            ControlsGrid.UpdateLayout();
+            ControlsGrid.SelectedItem = selectedRow;
+            ControlsGrid.ScrollIntoView(selectedRow);
+        }, DispatcherPriority.Background);
     }
 
     private static int? NormalizeDirectInputPovDirection(int povValue)
@@ -1165,12 +1172,7 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
-        Window? window = Window.GetWindow(this);
-        if (window is null)
-            return;
-
-        IntPtr hwnd = new WindowInteropHelper(window).Handle;
-        if (hwnd == IntPtr.Zero)
+        if (_captureSession is null)
             return;
 
         var lastInputCandidates =
@@ -1181,27 +1183,15 @@ public partial class ControlsView : UserControl
                      device.IsConnected &&
                      device.AxisCount > 0))
         {
-            JoystickSession? session =
-                EnsureJoystickOpened(deviceProfile, hwnd);
-
-            if (session is null)
-                continue;
-
-            int[] axisValues;
-
-            try
-            {
-                axisValues =
-                    DirectInputManager.ReadAxisVector(
-                        session.ReadState());
-            }
-            catch
+            if (!_captureSession.TryGetJoystickAxisValues(
+                    deviceProfile.DurableDeviceKey,
+                    out int[] axisValues))
             {
                 continue;
             }
 
-            // Reuse the axis state that was already read for the live mapping bars.
-            // No additional DirectInput polling is required for Last Input.
+            // Reuse the capture session's current axis cache for both the live
+            // mapping bars and Last Input. No DirectInput Poll() occurs here.
             AddLastInputAxisCandidates(
                 deviceProfile,
                 axisValues,
@@ -1409,26 +1399,6 @@ public partial class ControlsView : UserControl
         _lastInputAxisStableHitsByCandidate.Clear();
     }
 
-    private JoystickSession? EnsureJoystickOpened(DeviceBindingProfile deviceProfile, IntPtr hwnd)
-    {
-        if (!deviceProfile.IsConnected)
-            return null;
-
-        if (_joystickSessionsByDeviceKey.TryGetValue(deviceProfile.DurableDeviceKey, out JoystickSession session))
-            return session;
-
-        try
-        {
-            session = _di.OpenJoystick(deviceProfile.InstanceGuid, hwnd);
-            _joystickSessionsByDeviceKey[deviceProfile.DurableDeviceKey] = session;
-            return session;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     private string? GetClickedDeviceKey(DependencyObject? originalSource, ControlsViewModel viewModel)
     {
         DataGridCell? cell = FindVisualParent<DataGridCell>(originalSource);
@@ -1455,30 +1425,8 @@ public partial class ControlsView : UserControl
         return null;
     }
 
-    private void EnsureKeyboardOpened()
-    {
-        if (_keyboard is not null)
-            return;
 
-        Window? window = Window.GetWindow(this);
-        if (window is null)
-            return;
-
-        IntPtr hwnd = new WindowInteropHelper(window).Handle;
-        if (hwnd == IntPtr.Zero)
-            return;
-
-        try
-        {
-            _keyboard = _di.OpenKeyboard(hwnd);
-        }
-        catch
-        {
-            _keyboard = null;
-        }
-    }
-
-    private void CategoryListBox_PreviewMouseLeftButtonUp(
+     private void CategoryListBox_PreviewMouseLeftButtonUp(
     object sender,
     MouseButtonEventArgs e)
     {
@@ -1497,7 +1445,8 @@ public partial class ControlsView : UserControl
             return;
 
         // Prevent WPF's ListBox text search from changing categories.
-        // DirectInput polling still sees the key press and can jump the table row.
+        // Buffered DirectInput capture still sees the key press and can jump
+        // the table row.
         e.Handled = true;
     }
 
