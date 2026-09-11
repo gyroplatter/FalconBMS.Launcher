@@ -361,14 +361,6 @@ public sealed class KeyboardSession : IDisposable
     public event Action<Exception>? Faulted;
     public event Action<int>? BufferCapacityReached;
 
-    // Temporary compatibility path for ControlsView while the remaining
-    // polling consumers are converted to DirectInputCaptureSession
-    public KeyboardState ReadState()
-    {
-        _device.Poll();
-        return _device.GetCurrentKeyboardState();
-    }
-
     internal KeyboardSession(
         IDirectInputDevice8 device)
     {
@@ -383,7 +375,7 @@ public sealed class KeyboardSession : IDisposable
             new Thread(ListenLoop)
             {
                 IsBackground = true,
-                Name = "BMS Launcher DirectInput Keyboard"
+                Name = "DirectInput Keyboard"
             };
 
         _listenerThread.Start();
@@ -583,15 +575,6 @@ public sealed class JoystickSession : IDisposable
     public event Action<Exception>? Faulted;
     public event Action<int>? BufferCapacityReached;
 
-    // Temporary compatibility path for ControlsView, AxisAssignViewModel,
-    // and AxisPairAssignViewModel while those remaining polling consumers
-    // are converted to the buffered/current-state input layer
-    public JoystickState ReadState()
-    {
-        _device.Poll();
-        return _device.GetCurrentJoystickState();
-    }
-
     internal JoystickSession(
         IDirectInputDevice8 device)
     {
@@ -608,7 +591,7 @@ public sealed class JoystickSession : IDisposable
             new Thread(ListenLoop)
             {
                 IsBackground = true,
-                Name = "BMS Launcher DirectInput Joystick"
+                Name = "DirectInput Joystick"
             };
 
         _listenerThread.Start();

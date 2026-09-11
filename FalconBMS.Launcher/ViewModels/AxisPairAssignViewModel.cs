@@ -31,11 +31,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private readonly Action<AxisPairAssignViewModel> _saveAxisAssignment;
     private readonly Action _closeWindow;
     private readonly IntPtr _hwnd;
+
     private readonly string _actionId =
         DebugDiagnosticsService.CreateActionId("AXISPAIRUI");
 
-    private readonly Dictionary<string, JoystickSession>
-        _sessionsByDeviceKey = new();
+    private DirectInputCaptureSession? _captureSession;
 
     private readonly Dictionary<string, int[]>
         _baselineByDeviceKey = new();
@@ -229,6 +229,37 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     {
         Stop();
 
+        _baselineByDeviceKey.Clear();
+        _stableHitsByCandidate.Clear();
+
+        _captureSession =
+            new DirectInputCaptureSession(
+                _di,
+                System.Windows.Application.Current.Dispatcher,
+                _hwnd);
+
+        foreach (DeviceBindingProfile device in
+                 _deviceProfiles.Where(device =>
+                     device.IsConnected &&
+                     device.AxisCount > 0))
+        {
+            try
+            {
+                _captureSession.OpenJoystick(
+                    device.DurableDeviceKey,
+                    device.InstanceGuid);
+            }
+            catch
+            {
+                // One device failing to open must not prevent the remaining
+                // connected axis devices from being used.
+            }
+        }
+
+        // Keep the existing 16 ms evaluation cadence for live plotting and
+        // the settle/threshold/dominance/stability capture algorithm. The
+        // timer now reads the buffered listener's axis cache instead of
+        // polling DirectInput hardware.
         _timer = new DispatcherTimer(
             DispatcherPriority.Background)
         {
@@ -251,13 +282,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             _timer = null;
         }
 
-        foreach (JoystickSession session in
-                 _sessionsByDeviceKey.Values)
+        if (_captureSession is not null)
         {
-            session.Dispose();
+            _captureSession.Dispose();
+            _captureSession = null;
         }
-
-        _sessionsByDeviceKey.Clear();
     }
 
     private void StartCapture(
@@ -747,38 +776,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         if (!device.IsConnected)
             return false;
 
-        if (!_sessionsByDeviceKey.TryGetValue(
-                device.DurableDeviceKey,
-                out JoystickSession session))
-        {
-            try
-            {
-                session = _di.OpenJoystick(
-                    device.InstanceGuid,
-                    _hwnd);
-
-                _sessionsByDeviceKey[
-                    device.DurableDeviceKey] =
-                    session;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        try
-        {
-            axisValues =
-                DirectInputManager.ReadAxisVector(
-                    session.ReadState());
-
-            return true;
-        }
-        catch
-        {
+        if (_captureSession is null)
             return false;
-        }
+
+        return _captureSession.TryGetJoystickAxisValues(
+            device.DurableDeviceKey,
+            out axisValues);
     }
 
     private void UpdateAxisConflicts()

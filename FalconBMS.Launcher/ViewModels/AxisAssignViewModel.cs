@@ -12,9 +12,10 @@ using System.Windows.Threading;
 namespace FalconBMS.Launcher.ViewModels;
 
 /// <summary>
-/// Drives the axis assignment popup. Polling and detection are intentionally separate:
-/// mapped axes always poll so the live bar moves, but auto-detection is frozen until the user clicks Clear.
-/// This matches the old non-binding launcher and prevents jitter from replacing an existing assignment.
+/// Drives the axis assignment popup. Live axis evaluation and detection are intentionally separate:
+/// mapped axes always use the current cached value so the live bar moves, but auto-detection is frozen
+/// until the user clicks Clear. This matches the old non-binding launcher behavior and prevents jitter
+/// from replacing an existing assignment.
 /// </summary>
 public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 {
@@ -44,7 +45,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     // Correlates every log line from one Assign Axis popup session.
     private readonly string _actionId = DebugDiagnosticsService.CreateActionId("AXISUI");
 
-    private readonly Dictionary<string, JoystickSession> _sessionsByDeviceKey = new();
+    private DirectInputCaptureSession? _captureSession;
     private readonly Dictionary<string, int[]> _baselineByDeviceKey = new();
     private readonly Dictionary<string, int> _stableHitsByCandidate = new();
 
@@ -227,14 +228,45 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
         _captureStartedUtc = DateTime.UtcNow;
         _stableHitsByCandidate.Clear();
+        _baselineByDeviceKey.Clear();
 
-        // An existing assignment should only poll the assigned axis. Auto-capture is off until Clear is clicked,
-        // which is the critical old-launcher behavior that stops random jitter from remapping Pitch/Roll/etc.
+        // An existing assignment should only display the assigned axis.
+        // Auto-capture is off until Clear is clicked, which is the critical
+        // old-launcher behavior that stops random jitter from remapping
+        // Pitch/Roll/etc.
         _captureArmed = !_selectedPhysicalAxisIndex.HasValue;
 
-        DebugDiagnosticsService.Info(
-            $"Axis assign polling started. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | CaptureArmed={_captureArmed} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedDeviceName={GetSelectedDeviceName()} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConnectedAxisDevices={_deviceProfiles.Count(device => device.IsConnected && device.AxisCount > 0)}");
+        _captureSession =
+            new DirectInputCaptureSession(
+                _di,
+                Application.Current.Dispatcher,
+                _hwnd);
 
+        foreach (DeviceBindingProfile device in
+                 _deviceProfiles.Where(device =>
+                     device.IsConnected &&
+                     device.AxisCount > 0))
+        {
+            try
+            {
+                _captureSession.OpenJoystick(
+                    device.DurableDeviceKey,
+                    device.InstanceGuid);
+            }
+            catch
+            {
+                // One device failing to open must not prevent axis
+                // capture from the remaining connected devices.
+            }
+        }
+
+        DebugDiagnosticsService.Info(
+            $"Axis assign buffered capture started. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | CaptureArmed={_captureArmed} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedDeviceName={GetSelectedDeviceName()} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConnectedAxisDevices={_deviceProfiles.Count(device => device.IsConnected && device.AxisCount > 0)}");
+
+        // Keep the existing 16 ms evaluation cadence for the live bar and
+        // settle/threshold/dominance/stability capture algorithm. The timer
+        // now reads the buffered listener's axis cache instead of polling
+        // DirectInput hardware.
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromMilliseconds(16)
@@ -259,10 +291,11 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
             _timer = null;
         }
 
-        foreach (JoystickSession session in _sessionsByDeviceKey.Values)
-            session.Dispose();
-
-        _sessionsByDeviceKey.Clear();
+        if (_captureSession is not null)
+        {
+            _captureSession.Dispose();
+            _captureSession = null;
+        }
     }
 
     private void LoadExistingMapping(string? initialDeviceKey)
@@ -447,28 +480,12 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         if (!device.IsConnected)
             return false;
 
-        if (!_sessionsByDeviceKey.TryGetValue(device.DurableDeviceKey, out JoystickSession session))
-        {
-            try
-            {
-                session = _di.OpenJoystick(device.InstanceGuid, _hwnd);
-                _sessionsByDeviceKey[device.DurableDeviceKey] = session;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        try
-        {
-            axisValues = DirectInputManager.ReadAxisVector(session.ReadState());
-            return true;
-        }
-        catch
-        {
+        if (_captureSession is null)
             return false;
-        }
+
+        return _captureSession.TryGetJoystickAxisValues(
+            device.DurableDeviceKey,
+            out axisValues);
     }
 
     private void ClearMapping()
