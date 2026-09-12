@@ -92,11 +92,11 @@ public sealed class DirectInputManager : IDisposable
 
         // DirectInput's buffer preserves input events in order until the
         // listener consumes them, including rapid keyboard transitions and
-        // other bursty input. A buffer of 128 provides room for fast encoders
+        // other bursty input. A buffer of 16 provides room for fast encoders
         // and similar bursts.
         //
         // This must be configured before the device is acquired.
-        device.Properties.BufferSize = 128;
+        device.Properties.BufferSize = 16;
 
         return new KeyboardSession(device);
     }
@@ -118,7 +118,7 @@ public sealed class DirectInputManager : IDisposable
         // DirectInput buffers button transitions, POV changes and axis changes
         // in order until the listener consumes them. They all share this
         // device buffer.
-        device.Properties.BufferSize = 128;
+        device.Properties.BufferSize = 16;
 
         return new JoystickSession(device);
     }
@@ -335,7 +335,7 @@ public sealed class DirectInputManager : IDisposable
 
 public sealed class KeyboardSession : IDisposable
 {
-    private const int ConfiguredBufferSize = 128;
+    private const int ConfiguredBufferSize = 16;
     private const int MaximumBufferedEvents = ConfiguredBufferSize - 1;
 
     private readonly IDirectInputDevice8 _device;
@@ -539,7 +539,7 @@ public sealed class KeyboardSession : IDisposable
 
 public sealed class JoystickSession : IDisposable
 {
-    private const int ConfiguredBufferSize = 128;
+    private const int ConfiguredBufferSize = 16;
     private const int MaximumBufferedEvents = ConfiguredBufferSize - 1;
 
     private const int Pov0Offset = 32;
