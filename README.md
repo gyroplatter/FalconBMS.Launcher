@@ -51,7 +51,7 @@ The main goal of Launcher v3 is to make control setup easier to understand and e
 This project uses the following NuGet packages:
 
 - Vortice.DirectInput  
-  For DirectInput bindings used for device detection, axis polling, and button input.
+  For DirectInput device detection and buffered keyboard, button, POV, and axis input.
 
 - System.ServiceModel.Syndication  
   For RSS feed handling in the Launcher UI.
@@ -168,6 +168,6 @@ The Launcher writes diagnostic log output to:
 
 The log records application startup, selected install changes, device discovery, JSON loading/writing, generated compatibility file writes, launch preparation, Falcon launch events, close-time save behavior, warnings, and exceptions.
 
-This file is overwritten on every restart of the Launcher.
+The log records activities from the last 5 Launcher sessions. Each run adds a new session header, and older sessions are automatically removed.
 
 Generated file writes include before/after file signatures so it is possible to see whether a file actually changed.
