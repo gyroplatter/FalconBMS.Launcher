@@ -24,9 +24,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private readonly Action<BindingRow, string?, int?, int?> _saveDeviceButtonBinding;
     private readonly Action<BindingRow, string?, int?, int?, string?> _saveDevicePovBinding;
     private readonly Action _closeWindow;
-    private readonly DirectInputManager _di = new();
-
-    private DirectInputCaptureSession? _captureSession;
+    private readonly DirectInputCaptureHost _captureHost = new();
 
     private string _tempKeyScancode;
     private int _tempModifierFlags;
@@ -145,6 +143,15 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         _saveDevicePovBinding = saveDevicePovBinding;
         _closeWindow = closeWindow;
 
+        _captureHost.KeyboardInput +=
+            CaptureSession_KeyboardInput;
+
+        _captureHost.JoystickButtonInput +=
+            CaptureSession_JoystickButtonInput;
+
+        _captureHost.JoystickPovInput +=
+            CaptureSession_JoystickPovInput;
+
         TitleText = row.Description;
 
         _tempKeyScancode = row.KeyScancode;
@@ -224,73 +231,27 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     {
         StopCapture();
 
-        _captureSession =
-            new DirectInputCaptureSession(
-                _di,
-                Application.Current.Dispatcher,
-                hwnd);
+        IEnumerable<DirectInputCaptureDevice> joystickDevices =
+            _deviceProfiles
+                .Where(device =>
+                    device.IsConnected &&
+                    (device.ButtonCount > 0 ||
+                     device.PovCount > 0))
+                .Select(device =>
+                    new DirectInputCaptureDevice(
+                        device.DurableDeviceKey,
+                        device.InstanceGuid));
 
-        _captureSession.KeyboardInput +=
-            CaptureSession_KeyboardInput;
-
-        _captureSession.JoystickButtonInput +=
-            CaptureSession_JoystickButtonInput;
-
-        _captureSession.JoystickPovInput +=
-            CaptureSession_JoystickPovInput;
-
-        try
-        {
-            _captureSession.OpenKeyboard();
-        }
-        catch
-        {
-            // Keep DX capture working even if the keyboard cannot be opened.
-        }
-
-        foreach (DeviceBindingProfile deviceProfile
-                 in _deviceProfiles.Where(device =>
-                     device.IsConnected &&
-                     (device.ButtonCount > 0 ||
-                      device.PovCount > 0)))
-        {
-            try
-            {
-                _captureSession.OpenJoystick(
-                    deviceProfile.DurableDeviceKey,
-                    deviceProfile.InstanceGuid);
-            }
-            catch
-            {
-                // Keep the remaining devices working if one controller
-                // cannot be opened.
-            }
-        }
+        _captureHost.Start(
+            Application.Current.Dispatcher,
+            hwnd,
+            captureKeyboard: true,
+            joystickDevices: joystickDevices);
     }
 
     public void StopCapture()
     {
-        if (_captureSession is null)
-            return;
-
-        _captureSession.KeyboardInput -=
-            CaptureSession_KeyboardInput;
-
-        _captureSession.JoystickButtonInput -=
-            CaptureSession_JoystickButtonInput;
-
-        _captureSession.JoystickPovInput -=
-            CaptureSession_JoystickPovInput;
-
-        try
-        {
-            _captureSession.Dispose();
-        }
-        catch
-        {
-        }
-
-        _captureSession = null;
+        _captureHost.Stop();
     }
 
     private void CaptureSession_KeyboardInput(
@@ -374,8 +335,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         BufferedJoystickPovEventArgs e)
     {
         int? direction =
-            NormalizeDirectInputPovDirection(
-                e.Value);
+            e.Direction;
 
         // Ignore the centered/released POV event. A new directional event
         // will arrive the next time the hat is moved.
@@ -708,21 +668,6 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         IsOnPress = true;
     }
 
-    private static int? NormalizeDirectInputPovDirection(int povValue)
-    {
-        // DirectInput POV values are hundredths of a degree:
-        // 0=Up, 9000=Right, 18000=Down, 27000=Left, -1=centered.
-        // BMS stock/XML stores POV directions in 8-way slots:
-        // 0=Up, 2=Right, 4=Down, 6=Left, with odd numbers as diagonals.
-        if (povValue < 0)
-            return null;
-
-        int normalizedDegrees = ((povValue / 100) + 360) % 360;
-        int eightWayDirection = (int)Math.Round(normalizedDegrees / 45.0) % 8;
-
-        return eightWayDirection;
-    }
-
     private static string NormalizePovInvoke(string? invoke)
     {
         return string.Equals(invoke, PovInvokeShift, StringComparison.OrdinalIgnoreCase)
@@ -758,7 +703,6 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        StopCapture();
-        _di.Dispose();
+        _captureHost.Dispose();
     }
 }

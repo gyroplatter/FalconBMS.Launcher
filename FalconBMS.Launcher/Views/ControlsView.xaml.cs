@@ -21,8 +21,7 @@ namespace FalconBMS.Launcher.Views;
 
 public partial class ControlsView : UserControl
 {
-    private readonly DirectInputManager _di = new();
-    private DirectInputCaptureSession? _captureSession;
+    private readonly DirectInputCaptureHost _captureHost = new();
 
     // Last Input axis detection uses the same basic jitter protections as axis
     // assignment, but with a lower movement threshold
@@ -62,6 +61,15 @@ public partial class ControlsView : UserControl
     public ControlsView()
     {
         InitializeComponent();
+
+        _captureHost.KeyboardInput +=
+            CaptureSession_KeyboardInput;
+
+        _captureHost.JoystickButtonInput +=
+            CaptureSession_JoystickButtonInput;
+
+        _captureHost.JoystickPovInput +=
+            CaptureSession_JoystickPovInput;
 
         Loaded += ControlsView_Loaded;
         Unloaded += ControlsView_Unloaded;
@@ -851,50 +859,23 @@ public partial class ControlsView : UserControl
         _lastInputAxisBaselineByDeviceKey.Clear();
         _lastInputAxisStableHitsByCandidate.Clear();
 
-        _captureSession =
-            new DirectInputCaptureSession(
-                _di,
-                Dispatcher,
-                hwnd);
+        IEnumerable<DirectInputCaptureDevice> joystickDevices =
+            viewModel.DeviceColumns
+                .Where(device =>
+                    device.IsConnected &&
+                    (device.AxisCount > 0 ||
+                     device.ButtonCount > 0 ||
+                     device.PovCount > 0))
+                .Select(device =>
+                    new DirectInputCaptureDevice(
+                        device.DurableDeviceKey,
+                        device.InstanceGuid));
 
-        _captureSession.KeyboardInput +=
-            CaptureSession_KeyboardInput;
-
-        _captureSession.JoystickButtonInput +=
-            CaptureSession_JoystickButtonInput;
-
-        _captureSession.JoystickPovInput +=
-            CaptureSession_JoystickPovInput;
-
-        try
-        {
-            _captureSession.OpenKeyboard();
-        }
-        catch
-        {
-            // Controls can still capture joystick input if the keyboard
-            // device cannot be opened.
-        }
-
-        foreach (DeviceBindingProfile deviceProfile in
-                 viewModel.DeviceColumns.Where(device =>
-                     device.IsConnected &&
-                     (device.AxisCount > 0 ||
-                      device.ButtonCount > 0 ||
-                      device.PovCount > 0)))
-        {
-            try
-            {
-                _captureSession.OpenJoystick(
-                    deviceProfile.DurableDeviceKey,
-                    deviceProfile.InstanceGuid);
-            }
-            catch
-            {
-                // Preserve the existing behavior: one device failing to open
-                // must not prevent capture from the remaining devices.
-            }
-        }
+        _captureHost.Start(
+            Dispatcher,
+            hwnd,
+            captureKeyboard: true,
+            joystickDevices: joystickDevices);
 
         _timer = new DispatcherTimer(DispatcherPriority.Background)
         {
@@ -914,20 +895,7 @@ public partial class ControlsView : UserControl
             _timer = null;
         }
 
-        if (_captureSession is not null)
-        {
-            _captureSession.KeyboardInput -=
-                CaptureSession_KeyboardInput;
-
-            _captureSession.JoystickButtonInput -=
-                CaptureSession_JoystickButtonInput;
-
-            _captureSession.JoystickPovInput -=
-                CaptureSession_JoystickPovInput;
-
-            _captureSession.Dispose();
-            _captureSession = null;
-        }
+        _captureHost.Stop();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -1052,9 +1020,9 @@ public partial class ControlsView : UserControl
             return;
 
         int? direction =
-            NormalizeDirectInputPovDirection(e.Value);
+            e.Direction;
 
-        // Returning a POV to center is not a mapping input.
+        // Returning a POV to center is not a mapping input
         if (!direction.HasValue)
             return;
 
@@ -1099,9 +1067,6 @@ public partial class ControlsView : UserControl
             new Dictionary<string, bool[]>(
                 StringComparer.OrdinalIgnoreCase);
 
-        if (_captureSession is null)
-            return result;
-
         foreach (DeviceBindingProfile deviceProfile in
                  viewModel.DeviceColumns.Where(device =>
                      device.IsConnected &&
@@ -1115,7 +1080,7 @@ public partial class ControlsView : UserControl
                  buttonIndex++)
             {
                 buttons[buttonIndex] =
-                    _captureSession.IsJoystickButtonPressed(
+                    _captureHost.IsJoystickButtonPressed(
                         deviceProfile.DurableDeviceKey,
                         buttonIndex);
             }
@@ -1152,27 +1117,9 @@ public partial class ControlsView : UserControl
         }, DispatcherPriority.Background);
     }
 
-    private static int? NormalizeDirectInputPovDirection(int povValue)
-    {
-        // DirectInput POV values are hundredths of a degree:
-        // 0=Up, 9000=Right, 18000=Down, 27000=Left, -1=centered.
-        // BMS stock XML stores POV directions in 8-way slots:
-        // 0=Up, 2=Right, 4=Down, 6=Left, with odd numbers as diagonals.
-        if (povValue < 0)
-            return null;
-
-        int normalizedDegrees = ((povValue / 100) + 360) % 360;
-        int eightWayDirection = (int)Math.Round(normalizedDegrees / 45.0) % 8;
-
-        return eightWayDirection;
-    }
-
     private void PollLiveAxes()
     {
         if (DataContext is not ControlsViewModel viewModel)
-            return;
-
-        if (_captureSession is null)
             return;
 
         var lastInputCandidates =
@@ -1183,7 +1130,7 @@ public partial class ControlsView : UserControl
                      device.IsConnected &&
                      device.AxisCount > 0))
         {
-            if (!_captureSession.TryGetJoystickAxisValues(
+            if (!_captureHost.TryGetJoystickAxisValues(
                     deviceProfile.DurableDeviceKey,
                     out int[] axisValues))
             {

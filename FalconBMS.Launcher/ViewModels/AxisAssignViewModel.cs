@@ -34,7 +34,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     // This prevents a noisy Z/slider axis from winning while the user is moving X/Y/Rx/etc.
     private const double DominantAxisRatio = 1.5;
 
-    private readonly DirectInputManager _di = new();
+    private readonly DirectInputCaptureHost _captureHost = new();
     private readonly IReadOnlyList<DeviceBindingProfile> _deviceProfiles;
     private readonly ControlGridRowViewModel _axisRow;
     private readonly DeviceAxisDefinition? _definition;
@@ -42,10 +42,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     private readonly Action _closeWindow;
     private readonly IntPtr _hwnd;
 
-    // Correlates every log line from one Assign Axis popup session.
+    // Correlates every log line from one Assign Axis popup session
     private readonly string _actionId = DebugDiagnosticsService.CreateActionId("AXISUI");
 
-    private DirectInputCaptureSession? _captureSession;
     private readonly Dictionary<string, int[]> _baselineByDeviceKey = new();
     private readonly Dictionary<string, int> _stableHitsByCandidate = new();
 
@@ -233,32 +232,24 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         // An existing assignment should only display the assigned axis.
         // Auto-capture is off until Clear is clicked, which is the critical
         // old-launcher behavior that stops random jitter from remapping
-        // Pitch/Roll/etc.
+        // Pitch, Roll...
         _captureArmed = !_selectedPhysicalAxisIndex.HasValue;
 
-        _captureSession =
-            new DirectInputCaptureSession(
-                _di,
-                Application.Current.Dispatcher,
-                _hwnd);
+        IEnumerable<DirectInputCaptureDevice> joystickDevices =
+            _deviceProfiles
+                .Where(device =>
+                    device.IsConnected &&
+                    device.AxisCount > 0)
+                .Select(device =>
+                    new DirectInputCaptureDevice(
+                        device.DurableDeviceKey,
+                        device.InstanceGuid));
 
-        foreach (DeviceBindingProfile device in
-                 _deviceProfiles.Where(device =>
-                     device.IsConnected &&
-                     device.AxisCount > 0))
-        {
-            try
-            {
-                _captureSession.OpenJoystick(
-                    device.DurableDeviceKey,
-                    device.InstanceGuid);
-            }
-            catch
-            {
-                // One device failing to open must not prevent axis
-                // capture from the remaining connected devices.
-            }
-        }
+        _captureHost.Start(
+            Application.Current.Dispatcher,
+            _hwnd,
+            captureKeyboard: false,
+            joystickDevices: joystickDevices);
 
         DebugDiagnosticsService.Info(
             $"Axis assign buffered capture started. | ActionId={_actionId} | LogicalAxis={LogicalAxisName} | CaptureArmed={_captureArmed} | SelectedDeviceKey={_selectedDeviceKey ?? "<null>"} | SelectedDeviceName={GetSelectedDeviceName()} | SelectedPhysicalAxis={FormatPhysicalAxis(_selectedPhysicalAxisIndex)} | ConnectedAxisDevices={_deviceProfiles.Count(device => device.IsConnected && device.AxisCount > 0)}");
@@ -291,11 +282,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
             _timer = null;
         }
 
-        if (_captureSession is not null)
-        {
-            _captureSession.Dispose();
-            _captureSession = null;
-        }
+        _captureHost.Stop();
     }
 
     private void LoadExistingMapping(string? initialDeviceKey)
@@ -480,10 +467,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         if (!device.IsConnected)
             return false;
 
-        if (_captureSession is null)
-            return false;
-
-        return _captureSession.TryGetJoystickAxisValues(
+        return _captureHost.TryGetJoystickAxisValues(
             device.DurableDeviceKey,
             out axisValues);
     }
@@ -690,7 +674,6 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        Stop();
-        _di.Dispose();
+        _captureHost.Dispose();
     }
 }

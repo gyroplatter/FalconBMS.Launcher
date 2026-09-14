@@ -375,6 +375,7 @@ public sealed class BufferedJoystickPovEventArgs : EventArgs
     public string DeviceKey { get; }
     public int PovIndex { get; }
     public int Value { get; }
+    public int? Direction { get; }
 
     public BufferedJoystickPovEventArgs(
         string deviceKey,
@@ -384,6 +385,26 @@ public sealed class BufferedJoystickPovEventArgs : EventArgs
         DeviceKey = deviceKey;
         PovIndex = povIndex;
         Value = value;
+        Direction = NormalizeDirectInputPovDirection(value);
+    }
+
+    private static int? NormalizeDirectInputPovDirection(
+        int povValue)
+    {
+        // DirectInput POV values are hundredths of a degree:
+        // 0=Up, 9000=Right, 18000=Down, 27000=Left, -1=centered
+        // BMS stores POV directions in 8-way slots:
+        // 0=Up, 2=Right, 4=Down, 6=Left, with odd numbers as diagonals
+        if (povValue < 0)
+            return null;
+
+        int normalizedDegrees =
+            ((povValue / 100) + 360) % 360;
+
+        int eightWayDirection =
+            (int)Math.Round(normalizedDegrees / 45.0) % 8;
+
+        return eightWayDirection;
     }
 }
 

@@ -26,7 +26,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private const int MovementThreshold = AxisRange / 4;
     private const double DominantAxisRatio = 1.5;
 
-    private readonly DirectInputManager _di = new();
+    private readonly DirectInputCaptureHost _captureHost = new();
     private readonly IReadOnlyList<DeviceBindingProfile> _deviceProfiles;
     private readonly Action<AxisPairAssignViewModel> _saveAxisAssignment;
     private readonly Action _closeWindow;
@@ -34,8 +34,6 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     private readonly string _actionId =
         DebugDiagnosticsService.CreateActionId("AXISPAIRUI");
-
-    private DirectInputCaptureSession? _captureSession;
 
     private readonly Dictionary<string, int[]>
         _baselineByDeviceKey = new();
@@ -232,29 +230,21 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         _baselineByDeviceKey.Clear();
         _stableHitsByCandidate.Clear();
 
-        _captureSession =
-            new DirectInputCaptureSession(
-                _di,
-                System.Windows.Application.Current.Dispatcher,
-                _hwnd);
+        IEnumerable<DirectInputCaptureDevice> joystickDevices =
+            _deviceProfiles
+                .Where(device =>
+                    device.IsConnected &&
+                    device.AxisCount > 0)
+                .Select(device =>
+                    new DirectInputCaptureDevice(
+                        device.DurableDeviceKey,
+                        device.InstanceGuid));
 
-        foreach (DeviceBindingProfile device in
-                 _deviceProfiles.Where(device =>
-                     device.IsConnected &&
-                     device.AxisCount > 0))
-        {
-            try
-            {
-                _captureSession.OpenJoystick(
-                    device.DurableDeviceKey,
-                    device.InstanceGuid);
-            }
-            catch
-            {
-                // One device failing to open must not prevent the remaining
-                // connected axis devices from being used.
-            }
-        }
+        _captureHost.Start(
+            System.Windows.Application.Current.Dispatcher,
+            _hwnd,
+            captureKeyboard: false,
+            joystickDevices: joystickDevices);
 
         // Keep the existing 16 ms evaluation cadence for live plotting and
         // the settle/threshold/dominance/stability capture algorithm. The
@@ -282,11 +272,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             _timer = null;
         }
 
-        if (_captureSession is not null)
-        {
-            _captureSession.Dispose();
-            _captureSession = null;
-        }
+        _captureHost.Stop();
     }
 
     private void StartCapture(
@@ -776,10 +762,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         if (!device.IsConnected)
             return false;
 
-        if (_captureSession is null)
-            return false;
-
-        return _captureSession.TryGetJoystickAxisValues(
+        return _captureHost.TryGetJoystickAxisValues(
             device.DurableDeviceKey,
             out axisValues);
     }
@@ -1209,8 +1192,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
-        Stop();
-        _di.Dispose();
+        _captureHost.Dispose();
     }
 
     public sealed class AxisEditViewModel :
