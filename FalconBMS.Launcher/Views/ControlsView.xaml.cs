@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -21,7 +23,13 @@ namespace FalconBMS.Launcher.Views;
 
 public partial class ControlsView : UserControl
 {
-    private readonly DirectInputCaptureHost _captureHost = new();
+    // Controls creates DirectInput capture only when this view is active.
+    // Startup is performed on a worker thread so native device acquisition
+    // does not block WPF from rendering the Controls tab.
+    private readonly SemaphoreSlim _captureStartGate = new(1, 1);
+
+    private DirectInputCaptureHost? _captureHost;
+    private CancellationTokenSource? _captureStartCancellation;
 
     // Last Input axis detection uses the same basic jitter protections as axis
     // assignment, but with a lower movement threshold
@@ -62,15 +70,6 @@ public partial class ControlsView : UserControl
     {
         InitializeComponent();
 
-        _captureHost.KeyboardInput +=
-            CaptureSession_KeyboardInput;
-
-        _captureHost.JoystickButtonInput +=
-            CaptureSession_JoystickButtonInput;
-
-        _captureHost.JoystickPovInput +=
-            CaptureSession_JoystickPovInput;
-
         Loaded += ControlsView_Loaded;
         Unloaded += ControlsView_Unloaded;
         DataContextChanged += ControlsView_DataContextChanged;
@@ -92,7 +91,11 @@ public partial class ControlsView : UserControl
     private void ControlsView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         SubscribeToViewModel(e.NewValue as ControlsViewModel);
-        RebuildDeviceColumns();
+
+        // During initial view creation, DataContext is assigned before Loaded.
+        // Let Loaded perform that first column build so it is not done twice.
+        if (IsLoaded)
+            RebuildDeviceColumns();
     }
 
     private void SubscribeToViewModel(ControlsViewModel? viewModel)
@@ -185,11 +188,6 @@ public partial class ControlsView : UserControl
         }
 
         RestoreSavedDeviceColumnOrder();
-
-        // Save the current visible order after rebuild.
-        // This keeps the setting current when new devices are discovered
-        // and appends them after the user's saved device order.
-        SaveDeviceColumnOrder();
     }
 
     private void AddNormalFixedColumns()
@@ -837,7 +835,7 @@ public partial class ControlsView : UserControl
         }
     }
 
-    private void StartKeyboardSearchCapture()
+    private async void StartKeyboardSearchCapture()
     {
         StopKeyboardSearchCapture();
 
@@ -852,14 +850,10 @@ public partial class ControlsView : UserControl
         if (hwnd == IntPtr.Zero)
             return;
 
-        // Establish fresh axis baselines whenever Controls capture starts.
-        // The 30 ms timer below is now algorithm/UI-only; DirectInput hardware
-        // is fed into the capture session by buffered listeners.
-        _lastInputAxisCaptureStartedUtc = DateTime.UtcNow;
-        _lastInputAxisBaselineByDeviceKey.Clear();
-        _lastInputAxisStableHitsByCandidate.Clear();
-
-        IEnumerable<DirectInputCaptureDevice> joystickDevices =
+        // Materialize the device list while we are still on the UI thread.
+        // The actual DirectInput manager/device creation and acquisition below
+        // happens on a worker thread.
+        DirectInputCaptureDevice[] joystickDevices =
             viewModel.DeviceColumns
                 .Where(device =>
                     device.IsConnected &&
@@ -869,25 +863,142 @@ public partial class ControlsView : UserControl
                 .Select(device =>
                     new DirectInputCaptureDevice(
                         device.DurableDeviceKey,
-                        device.InstanceGuid));
+                        device.InstanceGuid))
+                .ToArray();
 
-        _captureHost.Start(
-            Dispatcher,
-            hwnd,
-            captureKeyboard: true,
-            joystickDevices: joystickDevices);
+        var cancellation =
+            new CancellationTokenSource();
 
-        _timer = new DispatcherTimer(DispatcherPriority.Background)
+        _captureStartCancellation = cancellation;
+
+        bool gateEntered = false;
+        DirectInputCaptureHost? captureHost = null;
+
+        try
         {
-            Interval = TimeSpan.FromMilliseconds(30)
-        };
+            await _captureStartGate.WaitAsync(
+                cancellation.Token);
 
-        _timer.Tick += Timer_Tick;
-        _timer.Start();
+            gateEntered = true;
+
+            captureHost = await Task.Run(() =>
+            {
+                cancellation.Token.ThrowIfCancellationRequested();
+
+                var host =
+                    new DirectInputCaptureHost();
+
+                try
+                {
+                    host.Start(
+                        Dispatcher,
+                        hwnd,
+                        captureKeyboard: true,
+                        joystickDevices: joystickDevices);
+
+                    cancellation.Token.ThrowIfCancellationRequested();
+
+                    return host;
+                }
+                catch
+                {
+                    host.Dispose();
+                    throw;
+                }
+            }, cancellation.Token);
+
+            // Controls may have been unloaded or switched to another DataContext
+            // while native DirectInput startup was still completing
+            if (cancellation.IsCancellationRequested ||
+                !IsLoaded ||
+                !ReferenceEquals(DataContext, viewModel))
+            {
+                return;
+            }
+
+            captureHost.KeyboardInput +=
+                CaptureSession_KeyboardInput;
+
+            captureHost.JoystickButtonInput +=
+                CaptureSession_JoystickButtonInput;
+
+            captureHost.JoystickPovInput +=
+                CaptureSession_JoystickPovInput;
+
+            _captureHost = captureHost;
+            captureHost = null;
+
+            // Establish fresh axis baselines only after buffered capture is ready.
+            // The 30 ms timer remains algorithm/UI-only; it never polls hardware.
+            _lastInputAxisCaptureStartedUtc = DateTime.UtcNow;
+            _lastInputAxisBaselineByDeviceKey.Clear();
+            _lastInputAxisStableHitsByCandidate.Clear();
+
+            _timer = new DispatcherTimer(DispatcherPriority.Background)
+            {
+                Interval = TimeSpan.FromMilliseconds(30)
+            };
+
+            _timer.Tick += Timer_Tick;
+            _timer.Start();
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal when Controls unloads or another capture owner takes over
+            // while this asynchronous startup is still in progress.
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                "Controls buffered DirectInput capture start failed.");
+        }
+        finally
+        {
+            // If this host was never promoted to _captureHost, it belongs only
+            // to this attempted startup and must be cleaned up here.
+            if (captureHost is not null)
+            {
+                captureHost.Dispose();
+            }
+
+            if (gateEntered)
+            {
+                _captureStartGate.Release();
+            }
+
+            if (ReferenceEquals(
+                    _captureStartCancellation,
+                    cancellation))
+            {
+                _captureStartCancellation = null;
+            }
+
+            cancellation.Dispose();
+        }
     }
 
     private void StopKeyboardSearchCapture()
     {
+        // Cancel a startup that may still be inside native DirectInput work.
+        // DirectInput Start itself is not cancellable, so the local host will be
+        // disposed as soon as that worker operation returns.
+        CancellationTokenSource? captureStartCancellation =
+            _captureStartCancellation;
+
+        _captureStartCancellation = null;
+
+        if (captureStartCancellation is not null)
+        {
+            try
+            {
+                captureStartCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+
         if (_timer is not null)
         {
             _timer.Stop();
@@ -895,7 +1006,24 @@ public partial class ControlsView : UserControl
             _timer = null;
         }
 
-        _captureHost.Stop();
+        DirectInputCaptureHost? captureHost =
+            _captureHost;
+
+        _captureHost = null;
+
+        if (captureHost is null)
+            return;
+
+        captureHost.KeyboardInput -=
+            CaptureSession_KeyboardInput;
+
+        captureHost.JoystickButtonInput -=
+            CaptureSession_JoystickButtonInput;
+
+        captureHost.JoystickPovInput -=
+            CaptureSession_JoystickPovInput;
+
+        captureHost.Dispose();
     }
 
     private void Timer_Tick(object? sender, EventArgs e)
@@ -1067,6 +1195,12 @@ public partial class ControlsView : UserControl
             new Dictionary<string, bool[]>(
                 StringComparer.OrdinalIgnoreCase);
 
+        DirectInputCaptureHost? captureHost =
+            _captureHost;
+
+        if (captureHost is null)
+            return result;
+
         foreach (DeviceBindingProfile deviceProfile in
                  viewModel.DeviceColumns.Where(device =>
                      device.IsConnected &&
@@ -1080,7 +1214,7 @@ public partial class ControlsView : UserControl
                  buttonIndex++)
             {
                 buttons[buttonIndex] =
-                    _captureHost.IsJoystickButtonPressed(
+                    captureHost.IsJoystickButtonPressed(
                         deviceProfile.DurableDeviceKey,
                         buttonIndex);
             }
@@ -1122,6 +1256,12 @@ public partial class ControlsView : UserControl
         if (DataContext is not ControlsViewModel viewModel)
             return;
 
+        DirectInputCaptureHost? captureHost =
+            _captureHost;
+
+        if (captureHost is null)
+            return;
+
         var lastInputCandidates =
             new List<LastInputAxisCandidate>();
 
@@ -1130,7 +1270,7 @@ public partial class ControlsView : UserControl
                      device.IsConnected &&
                      device.AxisCount > 0))
         {
-            if (!_captureHost.TryGetJoystickAxisValues(
+            if (!captureHost.TryGetJoystickAxisValues(
                     deviceProfile.DurableDeviceKey,
                     out int[] axisValues))
             {
