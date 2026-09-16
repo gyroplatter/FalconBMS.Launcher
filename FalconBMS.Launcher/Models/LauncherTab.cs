@@ -10,4 +10,5 @@ public enum LauncherTab
     Display = 2,
     Views = 3,
     Styles = 4,
+    Devices = 5,
 }

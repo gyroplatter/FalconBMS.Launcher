@@ -26,6 +26,9 @@ public partial class LauncherNavBar : UserControl
     private void Controls_Click(object sender, RoutedEventArgs e) =>
         Vm?.SetTab(LauncherTab.Controls);
 
+    private void Devices_Click(object sender, RoutedEventArgs e) =>
+        Vm?.SetTab(LauncherTab.Devices);
+
     private void Display_Click(object sender, RoutedEventArgs e) =>
         Vm?.SetTab(LauncherTab.Display);
 

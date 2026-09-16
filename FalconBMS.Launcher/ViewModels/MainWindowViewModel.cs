@@ -17,6 +17,7 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public ViewsViewModel Views { get; } = new();
     public ControlsViewModel Controls { get; } = new();
+    public DevicesViewModel Devices { get; } = new();
     public StylesViewModel Styles { get; } = new();
 
     private LauncherTab _currentTab = LauncherTab.Main;
@@ -34,6 +35,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         CurrentTab switch
         {
             LauncherTab.Controls => Controls,
+            LauncherTab.Devices => Devices,
             LauncherTab.Display => Display,
             LauncherTab.Views => Views,
             LauncherTab.Styles => Styles,
