@@ -41,10 +41,10 @@
                                    Margin="0,0,8,0"/>
 
                         <ComboBox Width="180"
-                                  SelectedIndex="0"
-                                  Margin="0,0,16,0">
-                            <ComboBoxItem Content="F-16"/>
-                        </ComboBox>
+                                  ItemsSource="{Binding Profiles}"
+                                  SelectedItem="{Binding SelectedProfile, Mode=TwoWay}"
+                                  DisplayMemberPath="AircraftProfile"
+                                  Margin="0,0,16,0"/>
 
                         <Button Content="Create Map"
                                 Width="100"
@@ -102,7 +102,18 @@
                                Text="DEVICES"
                                Style="{StaticResource ControlsNavHeadingTextBlockStyle}"/>
 
-                    <!-- Device list will be added during BindingModel integration. -->
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding ConnectedDevices}"
+                             SelectedItem="{Binding SelectedDeviceItem, Mode=TwoWay}"
+                             Style="{StaticResource ControlsNavListBoxStyle}"
+                             ItemContainerStyle="{StaticResource ControlsNavListBoxItemStyle}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayName}"
+                                           TextWrapping="Wrap"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </Grid>
             </Border>
 

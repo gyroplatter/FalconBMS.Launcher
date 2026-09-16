@@ -52,7 +52,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         SetTabCommand = new RelayCommand(() => { }, () => true);
 
         // Give MainViewModel a reference to ControlsViewModel so SaveOutputsForClose
-        // can check IsDirty and skip the write pipeline when nothing has changed.
+        // can check IsDirty and skip the write pipeline when nothing has changed
         Main.ControlsViewModel = Controls;
 
         Controls.ConfigureImportExport(
@@ -62,24 +62,37 @@ public sealed class MainWindowViewModel : ViewModelBase
             reloadBindingModel: Main.ReloadBindingModelForSelectedInstall);
 
         // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
-        // and notifies here. ControlsViewModel reloads from the new complete model.
+        // and notifies here. Controls and Devices both consume that same complete model.
+        // Devices does not perform any separate hardware discovery.
+        //
         // User-edit dirty state is reset here, but MainViewModel separately tracks whether
-        // newly discovered FULL-key rows need to be backfilled into KeyboardBindings.json.
+        // newly discovered FULL-key rows need to be backfilled into KeyboardBindings.json
         Main.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(Main.CurrentBindingModel))
             {
                 Controls.LoadBindingModel(Main.CurrentBindingModel);
+                Devices.LoadBindingModel(Main.CurrentBindingModel);
 
-                // The model was just reloaded from disk. No user binding edit has happened yet.
+                // The model was just reloaded from disk. No user binding edit has happened yet
                 Controls.ResetDirty();
             }
         };
 
         Controls.LoadBindingModel(Main.CurrentBindingModel);
+        Devices.LoadBindingModel(Main.CurrentBindingModel);
     }
 
-    public void SetTab(LauncherTab tab) => CurrentTab = tab;
+    public void SetTab(LauncherTab tab)
+    {
+        // Controls owns the persisted device-column ordering. Reread that
+        // order when entering Devices so a same-session Controls reorder is
+        // immediately reflected here without rebuilding the BindingModel
+        if (tab == LauncherTab.Devices)
+            Devices.RefreshDeviceOrder();
+
+        CurrentTab = tab;
+    }
 
     public void SaveOutputsForClose()
     {
