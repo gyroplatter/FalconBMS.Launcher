@@ -11,6 +11,53 @@ namespace FalconBMS.Launcher.Services;
 /// </summary>
 public sealed class DeviceInputMappingResolver
 {
+
+    public bool IsDxShiftActive(
+    BindingModel bindingModel,
+    BindingAircraftProfile selectedProfile,
+    Func<string, int, bool> isButtonPressed)
+    {
+        foreach (DeviceBindingProfile device in
+                 bindingModel.DeviceProfiles.Where(device =>
+                     device.IsConnected))
+        {
+            DeviceAircraftBindingProfile? aircraftProfile =
+                device.AircraftProfiles.FirstOrDefault(profile =>
+                    string.Equals(
+                        profile.AircraftProfile,
+                        selectedProfile.AircraftProfile,
+                        StringComparison.OrdinalIgnoreCase));
+
+            if (aircraftProfile is null)
+                continue;
+
+            foreach (DeviceButtonBinding binding in
+                     aircraftProfile.ButtonBindings)
+            {
+                if (!DeviceButtonBinding.IsDxShiftCallback(
+                        binding.CallbackName))
+                {
+                    continue;
+                }
+
+                if (binding.ButtonIndex < 0 ||
+                    binding.ButtonIndex >= device.ButtonCount)
+                {
+                    continue;
+                }
+
+                if (isButtonPressed(
+                        device.DurableDeviceKey,
+                        binding.ButtonIndex))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public DeviceInputMappingResult ResolveButton(
         BindingModel bindingModel,
         BindingAircraftProfile selectedProfile,

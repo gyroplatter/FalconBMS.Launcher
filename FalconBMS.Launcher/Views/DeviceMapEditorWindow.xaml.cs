@@ -6,19 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Interop;
 
 namespace FalconBMS.Launcher.Views;
 
-public partial class DevicesView : UserControl
+public partial class DeviceMapEditorWindow : Window
 {
-    /*
-     * Devices owns capture only while this view is active.
-     *
-     * The map editor gets exclusive capture while its modal window is open,
-     * then this view resumes capture when the editor closes.
-     */
     private readonly SemaphoreSlim _captureStartGate =
         new(1, 1);
 
@@ -26,169 +19,46 @@ public partial class DevicesView : UserControl
 
     private CancellationTokenSource? _captureStartCancellation;
 
-    public DevicesView()
+    public DeviceMapEditorWindow()
     {
         InitializeComponent();
 
         Loaded +=
-            DevicesView_Loaded;
+            DeviceMapEditorWindow_Loaded;
 
-        Unloaded +=
-            DevicesView_Unloaded;
-
-        DataContextChanged +=
-            DevicesView_DataContextChanged;
+        Closed +=
+            DeviceMapEditorWindow_Closed;
     }
 
-    private void DevicesView_Loaded(
+    private void DeviceMapEditorWindow_Loaded(
         object sender,
         RoutedEventArgs e)
     {
-        SubscribeToViewModel();
         StartDirectInputCapture();
     }
 
-    private void DevicesView_Unloaded(
-        object sender,
-        RoutedEventArgs e)
-    {
-        UnsubscribeFromViewModel();
-        StopDirectInputCapture();
-    }
-
-    private void DevicesView_DataContextChanged(
-        object sender,
-        DependencyPropertyChangedEventArgs e)
-    {
-        if (e.OldValue is DevicesViewModel oldViewModel)
-        {
-            oldViewModel.MapEditorRequested -=
-                ViewModel_MapEditorRequested;
-        }
-
-        if (!IsLoaded)
-            return;
-
-        SubscribeToViewModel();
-        StartDirectInputCapture();
-    }
-
-    private void SubscribeToViewModel()
-    {
-        if (DataContext is not DevicesViewModel viewModel)
-            return;
-
-        viewModel.MapEditorRequested -=
-            ViewModel_MapEditorRequested;
-
-        viewModel.MapEditorRequested +=
-            ViewModel_MapEditorRequested;
-    }
-
-    private void UnsubscribeFromViewModel()
-    {
-        if (DataContext is not DevicesViewModel viewModel)
-            return;
-
-        viewModel.MapEditorRequested -=
-            ViewModel_MapEditorRequested;
-    }
-
-    private void ViewModel_MapEditorRequested(
+    private void DeviceMapEditorWindow_Closed(
         object? sender,
-        DeviceMapEditorRequestEventArgs e)
+        EventArgs e)
     {
-        if (sender is not DevicesViewModel devicesViewModel)
-            return;
-
         StopDirectInputCapture();
-
-        Window? owner =
-            Window.GetWindow(this);
-
-        var editorWindow =
-            new DeviceMapEditorWindow
-            {
-                Owner =
-                    owner
-            };
-
-        editorWindow.DataContext =
-            new DeviceMapEditorViewModel(
-                e.BindingModel,
-                e.SelectedProfile,
-                e.Device,
-                e.BaseDir,
-                e.IsEditMode,
-                getOwnerWindow: () => editorWindow,
-                closeWindow: result =>
-                {
-                    if (result.HasValue)
-                    {
-                        editorWindow.DialogResult =
-                            result.Value;
-                    }
-                    else
-                    {
-                        editorWindow.Close();
-                    }
-                });
-
-        bool? result =
-            null;
-
-        try
-        {
-            using (MainWindow.BeginModalOverlay(owner))
-            {
-                result =
-                    editorWindow.ShowDialog();
-            }
-        }
-        finally
-        {
-            if (result == true)
-            {
-                devicesViewModel.RefreshDeviceMapState();
-            }
-
-            StartDirectInputCapture();
-        }
     }
 
     private async void StartDirectInputCapture()
     {
         StopDirectInputCapture();
 
-        if (DataContext is not DevicesViewModel viewModel)
-            return;
-
-        Window? window =
-            Window.GetWindow(this);
-
-        if (window is null)
+        if (DataContext is not DeviceMapEditorViewModel viewModel)
             return;
 
         IntPtr hwnd =
-            new WindowInteropHelper(window).Handle;
+            new WindowInteropHelper(this).Handle;
 
         if (hwnd == IntPtr.Zero)
             return;
 
-        /*
-         * Capture all connected joystick-family devices.
-         *
-         * We need all of them rather than only the selected device because
-         * DX Shift may physically live on another connected controller.
-         */
         DirectInputCaptureDevice[] joystickDevices =
-            viewModel.ConnectedDevices
-                .Select(item =>
-                    item.Device)
-                .Where(device =>
-                    device.IsConnected &&
-                    (device.ButtonCount > 0 ||
-                     device.PovCount > 0))
+            viewModel.GetCaptureDevices()
                 .Select(device =>
                     new DirectInputCaptureDevice(
                         device.DurableDeviceKey,
@@ -268,13 +138,13 @@ public partial class DevicesView : UserControl
         }
         catch (OperationCanceledException)
         {
-            // Normal when the Devices view unloads while capture is starting.
+            // Normal when the editor closes while capture is starting.
         }
         catch (Exception ex)
         {
             DebugDiagnosticsService.Exception(
                 ex,
-                "Devices buffered DirectInput capture start failed.");
+                "Device map editor DirectInput capture start failed.");
         }
         finally
         {
@@ -338,14 +208,10 @@ public partial class DevicesView : UserControl
         object? sender,
         BufferedJoystickButtonEventArgs e)
     {
-        /*
-         * Keep the last useful physical input visible.
-         * Releasing the button should not immediately erase what the user saw.
-         */
         if (!e.IsPressed)
             return;
 
-        if (DataContext is not DevicesViewModel viewModel)
+        if (DataContext is not DeviceMapEditorViewModel viewModel)
             return;
 
         bool isShifted =
@@ -362,14 +228,10 @@ public partial class DevicesView : UserControl
         object? sender,
         BufferedJoystickPovEventArgs e)
     {
-        /*
-         * Direction == null means the POV returned to center.
-         * Keep the previous direction visible instead of clearing it.
-         */
         if (!e.Direction.HasValue)
             return;
 
-        if (DataContext is not DevicesViewModel viewModel)
+        if (DataContext is not DeviceMapEditorViewModel viewModel)
             return;
 
         bool isShifted =
@@ -391,5 +253,21 @@ public partial class DevicesView : UserControl
                    deviceKey,
                    buttonIndex) ??
                false;
+    }
+
+    private void DeviceInputsListBox_SelectionChanged(
+        object sender,
+        System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (DeviceInputsListBox.SelectedItem is null)
+            return;
+
+        /*
+         * Physical DirectInput presses can select an input that is currently
+         * outside the visible part of the list. Anchor that button into view 
+         * so the user can immediately see what was pressed.
+         */
+        DeviceInputsListBox.ScrollIntoView(
+            DeviceInputsListBox.SelectedItem);
     }
 }

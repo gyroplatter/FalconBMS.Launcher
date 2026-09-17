@@ -1,12 +1,10 @@
 ﻿using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.Utils;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace FalconBMS.Launcher.ViewModels;
@@ -19,9 +17,6 @@ namespace FalconBMS.Launcher.ViewModels;
 /// </summary>
 public sealed class DevicesViewModel : ViewModelBase
 {
-    private const string DeviceImageFilter =
-        "Device images (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
-
     private readonly DeviceMapStore _deviceMapStore =
         new();
 
@@ -33,8 +28,6 @@ public sealed class DevicesViewModel : ViewModelBase
 
     private Func<string?>? _getBaseDir;
 
-    private Func<Window?>? _getOwnerWindow;
-
     public ObservableCollection<BindingAircraftProfile> Profiles { get; } =
         new();
 
@@ -44,6 +37,8 @@ public sealed class DevicesViewModel : ViewModelBase
     public RelayCommand CreateMapCommand { get; }
 
     public RelayCommand EditMapCommand { get; }
+
+    public event EventHandler<DeviceMapEditorRequestEventArgs>? MapEditorRequested;
 
     private BindingAircraftProfile? _selectedProfile;
 
@@ -172,37 +167,30 @@ public sealed class DevicesViewModel : ViewModelBase
 
     public DevicesViewModel()
     {
-        /*
-         * Phase 1 behavior:
-         *
-         * Create Map selects the first image for a device.
-         * Edit Map replaces the current image.
-         *
-         * When the real map editor is added, these commands can open
-         * that editor instead while continuing to use DeviceMapStore.
-         */
-
         CreateMapCommand =
             new RelayCommand(
-                ChooseDeviceImage,
+                () => RequestMapEditor(
+                    isEditMode: false),
                 CanCreateMap);
 
         EditMapCommand =
             new RelayCommand(
-                ChooseDeviceImage,
+                () => RequestMapEditor(
+                    isEditMode: true),
                 CanEditMap);
     }
 
     public void ConfigureMapImages(
-        Func<string?> getBaseDir,
-        Func<Window?> getOwnerWindow)
+        Func<string?> getBaseDir)
     {
         _getBaseDir =
             getBaseDir;
 
-        _getOwnerWindow =
-            getOwnerWindow;
+        RefreshDeviceMapState();
+    }
 
+    public void RefreshDeviceMapState()
+    {
         RefreshAllDeviceImageStates();
         RefreshSelectedDeviceImage();
         RefreshMapCommandState();
@@ -268,6 +256,30 @@ public sealed class DevicesViewModel : ViewModelBase
         int buttonIndex,
         bool isShifted)
     {
+        DevicesDeviceListItemViewModel? deviceItem =
+            ConnectedDevices.FirstOrDefault(item =>
+                string.Equals(
+                    item.Device.DurableDeviceKey,
+                    deviceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (deviceItem is null)
+            return;
+
+        /*
+         * Follow the physical device that generated the input.
+         *
+         * Changing SelectedDeviceItem also refreshes the displayed image and
+         * clears any stale input details that belonged to the previous device.
+         */
+        if (!ReferenceEquals(
+                SelectedDeviceItem,
+                deviceItem))
+        {
+            SelectedDeviceItem =
+                deviceItem;
+        }
+
         DeviceBindingProfile? selectedDevice =
             SelectedDevice;
 
@@ -276,14 +288,6 @@ public sealed class DevicesViewModel : ViewModelBase
 
         if (selectedDevice is null ||
             selectedProfile is null)
-        {
-            return;
-        }
-
-        if (!string.Equals(
-                selectedDevice.DurableDeviceKey,
-                deviceKey,
-                StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -306,6 +310,28 @@ public sealed class DevicesViewModel : ViewModelBase
         int direction,
         bool isShifted)
     {
+        DevicesDeviceListItemViewModel? deviceItem =
+            ConnectedDevices.FirstOrDefault(item =>
+                string.Equals(
+                    item.Device.DurableDeviceKey,
+                    deviceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (deviceItem is null)
+            return;
+
+        /*
+         * POV input follows the same behavior as a DX button:
+         * switch the Devices view to the hardware that generated the input.
+         */
+        if (!ReferenceEquals(
+                SelectedDeviceItem,
+                deviceItem))
+        {
+            SelectedDeviceItem =
+                deviceItem;
+        }
+
         DeviceBindingProfile? selectedDevice =
             SelectedDevice;
 
@@ -314,14 +340,6 @@ public sealed class DevicesViewModel : ViewModelBase
 
         if (selectedDevice is null ||
             selectedProfile is null)
-        {
-            return;
-        }
-
-        if (!string.Equals(
-                selectedDevice.DurableDeviceKey,
-                deviceKey,
-                StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -348,45 +366,10 @@ public sealed class DevicesViewModel : ViewModelBase
         if (selectedProfile is null)
             return false;
 
-        foreach (DeviceBindingProfile device in
-                 _bindingModel.DeviceProfiles.Where(device =>
-                     device.IsConnected))
-        {
-            DeviceAircraftBindingProfile? aircraftProfile =
-                device.AircraftProfiles.FirstOrDefault(profile =>
-                    string.Equals(
-                        profile.AircraftProfile,
-                        selectedProfile.AircraftProfile,
-                        StringComparison.OrdinalIgnoreCase));
-
-            if (aircraftProfile is null)
-                continue;
-
-            foreach (DeviceButtonBinding binding in
-                     aircraftProfile.ButtonBindings)
-            {
-                if (!DeviceButtonBinding.IsDxShiftCallback(
-                        binding.CallbackName))
-                {
-                    continue;
-                }
-
-                if (binding.ButtonIndex < 0 ||
-                    binding.ButtonIndex >= device.ButtonCount)
-                {
-                    continue;
-                }
-
-                if (isButtonPressed(
-                        device.DurableDeviceKey,
-                        binding.ButtonIndex))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return _inputMappingResolver.IsDxShiftActive(
+            _bindingModel,
+            selectedProfile,
+            isButtonPressed);
     }
 
     private void RebuildConnectedDevices(
@@ -498,24 +481,26 @@ public sealed class DevicesViewModel : ViewModelBase
 
     private bool CanCreateMap()
     {
-        return CanChooseDeviceImage() &&
+        return CanOpenMapEditor() &&
                !HasSelectedDeviceImage;
     }
 
     private bool CanEditMap()
     {
-        return CanChooseDeviceImage() &&
+        return CanOpenMapEditor() &&
                HasSelectedDeviceImage;
     }
 
-    private bool CanChooseDeviceImage()
+    private bool CanOpenMapEditor()
     {
         return SelectedDevice is not null &&
+               SelectedProfile is not null &&
                !string.IsNullOrWhiteSpace(
                    _getBaseDir?.Invoke());
     }
 
-    private void ChooseDeviceImage()
+    private void RequestMapEditor(
+        bool isEditMode)
     {
         string? baseDir =
             _getBaseDir?.Invoke();
@@ -523,62 +508,25 @@ public sealed class DevicesViewModel : ViewModelBase
         DeviceBindingProfile? device =
             SelectedDevice;
 
+        BindingAircraftProfile? profile =
+            SelectedProfile;
+
         if (baseDir is null ||
             string.IsNullOrWhiteSpace(baseDir) ||
-            device is null)
+            device is null ||
+            profile is null)
         {
             return;
         }
 
-        var openDialog =
-            new OpenFileDialog
-            {
-                Title =
-                    HasSelectedDeviceImage
-                        ? "Change Device Image"
-                        : "Choose Device Image",
-
-                Filter =
-                    DeviceImageFilter,
-
-                CheckFileExists =
-                    true,
-
-                Multiselect =
-                    false
-            };
-
-        if (openDialog.ShowDialog(
-                _getOwnerWindow?.Invoke()) != true)
-        {
-            return;
-        }
-
-        try
-        {
-            _deviceMapStore.ImportUserImage(
-                baseDir,
+        MapEditorRequested?.Invoke(
+            this,
+            new DeviceMapEditorRequestEventArgs(
+                _bindingModel,
+                profile,
                 device,
-                openDialog.FileName);
-
-            RefreshAllDeviceImageStates();
-            RefreshSelectedDeviceImage();
-            RefreshMapCommandState();
-        }
-        catch (Exception ex)
-        {
-            DebugDiagnosticsService.Exception(
-                ex,
-                $"Device map image import failed: {openDialog.FileName}");
-
-            MessageBox.Show(
-                _getOwnerWindow?.Invoke(),
-                "The selected device image could not be saved.\n\n" +
-                ex.Message,
-                "Device Image",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
+                baseDir,
+                isEditMode));
     }
 
     private void RefreshMapCommandState()
@@ -645,6 +593,42 @@ public sealed class DevicesViewModel : ViewModelBase
                 group => group.Key,
                 group => group.First().Index,
                 StringComparer.OrdinalIgnoreCase);
+    }
+}
+
+public sealed class DeviceMapEditorRequestEventArgs : EventArgs
+{
+    public BindingModel BindingModel { get; }
+
+    public BindingAircraftProfile SelectedProfile { get; }
+
+    public DeviceBindingProfile Device { get; }
+
+    public string BaseDir { get; }
+
+    public bool IsEditMode { get; }
+
+    public DeviceMapEditorRequestEventArgs(
+        BindingModel bindingModel,
+        BindingAircraftProfile selectedProfile,
+        DeviceBindingProfile device,
+        string baseDir,
+        bool isEditMode)
+    {
+        BindingModel =
+            bindingModel;
+
+        SelectedProfile =
+            selectedProfile;
+
+        Device =
+            device;
+
+        BaseDir =
+            baseDir;
+
+        IsEditMode =
+            isEditMode;
     }
 }
 

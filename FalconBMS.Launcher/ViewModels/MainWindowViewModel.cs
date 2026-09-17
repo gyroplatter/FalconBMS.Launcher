@@ -62,8 +62,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             reloadBindingModel: Main.ReloadBindingModelForSelectedInstall);
 
         Devices.ConfigureMapImages(
-            getBaseDir: () => Main.SelectedInstall?.BaseDir,
-            getOwnerWindow: () => Application.Current?.MainWindow);
+            getBaseDir: () => Main.SelectedInstall?.BaseDir);
 
         // Whenever the selected install changes, MainViewModel rebuilds CurrentBindingModel
         // and notifies here. Controls and Devices both consume that same complete model.

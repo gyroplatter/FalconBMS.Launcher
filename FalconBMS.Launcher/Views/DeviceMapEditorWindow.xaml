@@ -1,0 +1,311 @@
+﻿<Window x:Class="FalconBMS.Launcher.Views.DeviceMapEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle}"
+        Width="1157"
+        Height="745"
+        MinWidth="900"
+        MinHeight="600"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource AppWindowBackgroundBrush}">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="12"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Device and image heading -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+
+                <TextBlock Text="Device:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+
+                <TextBlock Text="{Binding DeviceName}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+
+                <TextBlock Text="Image:"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+
+                <TextBlock Text="{Binding ImageFileName}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           Margin="0,0,16,0"/>
+
+                <Button Content="Change Image"
+                        Width="125"
+                        Command="{Binding ChangeImageCommand}"/>
+
+            </StackPanel>
+        </Grid>
+
+        <!-- Editor workspace -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="250"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Device inputs -->
+            <Border Grid.Column="0"
+                    Padding="12"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    Background="{DynamicResource AppSurfaceBrush}">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="DEVICE INPUTS"
+                               Style="{StaticResource ControlsNavHeadingTextBlockStyle}"/>
+
+                    <ListBox x:Name="DeviceInputsListBox"
+                             Grid.Row="2"
+                             ItemsSource="{Binding Inputs}"
+                             SelectedItem="{Binding SelectedInput, Mode=TwoWay}"
+                             SelectionChanged="DeviceInputsListBox_SelectionChanged"
+                             Style="{StaticResource ControlsNavListBoxStyle}"
+                             ItemContainerStyle="{StaticResource ControlsNavListBoxItemStyle}">
+
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding DisplayName}"/>
+
+                                    <Ellipse Grid.Column="1"
+                                             Width="8"
+                                             Height="8"
+                                             Margin="8,0,2,0"
+                                             VerticalAlignment="Center">
+
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+
+                                                <Setter Property="Fill"
+                                                        Value="{DynamicResource AppMutedForegroundBrush}"/>
+
+                                                <Style.Triggers>
+
+                                                    <DataTrigger Binding="{Binding HasMapping}"
+                                                                 Value="True">
+
+                                                        <Setter Property="Fill"
+                                                                Value="{DynamicResource AppAccentBrush}"/>
+
+                                                    </DataTrigger>
+
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+
+                                    </Ellipse>
+
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+
+                    </ListBox>
+                </Grid>
+
+            </Border>
+
+            <!-- Device image -->
+            <Border Grid.Column="2"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    Background="{DynamicResource AppSurfaceBrush}">
+
+                <Grid>
+
+                    <Image Source="{Binding DeviceImage}"
+                           Stretch="Uniform"
+                           Margin="18"/>
+
+                    <TextBlock Text="Choose an image to begin."
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center">
+
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource MutedTextBlockStyle}">
+
+                                <Setter Property="Visibility"
+                                        Value="Visible"/>
+
+                                <Style.Triggers>
+
+                                    <DataTrigger Binding="{Binding HasDeviceImage}"
+                                                 Value="True">
+
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+
+                    </TextBlock>
+
+                </Grid>
+
+            </Border>
+
+            <!-- Current input -->
+            <Border Grid.Column="4"
+                    Padding="12"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    Background="{DynamicResource AppSurfaceBrush}">
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding DeviceName}"
+                               FontSize="{StaticResource FontSizeLarge}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="1"
+                               Text="{Binding DeviceSummary}"
+                               Style="{StaticResource MutedTextBlockStyle}"
+                               FontSize="{StaticResource FontSizeSmall}"
+                               TextWrapping="Wrap"/>
+
+                    <Grid Grid.Row="3">
+
+                        <TextBlock Text="Press a button on the device or select an input on the left."
+                                   FontSize="{StaticResource FontSizeSmall}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top">
+
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource MutedTextBlockStyle}">
+
+                                    <Setter Property="Visibility"
+                                            Value="Visible"/>
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding HasCurrentInput}"
+                                                     Value="True">
+
+                                            <Setter Property="Visibility"
+                                                    Value="Collapsed"/>
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+
+                        </TextBlock>
+
+                        <StackPanel VerticalAlignment="Top">
+
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed"/>
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding HasCurrentInput}"
+                                                     Value="True">
+
+                                            <Setter Property="Visibility"
+                                                    Value="Visible"/>
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="CURRENT INPUT"
+                                       Style="{StaticResource ControlsNavHeadingTextBlockStyle}"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBlock Text="{Binding CurrentInputDisplay}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,20"/>
+
+                            <TextBlock Text="CURRENT BMS MAPPING"
+                                       Style="{StaticResource ControlsNavHeadingTextBlockStyle}"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBlock Text="{Binding CurrentBmsMappingDisplay}"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+
+                        </StackPanel>
+
+                    </Grid>
+
+                </Grid>
+
+            </Border>
+
+        </Grid>
+
+        <!-- Footer -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+
+            <Button Content="Cancel"
+                    Width="100"
+                    Margin="0,0,8,0"
+                    Command="{Binding CancelCommand}"/>
+
+            <Button Content="Save Map"
+                    Width="110"
+                    Command="{Binding SaveCommand}"/>
+
+        </StackPanel>
+
+    </Grid>
+</Window>
