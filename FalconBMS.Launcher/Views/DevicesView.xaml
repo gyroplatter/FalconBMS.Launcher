@@ -48,10 +48,12 @@
 
                         <Button Content="Create Map"
                                 Width="100"
-                                Margin="0,0,8,0"/>
+                                Margin="0,0,8,0"
+                                Command="{Binding CreateMapCommand}"/>
 
                         <Button Content="Edit Map"
-                                Width="100"/>
+                                Width="100"
+                                Command="{Binding EditMapCommand}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2"
@@ -109,8 +111,15 @@
                              ItemContainerStyle="{StaticResource ControlsNavListBoxItemStyle}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding DisplayName}"
-                                           TextWrapping="Wrap"/>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="{Binding VisualLayoutStatus}"
+                                               Style="{StaticResource MutedTextBlockStyle}"
+                                               FontSize="{StaticResource FontSizeSmall}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -123,7 +132,49 @@
                     BorderBrush="{DynamicResource AppBorderBrush}"
                     Background="{DynamicResource AppSurfaceBrush}">
 
-                <!-- DeviceMapRenderer will be added here later. -->
+                <Grid>
+
+                    <!--
+                        Phase 1 displays only the matched device image.
+
+                        Stretch="Uniform" means images of any size can fill the
+                        available area without changing their aspect ratio.
+
+                        This Image will eventually be replaced by the shared
+                        DeviceMapRenderer when hotspot rendering is added.
+                    -->
+                    <Image Source="{Binding SelectedDeviceImage}"
+                           Stretch="Uniform"
+                           Margin="18"/>
+
+                    <TextBlock Text="No visual layout"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center">
+
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock"
+                                   BasedOn="{StaticResource MutedTextBlockStyle}">
+
+                                <Setter Property="Visibility"
+                                        Value="Visible"/>
+
+                                <Style.Triggers>
+
+                                    <DataTrigger Binding="{Binding HasSelectedDeviceImage}"
+                                                 Value="True">
+
+                                        <Setter Property="Visibility"
+                                                Value="Collapsed"/>
+
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+
+                    </TextBlock>
+
+                </Grid>
 
             </Border>
 
@@ -134,7 +185,108 @@
                     BorderBrush="{DynamicResource AppBorderBrush}"
                     Background="{DynamicResource AppSurfaceBrush}">
 
-                <!-- Selected-device / mapped-control details will be added later. -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Selected device heading -->
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding SelectedDevice.ProductName}"
+                               FontSize="{StaticResource FontSizeLarge}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="1"
+                               Style="{StaticResource MutedTextBlockStyle}"
+                               FontSize="{StaticResource FontSizeSmall}"
+                               TextWrapping="Wrap">
+                        <Run Text="{Binding SelectedDevice.ButtonCount}"/>
+                        <Run Text=" buttons, "/>
+                        <Run Text="{Binding SelectedDevice.PovCount}"/>
+                        <Run Text=" POV, "/>
+                        <Run Text="{Binding SelectedDevice.AxisCount}"/>
+                        <Run Text=" axes"/>
+                    </TextBlock>
+
+                    <Grid Grid.Row="3">
+
+                        <!-- No input captured yet -->
+                        <TextBlock Text="Press a button or POV direction on the selected device."
+                                   FontSize="{StaticResource FontSizeSmall}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top">
+
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource MutedTextBlockStyle}">
+
+                                    <Setter Property="Visibility"
+                                            Value="Visible"/>
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding HasCurrentInput}"
+                                                     Value="True">
+
+                                            <Setter Property="Visibility"
+                                                    Value="Collapsed"/>
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+
+                        </TextBlock>
+
+                        <!-- Last pressed input -->
+                        <StackPanel VerticalAlignment="Top">
+
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+
+                                    <Setter Property="Visibility"
+                                            Value="Collapsed"/>
+
+                                    <Style.Triggers>
+
+                                        <DataTrigger Binding="{Binding HasCurrentInput}"
+                                                     Value="True">
+
+                                            <Setter Property="Visibility"
+                                                    Value="Visible"/>
+
+                                        </DataTrigger>
+
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <TextBlock Text="CURRENT INPUT"
+                                       Style="{StaticResource ControlsNavHeadingTextBlockStyle}"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBlock Text="{Binding CurrentInputDisplay}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,20"/>
+
+                            <TextBlock Text="CURRENT BMS MAPPING"
+                                       Style="{StaticResource ControlsNavHeadingTextBlockStyle}"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBlock Text="{Binding CurrentBmsMappingDisplay}"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+
+                        </StackPanel>
+
+                    </Grid>
+
+                </Grid>
 
             </Border>
         </Grid>
