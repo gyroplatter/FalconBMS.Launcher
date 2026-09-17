@@ -599,6 +599,25 @@
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
 
+    <!-- Device map callout primary mapping text.
+         This size is expressed in map-surface coordinates, so the containing
+         Viewbox scales it with the device image on different window sizes. -->
+    <Style x:Key="DeviceMapCalloutMappingTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource DialogAssignmentValueStyle}">
+        <Setter Property="FontSize"
+                Value="20"/>
+    </Style>
+
+    <!-- Device map callout DX/POV identifier.
+         It scales with the same map Viewbox as the primary text. -->
+    <Style x:Key="DeviceMapCalloutInputTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="FontSize"
+                Value="20"/>
+    </Style>
+
     <!-- Shared warning text for overwrite/conflict messages in popup dialogs -->
     <Style x:Key="DialogWarningTextBlockStyle"
        TargetType="TextBlock"

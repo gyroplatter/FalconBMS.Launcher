@@ -143,7 +143,7 @@
 
             </Border>
 
-            <!-- Device image -->
+            <!-- Device image and editable hotspots -->
             <Border Grid.Column="2"
                     BorderThickness="1"
                     BorderBrush="{DynamicResource AppBorderBrush}"
@@ -151,9 +151,232 @@
 
                 <Grid>
 
-                    <Image Source="{Binding DeviceImage}"
-                           Stretch="Uniform"
-                           Margin="18"/>
+                    <!--
+                        Image and hotspot canvas share one canonical surface.
+                        The Viewbox scales that surface without changing its
+                        aspect ratio.
+                    -->
+                    <Viewbox Margin="18"
+                             Stretch="Uniform">
+
+                        <Viewbox.Style>
+                            <Style TargetType="Viewbox">
+
+                                <Setter Property="Visibility"
+                                        Value="Collapsed"/>
+
+                                <Style.Triggers>
+
+                                    <DataTrigger Binding="{Binding HasDeviceImage}"
+                                                 Value="True">
+
+                                        <Setter Property="Visibility"
+                                                Value="Visible"/>
+
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </Viewbox.Style>
+
+                        <Grid Width="{Binding MapSurfaceWidth}"
+                              Height="{Binding MapSurfaceHeight}">
+
+                            <Image Source="{Binding DeviceImage}"
+                                   Stretch="Fill"/>
+
+                            <!-- Curved connectors sit behind hotspots/callouts. -->
+                            <ItemsControl ItemsSource="{Binding VisibleConnectors}"
+                                          IsHitTestVisible="False">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Path Data="{Binding ConnectorGeometry}"
+                                              Stroke="{DynamicResource AppAccentBrush}"
+                                              StrokeThickness="3"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Opacity="0.9"/>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                            <ItemsControl x:Name="HotspotItemsControl"
+                                          ItemsSource="{Binding VisibleHotspots}">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+
+                                        <Setter Property="Canvas.Left"
+                                                Value="{Binding Left}"/>
+
+                                        <Setter Property="Canvas.Top"
+                                                Value="{Binding Top}"/>
+
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Grid Width="{Binding DisplayWidth}"
+                                              Height="{Binding DisplayHeight}"
+                                              Cursor="SizeAll"
+                                              MouseLeftButtonDown="Hotspot_MouseLeftButtonDown"
+                                              MouseMove="Hotspot_MouseMove"
+                                              MouseLeftButtonUp="Hotspot_MouseLeftButtonUp">
+
+                                            <Ellipse Fill="{DynamicResource AppAccentBrush}"
+                                                     Stroke="{DynamicResource AppAccentBrush}"
+                                                     StrokeThickness="3"
+                                                     Opacity="0.35"/>
+
+                                            <!-- Top-left resize handle -->
+                                            <Ellipse Width="16"
+                                                     Height="16"
+                                                     HorizontalAlignment="Left"
+                                                     VerticalAlignment="Top"
+                                                     Margin="-8,-8,0,0"
+                                                     Fill="{DynamicResource AppAccentBrush}"
+                                                     Stroke="{DynamicResource AppWindowBackgroundBrush}"
+                                                     StrokeThickness="2"
+                                                     Cursor="SizeNWSE"
+                                                     Tag="TopLeft"
+                                                     MouseLeftButtonDown="HotspotResize_MouseLeftButtonDown"
+                                                     MouseMove="HotspotResize_MouseMove"
+                                                     MouseLeftButtonUp="HotspotResize_MouseLeftButtonUp"/>
+
+                                            <!-- Top-right resize handle -->
+                                            <Ellipse Width="16"
+                                                     Height="16"
+                                                     HorizontalAlignment="Right"
+                                                     VerticalAlignment="Top"
+                                                     Margin="0,-8,-8,0"
+                                                     Fill="{DynamicResource AppAccentBrush}"
+                                                     Stroke="{DynamicResource AppWindowBackgroundBrush}"
+                                                     StrokeThickness="2"
+                                                     Cursor="SizeNESW"
+                                                     Tag="TopRight"
+                                                     MouseLeftButtonDown="HotspotResize_MouseLeftButtonDown"
+                                                     MouseMove="HotspotResize_MouseMove"
+                                                     MouseLeftButtonUp="HotspotResize_MouseLeftButtonUp"/>
+
+                                            <!-- Bottom-left resize handle -->
+                                            <Ellipse Width="16"
+                                                     Height="16"
+                                                     HorizontalAlignment="Left"
+                                                     VerticalAlignment="Bottom"
+                                                     Margin="-8,0,0,-8"
+                                                     Fill="{DynamicResource AppAccentBrush}"
+                                                     Stroke="{DynamicResource AppWindowBackgroundBrush}"
+                                                     StrokeThickness="2"
+                                                     Cursor="SizeNESW"
+                                                     Tag="BottomLeft"
+                                                     MouseLeftButtonDown="HotspotResize_MouseLeftButtonDown"
+                                                     MouseMove="HotspotResize_MouseMove"
+                                                     MouseLeftButtonUp="HotspotResize_MouseLeftButtonUp"/>
+
+                                            <!-- Bottom-right resize handle -->
+                                            <Ellipse Width="16"
+                                                     Height="16"
+                                                     HorizontalAlignment="Right"
+                                                     VerticalAlignment="Bottom"
+                                                     Margin="0,0,-8,-8"
+                                                     Fill="{DynamicResource AppAccentBrush}"
+                                                     Stroke="{DynamicResource AppWindowBackgroundBrush}"
+                                                     StrokeThickness="2"
+                                                     Cursor="SizeNWSE"
+                                                     Tag="BottomRight"
+                                                     MouseLeftButtonDown="HotspotResize_MouseLeftButtonDown"
+                                                     MouseMove="HotspotResize_MouseMove"
+                                                     MouseLeftButtonUp="HotspotResize_MouseLeftButtonUp"/>
+
+                                        </Grid>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                            <!-- One shared callout per logical DX/POV input. -->
+                            <ItemsControl ItemsSource="{Binding VisibleCallouts}">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+
+                                        <Setter Property="Canvas.Left"
+                                                Value="{Binding Left}"/>
+
+                                        <Setter Property="Canvas.Top"
+                                                Value="{Binding Top}"/>
+
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Border Width="{Binding DisplayWidth}"
+                                                Height="{Binding DisplayHeight}"
+                                                Padding="10,7"
+                                                Background="{DynamicResource AppSurfaceBrush}"
+                                                BorderBrush="{DynamicResource AppAccentBrush}"
+                                                BorderThickness="2"
+                                                Cursor="SizeAll"
+                                                MouseLeftButtonDown="Callout_MouseLeftButtonDown"
+                                                MouseMove="Callout_MouseMove"
+                                                MouseLeftButtonUp="Callout_MouseLeftButtonUp">
+
+                                            <Grid VerticalAlignment="Center">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="10"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Grid.Row="0"
+                                                           Text="{Binding MappingDisplay}"
+                                                           Style="{StaticResource DeviceMapCalloutMappingTextStyle}"
+                                                           TextWrapping="Wrap"
+                                                           LineStackingStrategy="BlockLineHeight"
+                                                           LineHeight="20"/>
+
+                                                <TextBlock Grid.Row="2"
+                                                           Text="{Binding InputDisplay}"
+                                                           Style="{StaticResource DeviceMapCalloutInputTextStyle}"/>
+                                            </Grid>
+
+                                        </Border>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                        </Grid>
+
+                    </Viewbox>
 
                     <TextBlock Text="Choose an image to begin."
                                HorizontalAlignment="Center"
@@ -279,7 +502,23 @@
 
                             <TextBlock Text="{Binding CurrentBmsMappingDisplay}"
                                        FontWeight="SemiBold"
-                                       TextWrapping="Wrap"/>
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,20"/>
+
+                            <TextBlock Text="ACTIONS"
+                                       Style="{StaticResource ControlsNavHeadingTextBlockStyle}"
+                                       Margin="0,0,0,8"/>
+
+                            <Button Content="Add Hotspot"
+                                    Margin="0,0,0,8"
+                                    Command="{Binding AddHotspotCommand}"/>
+
+                            <Button Content="Add Secondary Hotspot"
+                                    Margin="0,0,0,8"
+                                    Command="{Binding AddSecondaryHotspotCommand}"/>
+
+                            <Button Content="Clear"
+                                    Command="{Binding ClearHotspotsCommand}"/>
 
                         </StackPanel>
 

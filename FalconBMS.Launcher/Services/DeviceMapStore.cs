@@ -3,19 +3,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Windows.Media.Imaging;
 
 namespace FalconBMS.Launcher.Services;
 
 /// <summary>
-/// Resolves and stores device-map images.
+/// Resolves and stores device-map images and persisted map JSON.
 ///
-/// Launcher-provided images live under Stock\Maps.
-/// User-provided images live under User\Config\Launcher-Backups.
+/// Launcher-provided map assets live under Stock\Maps.
+/// User-provided map assets live under User\Config\Launcher-Backups.
 ///
-/// Images are matched to hardware by PID/VID, which is embedded in the
-/// filename as {PIDVID}. The human-readable device name remains in the
-/// filename only for readability.
+/// Assets are matched to hardware by PID/VID, embedded in the filename as
+/// {PIDVID}. The human-readable device name remains in the filename only for
+/// readability.
 /// </summary>
 public sealed class DeviceMapStore
 {
@@ -26,11 +27,16 @@ public sealed class DeviceMapStore
         ".jpeg"
     };
 
+    private static readonly JsonSerializerOptions MapJsonOptions =
+        new()
+        {
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = true
+        };
+
     /// <summary>
     /// Finds the image associated with a device.
-    ///
-    /// User images are checked first so a user replacement overrides
-    /// a launcher-provided stock image for the same PID/VID.
+    /// User images override launcher-provided stock images.
     /// </summary>
     public string? FindImagePath(
         string baseDir,
@@ -44,22 +50,123 @@ public sealed class DeviceMapStore
 
         string? userImage =
             FindMatchingImage(
-                GetUserImageDirectory(baseDir),
+                GetUserMapDirectory(baseDir),
                 device.PidVid);
 
         if (!string.IsNullOrWhiteSpace(userImage))
             return userImage;
 
         return FindMatchingImage(
-            GetStockImageDirectory(),
+            GetStockMapDirectory(),
             device.PidVid);
     }
 
     /// <summary>
-    /// Copies a user-selected image into User\Config\Launcher-Backups
-    /// using the device name plus PID/VID.
-    ///
-    /// Only one user image is retained for each PID/VID.
+    /// Finds persisted map JSON for a device.
+    /// User map JSON overrides launcher-provided stock map JSON.
+    /// </summary>
+    public string? FindMapPath(
+        string baseDir,
+        DeviceBindingProfile device)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir) ||
+            string.IsNullOrWhiteSpace(device.PidVid))
+        {
+            return null;
+        }
+
+        string? userMap =
+            FindMatchingMap(
+                GetUserMapDirectory(baseDir),
+                device.PidVid);
+
+        if (!string.IsNullOrWhiteSpace(userMap))
+            return userMap;
+
+        return FindMatchingMap(
+            GetStockMapDirectory(),
+            device.PidVid);
+    }
+
+    public DeviceMapDefinition? LoadMap(
+        string baseDir,
+        DeviceBindingProfile device)
+    {
+        string? mapPath =
+            FindMapPath(
+                baseDir,
+                device);
+
+        if (string.IsNullOrWhiteSpace(mapPath) ||
+            !File.Exists(mapPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            string json =
+                File.ReadAllText(mapPath);
+
+            return JsonSerializer.Deserialize<DeviceMapDefinition>(
+                json,
+                MapJsonOptions);
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                $"Device map JSON load failed: {mapPath}");
+
+            return null;
+        }
+    }
+
+    public string SaveMap(
+        string baseDir,
+        DeviceBindingProfile device,
+        DeviceMapDefinition map)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir))
+        {
+            throw new ArgumentException(
+                "The BMS install folder is required.",
+                nameof(baseDir));
+        }
+
+        if (string.IsNullOrWhiteSpace(device.PidVid))
+        {
+            throw new InvalidOperationException(
+                "The selected device does not have a PID/VID identity.");
+        }
+
+        string userMapDirectory =
+            GetUserMapDirectory(baseDir);
+
+        Directory.CreateDirectory(
+            userMapDirectory);
+
+        string destinationPath =
+            Path.Combine(
+                userMapDirectory,
+                GetMapFileName(device));
+
+        string json =
+            JsonSerializer.Serialize(
+                map,
+                MapJsonOptions);
+
+        File.WriteAllText(
+            destinationPath,
+            json);
+
+        return destinationPath;
+    }
+
+    /// <summary>
+    /// Copies a user-selected image into User\Config\Launcher-Backups using
+    /// the device name plus PID/VID. Only one user image is retained for each
+    /// PID/VID.
     /// </summary>
     public string ImportUserImage(
         string baseDir,
@@ -96,11 +203,11 @@ public sealed class DeviceMapStore
                 "Device map images must be PNG, JPG, or JPEG files.");
         }
 
-        string userImageDirectory =
-            GetUserImageDirectory(baseDir);
+        string userMapDirectory =
+            GetUserMapDirectory(baseDir);
 
         Directory.CreateDirectory(
-            userImageDirectory);
+            userMapDirectory);
 
         string displayName =
             GetDeviceDisplayName(device);
@@ -110,7 +217,7 @@ public sealed class DeviceMapStore
 
         string destinationPath =
             Path.Combine(
-                userImageDirectory,
+                userMapDirectory,
                 destinationFileName);
 
         string sourceFullPath =
@@ -130,11 +237,11 @@ public sealed class DeviceMapStore
                 overwrite: true);
         }
 
-        // Keep lookup deterministic by allowing only one user image
-        // for a particular PID/VID.
+        // Keep lookup deterministic by allowing only one user image for a
+        // particular PID/VID, regardless of image extension.
         foreach (string existingPath in
                  EnumerateMatchingImages(
-                     userImageDirectory,
+                     userMapDirectory,
                      device.PidVid))
         {
             if (string.Equals(
@@ -152,8 +259,8 @@ public sealed class DeviceMapStore
     }
 
     /// <summary>
-    /// Loads the image fully into memory so WPF does not keep the source
-    /// file locked. This will matter when users replace an image later.
+    /// Loads the image fully into memory so WPF does not keep the source file
+    /// locked. This allows the image to be replaced while the launcher runs.
     /// </summary>
     public BitmapImage? LoadImage(
         string? imagePath)
@@ -178,13 +285,12 @@ public sealed class DeviceMapStore
                 UriKind.Absolute);
 
         image.EndInit();
-
         image.Freeze();
 
         return image;
     }
 
-    private static string GetStockImageDirectory()
+    private static string GetStockMapDirectory()
     {
         return Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory,
@@ -192,7 +298,7 @@ public sealed class DeviceMapStore
             "Maps");
     }
 
-    private static string GetUserImageDirectory(
+    private static string GetUserMapDirectory(
         string baseDir)
     {
         return Path.Combine(
@@ -209,6 +315,32 @@ public sealed class DeviceMapStore
         return EnumerateMatchingImages(
                 directory,
                 pidVid)
+            .OrderBy(
+                path => path,
+                StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault();
+    }
+
+    private static string? FindMatchingMap(
+        string directory,
+        string pidVid)
+    {
+        if (!Directory.Exists(directory))
+            return null;
+
+        string pidVidToken =
+            "{" + pidVid + "}";
+
+        return Directory
+            .EnumerateFiles(
+                directory,
+                "*.json",
+                SearchOption.TopDirectoryOnly)
+            .Where(path =>
+                Path.GetFileNameWithoutExtension(path)
+                    .IndexOf(
+                        pidVidToken,
+                        StringComparison.OrdinalIgnoreCase) >= 0)
             .OrderBy(
                 path => path,
                 StringComparer.OrdinalIgnoreCase)
@@ -248,6 +380,13 @@ public sealed class DeviceMapStore
                 candidate,
                 extension,
                 StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string GetMapFileName(
+        DeviceBindingProfile device)
+    {
+        return
+            $"{SanitizeFileName(GetDeviceDisplayName(device))} {{{device.PidVid}}}.json";
     }
 
     private static string GetDeviceDisplayName(
