@@ -17,6 +17,9 @@ namespace FalconBMS.Launcher.ViewModels;
 /// </summary>
 public sealed class DevicesViewModel : ViewModelBase
 {
+    private const double MapSurfaceWidthValue =
+        1000.0;
+
     private readonly DeviceMapStore _deviceMapStore =
         new();
 
@@ -33,6 +36,32 @@ public sealed class DevicesViewModel : ViewModelBase
 
     public ObservableCollection<DevicesDeviceListItemViewModel> ConnectedDevices { get; } =
         new();
+
+    public ObservableCollection<DeviceMapHotspotViewModel> VisibleHotspots { get; } =
+        new();
+
+    public ObservableCollection<DeviceMapCalloutViewModel> VisibleCallouts { get; } =
+        new();
+
+    public ObservableCollection<DeviceMapConnectorViewModel> VisibleConnectors { get; } =
+        new();
+
+    private DeviceMapDefinition? _selectedDeviceMap;
+
+    public double MapSurfaceWidth =>
+        MapSurfaceWidthValue;
+
+    private double _mapSurfaceHeight =
+        MapSurfaceWidthValue;
+
+    public double MapSurfaceHeight
+    {
+        get => _mapSurfaceHeight;
+
+        private set => Set(
+            ref _mapSurfaceHeight,
+            value);
+    }
 
     public RelayCommand CreateMapCommand { get; }
 
@@ -112,6 +141,8 @@ public sealed class DevicesViewModel : ViewModelBase
 
             OnPropertyChanged(
                 nameof(HasSelectedDeviceImage));
+
+            UpdateMapSurfaceSize();
         }
     }
 
@@ -302,6 +333,13 @@ public sealed class DevicesViewModel : ViewModelBase
 
         ApplyCurrentInput(
             result);
+
+        ShowMapInput(
+            inputKind: "Button",
+            buttonIndex: buttonIndex,
+            povIndex: -1,
+            povDirection: -1,
+            result: result);
     }
 
     public void ShowPovInput(
@@ -355,6 +393,13 @@ public sealed class DevicesViewModel : ViewModelBase
 
         ApplyCurrentInput(
             result);
+
+        ShowMapInput(
+            inputKind: "Pov",
+            buttonIndex: -1,
+            povIndex: povIndex,
+            povDirection: direction,
+            result: result);
     }
 
     public bool IsDxShiftActive(
@@ -459,10 +504,15 @@ public sealed class DevicesViewModel : ViewModelBase
         DeviceBindingProfile? device =
             SelectedDevice;
 
+        ClearVisibleMapInput();
+
         if (baseDir is null ||
             string.IsNullOrWhiteSpace(baseDir) ||
             device is null)
         {
+            _selectedDeviceMap =
+                null;
+
             SelectedDeviceImage =
                 null;
 
@@ -477,6 +527,11 @@ public sealed class DevicesViewModel : ViewModelBase
         SelectedDeviceImage =
             _deviceMapStore.LoadImage(
                 imagePath);
+
+        _selectedDeviceMap =
+            _deviceMapStore.LoadMap(
+                baseDir,
+                device);
     }
 
     private bool CanCreateMap()
@@ -535,6 +590,139 @@ public sealed class DevicesViewModel : ViewModelBase
         EditMapCommand.RaiseCanExecuteChanged();
     }
 
+    private void ShowMapInput(
+    string inputKind,
+    int buttonIndex,
+    int povIndex,
+    int povDirection,
+    DeviceInputMappingResult result)
+    {
+        /*
+         * Devices only exposes the visual data belonging to the most recent
+         * physical input. Release events do not call this method, so the last
+         * pressed input remains visible.
+         */
+        ClearVisibleMapInput();
+
+        DeviceMapDefinition? map =
+            _selectedDeviceMap;
+
+        if (map is null)
+            return;
+
+        foreach (DeviceMapHotspot hotspot in map.Hotspots)
+        {
+            if (!MapInputMatches(
+                    hotspot.InputKind,
+                    hotspot.ButtonIndex,
+                    hotspot.PovIndex,
+                    hotspot.PovDirection,
+                    inputKind,
+                    buttonIndex,
+                    povIndex,
+                    povDirection))
+            {
+                continue;
+            }
+
+            VisibleHotspots.Add(
+                new DeviceMapHotspotViewModel(
+                    hotspot,
+                    () => MapSurfaceWidth,
+                    () => MapSurfaceHeight));
+        }
+
+        DeviceMapCallout? calloutModel =
+            map.Callouts.FirstOrDefault(callout =>
+                MapInputMatches(
+                    callout.InputKind,
+                    callout.ButtonIndex,
+                    callout.PovIndex,
+                    callout.PovDirection,
+                    inputKind,
+                    buttonIndex,
+                    povIndex,
+                    povDirection));
+
+        if (calloutModel is null)
+            return;
+
+        var callout =
+            new DeviceMapCalloutViewModel(
+                calloutModel,
+                result.InputDisplay,
+                result.MappingDisplay,
+                () => MapSurfaceWidth,
+                () => MapSurfaceHeight);
+
+        VisibleCallouts.Add(
+            callout);
+
+        foreach (DeviceMapHotspotViewModel hotspot in VisibleHotspots)
+        {
+            VisibleConnectors.Add(
+                new DeviceMapConnectorViewModel(
+                    hotspot,
+                    callout));
+        }
+    }
+
+    private void ClearVisibleMapInput()
+    {
+        VisibleHotspots.Clear();
+        VisibleCallouts.Clear();
+        VisibleConnectors.Clear();
+    }
+
+    private static bool MapInputMatches(
+        string storedInputKind,
+        int storedButtonIndex,
+        int storedPovIndex,
+        int storedPovDirection,
+        string inputKind,
+        int buttonIndex,
+        int povIndex,
+        int povDirection)
+    {
+        if (!string.Equals(
+                storedInputKind,
+                inputKind,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(
+                inputKind,
+                "Button",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return storedButtonIndex ==
+                   buttonIndex;
+        }
+
+        return storedPovIndex == povIndex &&
+               storedPovDirection == povDirection;
+    }
+
+    private void UpdateMapSurfaceSize()
+    {
+        if (SelectedDeviceImage is null ||
+            SelectedDeviceImage.PixelWidth <= 0 ||
+            SelectedDeviceImage.PixelHeight <= 0)
+        {
+            MapSurfaceHeight =
+                MapSurfaceWidthValue;
+
+            return;
+        }
+
+        MapSurfaceHeight =
+            MapSurfaceWidthValue *
+            SelectedDeviceImage.PixelHeight /
+            SelectedDeviceImage.PixelWidth;
+    }
+
     private void ApplyCurrentInput(
         DeviceInputMappingResult result)
     {
@@ -564,6 +752,8 @@ public sealed class DevicesViewModel : ViewModelBase
 
         HasCurrentInput =
             false;
+
+        ClearVisibleMapInput();
     }
 
     private static Dictionary<string, int> GetSavedControlsDeviceOrder()

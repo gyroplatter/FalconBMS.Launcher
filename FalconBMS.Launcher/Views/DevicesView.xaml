@@ -135,17 +135,163 @@
                 <Grid>
 
                     <!--
-                        Phase 1 displays only the matched device image.
-
-                        Stretch="Uniform" means images of any size can fill the
-                        available area without changing their aspect ratio.
-
-                        This Image will eventually be replaced by the shared
-                        DeviceMapRenderer when hotspot rendering is added.
+                        Match the editor's canonical image surface so the
+                        normalized hotspot and callout positions render in
+                        exactly the same locations.
                     -->
-                    <Image Source="{Binding SelectedDeviceImage}"
-                           Stretch="Uniform"
-                           Margin="18"/>
+                    <Viewbox Margin="18"
+                             Stretch="Uniform">
+
+                        <Viewbox.Style>
+                            <Style TargetType="Viewbox">
+
+                                <Setter Property="Visibility"
+                                        Value="Collapsed"/>
+
+                                <Style.Triggers>
+
+                                    <DataTrigger Binding="{Binding HasSelectedDeviceImage}"
+                                                 Value="True">
+
+                                        <Setter Property="Visibility"
+                                                Value="Visible"/>
+
+                                    </DataTrigger>
+
+                                </Style.Triggers>
+                            </Style>
+                        </Viewbox.Style>
+
+                        <Grid Width="{Binding MapSurfaceWidth}"
+                              Height="{Binding MapSurfaceHeight}">
+
+                            <Image Source="{Binding SelectedDeviceImage}"
+                                   Stretch="Fill"/>
+
+                            <!-- Curved lines behind hotspots and callout. -->
+                            <ItemsControl ItemsSource="{Binding VisibleConnectors}"
+                                          IsHitTestVisible="False">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Path Data="{Binding ConnectorGeometry}"
+                                              Stroke="{DynamicResource AppAccentBrush}"
+                                              StrokeThickness="3"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Opacity="0.9"/>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                            <!-- Hotspots for only the last pressed input. -->
+                            <ItemsControl ItemsSource="{Binding VisibleHotspots}"
+                                          IsHitTestVisible="False">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+
+                                        <Setter Property="Canvas.Left"
+                                                Value="{Binding Left}"/>
+
+                                        <Setter Property="Canvas.Top"
+                                                Value="{Binding Top}"/>
+
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Ellipse Width="{Binding DisplayWidth}"
+                                                 Height="{Binding DisplayHeight}"
+                                                 Fill="{DynamicResource AppAccentBrush}"
+                                                 Stroke="{DynamicResource AppAccentBrush}"
+                                                 StrokeThickness="3"
+                                                 Opacity="0.35"/>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                            <!-- Callout for only the last pressed input. -->
+                            <ItemsControl ItemsSource="{Binding VisibleCallouts}"
+                                          IsHitTestVisible="False">
+
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+
+                                        <Setter Property="Canvas.Left"
+                                                Value="{Binding Left}"/>
+
+                                        <Setter Property="Canvas.Top"
+                                                Value="{Binding Top}"/>
+
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+
+                                        <Border Width="{Binding DisplayWidth}"
+                                                Height="{Binding DisplayHeight}"
+                                                Padding="10,7"
+                                                Background="{DynamicResource AppSurfaceBrush}"
+                                                BorderBrush="{DynamicResource AppAccentBrush}"
+                                                BorderThickness="2">
+
+                                            <Grid VerticalAlignment="Center">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="10"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Grid.Row="0"
+                                                           Text="{Binding MappingDisplay}"
+                                                           Style="{StaticResource DeviceMapCalloutMappingTextStyle}"
+                                                           TextWrapping="Wrap"
+                                                           LineStackingStrategy="BlockLineHeight"
+                                                           LineHeight="20"/>
+
+                                                <TextBlock Grid.Row="2"
+                                                           Text="{Binding InputDisplay}"
+                                                           Style="{StaticResource DeviceMapCalloutInputTextStyle}"/>
+
+                                            </Grid>
+
+                                        </Border>
+
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+
+                            </ItemsControl>
+
+                        </Grid>
+
+                    </Viewbox>
 
                     <TextBlock Text="No visual layout"
                                HorizontalAlignment="Center"
