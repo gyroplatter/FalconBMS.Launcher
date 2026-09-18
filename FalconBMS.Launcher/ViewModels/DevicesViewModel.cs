@@ -67,7 +67,11 @@ public sealed class DevicesViewModel : ViewModelBase
 
     public RelayCommand EditMapCommand { get; }
 
+    public RelayCommand DeleteMapCommand { get; }
+
     public event EventHandler<DeviceMapEditorRequestEventArgs>? MapEditorRequested;
+
+    public event EventHandler? DeleteMapRequested;
 
     private BindingAircraftProfile? _selectedProfile;
 
@@ -209,6 +213,11 @@ public sealed class DevicesViewModel : ViewModelBase
                 () => RequestMapEditor(
                     isEditMode: true),
                 CanEditMap);
+
+        DeleteMapCommand =
+            new RelayCommand(
+                RequestDeleteMap,
+                CanDeleteMap);
     }
 
     public void ConfigureMapImages(
@@ -546,6 +555,63 @@ public sealed class DevicesViewModel : ViewModelBase
                HasSelectedDeviceImage;
     }
 
+    private bool CanDeleteMap()
+    {
+        string? baseDir =
+            _getBaseDir?.Invoke();
+
+        DeviceBindingProfile? device =
+            SelectedDevice;
+
+        if (baseDir is null ||
+            string.IsNullOrWhiteSpace(baseDir) ||
+            device is null)
+        {
+            return false;
+        }
+
+        /*
+         * Stock maps cannot be deleted from the Devices tab.
+         * The button is enabled only when this device has a user map.
+         */
+        return _deviceMapStore.HasUserMap(
+            baseDir,
+            device);
+    }
+
+    private void RequestDeleteMap()
+    {
+        if (!CanDeleteMap())
+            return;
+
+        DeleteMapRequested?.Invoke(
+            this,
+            EventArgs.Empty);
+    }
+
+    public void DeleteSelectedUserMap()
+    {
+        string? baseDir =
+            _getBaseDir?.Invoke();
+
+        DeviceBindingProfile? device =
+            SelectedDevice;
+
+        if (baseDir is null ||
+            string.IsNullOrWhiteSpace(baseDir) ||
+            device is null)
+        {
+            return;
+        }
+
+        _deviceMapStore.DeleteUserMap(
+            baseDir,
+            device);
+
+        ClearCurrentInput();
+        RefreshDeviceMapState();
+    }
+
     private bool CanOpenMapEditor()
     {
         return SelectedDevice is not null &&
@@ -588,6 +654,7 @@ public sealed class DevicesViewModel : ViewModelBase
     {
         CreateMapCommand.RaiseCanExecuteChanged();
         EditMapCommand.RaiseCanExecuteChanged();
+        DeleteMapCommand.RaiseCanExecuteChanged();
     }
 
     private void ShowMapInput(

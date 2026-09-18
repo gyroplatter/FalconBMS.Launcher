@@ -53,7 +53,12 @@
 
                         <Button Content="Edit Map"
                                 Width="100"
+                                Margin="0,0,8,0"
                                 Command="{Binding EditMapCommand}"/>
+
+                        <Button Content="Delete Map"
+                                Width="100"
+                                Command="{Binding DeleteMapCommand}"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2"

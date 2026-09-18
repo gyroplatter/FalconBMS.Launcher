@@ -163,6 +163,65 @@ public sealed class DeviceMapStore
         return destinationPath;
     }
 
+    public bool HasUserMap(
+        string baseDir,
+        DeviceBindingProfile device)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir) ||
+            string.IsNullOrWhiteSpace(device.PidVid))
+        {
+            return false;
+        }
+
+        string userMapDirectory =
+            GetUserMapDirectory(baseDir);
+
+        return !string.IsNullOrWhiteSpace(
+            FindMatchingMap(
+                userMapDirectory,
+                device.PidVid));
+    }
+
+    public void DeleteUserMap(
+        string baseDir,
+        DeviceBindingProfile device)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir) ||
+            string.IsNullOrWhiteSpace(device.PidVid))
+        {
+            return;
+        }
+
+        string userMapDirectory =
+            GetUserMapDirectory(baseDir);
+
+        string? mapPath =
+            FindMatchingMap(
+                userMapDirectory,
+                device.PidVid);
+
+        if (!string.IsNullOrWhiteSpace(mapPath) &&
+            File.Exists(mapPath))
+        {
+            File.Delete(mapPath);
+        }
+
+        /*
+         * The image belongs to the user map as well. Delete only images
+         * stored in the user map folder. Stock assets are never touched.
+         */
+        foreach (string imagePath in
+                 EnumerateMatchingImages(
+                     userMapDirectory,
+                     device.PidVid))
+        {
+            if (File.Exists(imagePath))
+            {
+                File.Delete(imagePath);
+            }
+        }
+    }
+
     /// <summary>
     /// Copies a user-selected image into User\Config\Launcher-Backups using
     /// the device name plus PID/VID. Only one user image is retained for each

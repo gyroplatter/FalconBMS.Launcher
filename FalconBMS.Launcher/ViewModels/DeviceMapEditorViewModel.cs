@@ -780,7 +780,7 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
                 input);
 
         /*
-         * Center a newly-created callout on the device-map surface.
+         * Center a newly created callout on the device-map surface.
          * The stored position remains normalized like the hotspot positions.
          */
         double calloutLeft =
@@ -791,15 +791,15 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
                 2.0);
 
         /*
-         * Start the callout centered horizontally in the upper third of the
-         * image. This leaves clear space between the default callout and the
-         * default hotspot position.
+         * Center the newly created callout vertically on the device image.
+         * The hotspot still starts in the lower third of the image.
          */
         double calloutTop =
             Math.Max(
                 0.0,
-                (MapSurfaceHeight * 0.22) -
-                (DeviceMapCalloutViewModel.DisplayHeightValue / 2.0));
+                (MapSurfaceHeight -
+                 DeviceMapCalloutViewModel.DisplayHeightValue) /
+                2.0);
 
         var model =
             new DeviceMapCallout

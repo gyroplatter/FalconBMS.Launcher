@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Input;
+using FalconBMS.Launcher.Models;
 using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.ViewModels;
 using System;
@@ -64,6 +65,9 @@ public partial class DevicesView : UserControl
         {
             oldViewModel.MapEditorRequested -=
                 ViewModel_MapEditorRequested;
+
+            oldViewModel.DeleteMapRequested -=
+                ViewModel_DeleteMapRequested;
         }
 
         if (!IsLoaded)
@@ -83,6 +87,12 @@ public partial class DevicesView : UserControl
 
         viewModel.MapEditorRequested +=
             ViewModel_MapEditorRequested;
+
+        viewModel.DeleteMapRequested -=
+            ViewModel_DeleteMapRequested;
+
+        viewModel.DeleteMapRequested +=
+            ViewModel_DeleteMapRequested;
     }
 
     private void UnsubscribeFromViewModel()
@@ -92,6 +102,41 @@ public partial class DevicesView : UserControl
 
         viewModel.MapEditorRequested -=
             ViewModel_MapEditorRequested;
+
+        viewModel.DeleteMapRequested -=
+            ViewModel_DeleteMapRequested;
+    }
+
+    private void ViewModel_DeleteMapRequested(
+        object? sender,
+        EventArgs e)
+    {
+        if (sender is not DevicesViewModel viewModel)
+            return;
+
+        DeviceBindingProfile? device =
+            viewModel.SelectedDevice;
+
+        if (device is null)
+            return;
+
+        Window? owner =
+            Window.GetWindow(this);
+
+        MessageBoxResult result =
+            MessageBox.Show(
+                owner,
+                $"Delete the user map for {device.ProductName}?\n\n" +
+                "Launcher stock maps will not be deleted.",
+                "Delete Device Map",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        viewModel.DeleteSelectedUserMap();
     }
 
     private void ViewModel_MapEditorRequested(
