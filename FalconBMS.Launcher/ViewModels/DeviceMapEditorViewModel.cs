@@ -107,6 +107,9 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
             OnPropertyChanged(
                 nameof(HasDeviceImage));
 
+            OnPropertyChanged(
+                nameof(ImageButtonText));
+
             UpdateMapSurfaceSize();
             SaveCommand.RaiseCanExecuteChanged();
             RefreshHotspotCommandState();
@@ -115,6 +118,11 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
 
     public bool HasDeviceImage =>
         DeviceImage is not null;
+
+    public string ImageButtonText =>
+        HasDeviceImage
+            ? "Change Image"
+            : "Add Image";
 
     private string _imageFileName =
         "No image selected";

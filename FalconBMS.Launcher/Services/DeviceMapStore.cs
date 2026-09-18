@@ -330,23 +330,29 @@ public sealed class DeviceMapStore
             return null;
         }
 
-        var image =
-            new BitmapImage();
+        using (FileStream stream =
+               new FileStream(
+                   imagePath,
+                   FileMode.Open,
+                   FileAccess.Read,
+                   FileShare.Read))
+        {
+            var image =
+                new BitmapImage();
 
-        image.BeginInit();
+            image.BeginInit();
 
-        image.CacheOption =
-            BitmapCacheOption.OnLoad;
+            image.CacheOption =
+                BitmapCacheOption.OnLoad;
 
-        image.UriSource =
-            new Uri(
-                imagePath,
-                UriKind.Absolute);
+            image.StreamSource =
+                stream;
 
-        image.EndInit();
-        image.Freeze();
+            image.EndInit();
+            image.Freeze();
 
-        return image;
+            return image;
+        }
     }
 
     private static string GetStockMapDirectory()

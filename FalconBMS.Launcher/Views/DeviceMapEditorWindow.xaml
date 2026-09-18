@@ -52,9 +52,51 @@
                            VerticalAlignment="Center"
                            Margin="0,0,16,0"/>
 
-                <Button Content="Change Image"
-                        Width="125"
-                        Command="{Binding ChangeImageCommand}"/>
+                <Grid Width="125">
+
+                    <Button Content="Add Image"
+            Command="{Binding ChangeImageCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                   BasedOn="{StaticResource TertiaryButtonStyle}">
+
+                                <Setter Property="Visibility"
+                        Value="Visible"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasDeviceImage}"
+                                 Value="True">
+                                        <Setter Property="Visibility"
+                                Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <Button Content="Change Image"
+            Command="{Binding ChangeImageCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+
+                                <Setter Property="Visibility"
+                        Value="Collapsed"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasDeviceImage}"
+                                 Value="True">
+                                        <Setter Property="Visibility"
+                                Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                </Grid>
 
             </StackPanel>
         </Grid>
@@ -542,6 +584,7 @@
 
             <Button Content="Save Map"
                     Width="110"
+                    Style="{StaticResource TertiaryButtonStyle}"
                     Command="{Binding SaveCommand}"/>
 
         </StackPanel>
