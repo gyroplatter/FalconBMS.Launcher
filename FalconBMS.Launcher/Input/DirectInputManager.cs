@@ -159,11 +159,15 @@ public sealed class DirectInputManager : IDisposable
 
             EnsureObjectEnumReflection(device);
 
+            /*
+             * DirectInput's Axis enumeration includes all axis objects,
+             * including sliders. Vortice.DirectInput 2.4.2 exposes this
+             * through the "Axis" enum member.
+             */
             int axisCount =
-                CountObjectsByFlag(device, "Axis") +
-                CountObjectsByFlag(device, "Axes") +
-                CountObjectsByFlag(device, "Slider") +
-                CountObjectsByFlag(device, "Sliders");
+                CountObjectsByFlag(
+                    device,
+                    "Axis");
 
             int buttonCount = ReadIntMember(caps, "ButtonsCount", "ButtonCount", "Buttons");
             int povCount = ReadIntMember(caps, "PovsCount", "POVsCount", "PovCount", "Povs", "POVs");
