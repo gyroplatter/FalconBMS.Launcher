@@ -123,6 +123,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="8"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -148,39 +150,65 @@
                                     <TextBlock Grid.Column="0"
                                                Text="{Binding DisplayName}"/>
 
-                                    <Ellipse Grid.Column="1"
-                                             Width="8"
-                                             Height="8"
-                                             Margin="8,0,2,0"
-                                             VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                Margin="8,0,2,0"
+                                                VerticalAlignment="Center">
 
-                                        <Ellipse.Style>
-                                            <Style TargetType="Ellipse">
+                                        <!-- Assigned -->
+                                        <Polygon Width="16"
+                                                 Height="16"
+                                                 Points="6,0 12,6 6,12 0,6"
+                                                 Stretch="Fill"
+                                                 VerticalAlignment="Center"
+                                                 Style="{StaticResource DeviceInputAssignedStatusShapeStyle}"/>
 
-                                                <Setter Property="Fill"
-                                                        Value="{DynamicResource AppMutedForegroundBrush}"/>
+                                        <!-- Hotspot -->
+                                        <Ellipse Width="12"
+                                                 Height="12"
+                                                 Margin="7,0,0,0"
+                                                 VerticalAlignment="Center"
+                                                 Style="{StaticResource DeviceInputHotspotStatusShapeStyle}"/>
 
-                                                <Style.Triggers>
-
-                                                    <DataTrigger Binding="{Binding HasMapping}"
-                                                                 Value="True">
-
-                                                        <Setter Property="Fill"
-                                                                Value="{DynamicResource AppAccentBrush}"/>
-
-                                                    </DataTrigger>
-
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Ellipse.Style>
-
-                                    </Ellipse>
+                                    </StackPanel>
 
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
 
                     </ListBox>
+
+                    <Border Grid.Row="4"
+                            Padding="8,6"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource AppBorderBrush}"
+                            Background="{DynamicResource AppWindowBackgroundBrush}">
+
+                        <StackPanel Orientation="Horizontal"
+                                    VerticalAlignment="Center">
+
+                            <Polygon Width="16"
+                                     Height="16"
+                                     Points="6,0 12,6 6,12 0,6"
+                                     Stretch="Fill"
+                                     Fill="{DynamicResource AppAccentBrush}"
+                                     VerticalAlignment="Center"/>
+
+                            <TextBlock Text="Assigned"
+                                       Margin="6,0,12,0"
+                                       VerticalAlignment="Center"/>
+
+                            <Ellipse Width="12"
+                                     Height="12"
+                                     Fill="{DynamicResource AppAccentBrush}"
+                                     VerticalAlignment="Center"/>
+
+                            <TextBlock Text="Hotspot"
+                                       Margin="6,0,0,0"
+                                       VerticalAlignment="Center"/>
+
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
             </Border>

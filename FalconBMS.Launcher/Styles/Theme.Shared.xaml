@@ -618,6 +618,71 @@
                 Value="20"/>
     </Style>
 
+    <!-- Tooltips use launcher theme colors instead of the operating system
+         tooltip colors so they remain readable in both light and dark mode. -->
+    <Style TargetType="{x:Type ToolTip}">
+        <Setter Property="Background"
+                Value="{DynamicResource AppSurfaceBrush}"/>
+        <Setter Property="Foreground"
+                Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="BorderBrush"
+                Value="{DynamicResource AppBorderBrush}"/>
+        <Setter Property="BorderThickness"
+                Value="1"/>
+        <Setter Property="Padding"
+                Value="6,3"/>
+    </Style>
+
+    <!-- Device Map input assignment indicator
+         Filled diamond = assigned
+         Outlined diamond = unassigned -->
+    <Style x:Key="DeviceInputAssignedStatusShapeStyle"
+           TargetType="Polygon">
+        <Setter Property="Fill"
+                Value="Transparent"/>
+        <Setter Property="Stroke"
+                Value="{DynamicResource AppAccentBrush}"/>
+        <Setter Property="StrokeThickness"
+                Value="1.5"/>
+        <Setter Property="ToolTip"
+                Value="Unassigned"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding HasMapping}"
+                         Value="True">
+                <Setter Property="Fill"
+                        Value="{DynamicResource AppAccentBrush}"/>
+                <Setter Property="ToolTip"
+                        Value="Assigned"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Device Map hotspot indicator
+         Filled circle = hotspot placed
+         Outlined circle = no hotspot -->
+    <Style x:Key="DeviceInputHotspotStatusShapeStyle"
+           TargetType="Ellipse">
+        <Setter Property="Fill"
+                Value="Transparent"/>
+        <Setter Property="Stroke"
+                Value="{DynamicResource AppAccentBrush}"/>
+        <Setter Property="StrokeThickness"
+                Value="1.5"/>
+        <Setter Property="ToolTip"
+                Value="No Hotspot Placed"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding HasHotspot}"
+                         Value="True">
+                <Setter Property="Fill"
+                        Value="{DynamicResource AppAccentBrush}"/>
+                <Setter Property="ToolTip"
+                        Value="Hotspot Placed"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Shared warning text for overwrite/conflict messages in popup dialogs -->
     <Style x:Key="DialogWarningTextBlockStyle"
        TargetType="TextBlock"

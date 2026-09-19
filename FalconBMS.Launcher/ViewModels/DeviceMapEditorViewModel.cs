@@ -491,9 +491,8 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
         }
 
         /*
-         * Version-1 maps had hotspots but no callouts.
-         * Give those existing hotspots a callout automatically instead of
-         * requiring users to recreate their maps.
+         * Give hotspots a callout automatically instead of
+         * requiring users to recreate one
          */
         foreach (DeviceMapInputListItemViewModel input in Inputs)
         {
@@ -505,6 +504,7 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
             }
         }
 
+        RefreshInputHotspotStates();
         RefreshVisibleHotspots();
         RefreshHotspotCommandState();
     }
@@ -682,6 +682,7 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
                 input);
         }
 
+        RefreshInputHotspotStates();
         RefreshVisibleHotspots();
         RefreshHotspotCommandState();
     }
@@ -717,6 +718,7 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
                 callout);
         }
 
+        RefreshInputHotspotStates();
         RefreshVisibleHotspots();
         RefreshHotspotCommandState();
     }
@@ -895,6 +897,16 @@ public sealed class DeviceMapEditorViewModel : ViewModelBase
             HotspotMatchesInput(
                 hotspot.Model,
                 input));
+    }
+
+    private void RefreshInputHotspotStates()
+    {
+        foreach (DeviceMapInputListItemViewModel input in Inputs)
+        {
+            input.HasHotspot =
+                HasHotspotForInput(
+                    input);
+        }
     }
 
     private static bool CalloutMatchesInput(
@@ -1158,8 +1170,10 @@ public enum DeviceMapInputKind
     Pov
 }
 
-public sealed class DeviceMapInputListItemViewModel
+public sealed class DeviceMapInputListItemViewModel : ViewModelBase
 {
+    private bool _hasHotspot;
+
     public DeviceMapInputKind Kind { get; private init; }
 
     public int ButtonIndex { get; private init; } =
@@ -1175,6 +1189,17 @@ public sealed class DeviceMapInputListItemViewModel
         "";
 
     public bool HasMapping { get; private init; }
+
+    public bool HasHotspot
+    {
+        get =>
+            _hasHotspot;
+
+        set =>
+            Set(
+                ref _hasHotspot,
+                value);
+    }
 
     public static DeviceMapInputListItemViewModel CreateButton(
         int buttonIndex,
