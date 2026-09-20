@@ -87,6 +87,19 @@ public sealed class DeviceMapStore
     }
 
     /// <summary>
+    /// True when this device currently resolves to a complete saved map and image.
+    /// This is based on storage state rather than WPF image state.
+    /// </summary>
+    public bool HasResolvedMap(
+        string baseDir,
+        DeviceBindingProfile device)
+    {
+        return Resolve(
+                   baseDir,
+                   device) is not null;
+    }
+
+    /// <summary>
     /// Writes the map JSON to the user DeviceMaps folder. This is the only place a
     /// map file is created; stock and blank maps live in memory until the user saves.
     /// </summary>
@@ -300,6 +313,179 @@ public sealed class DeviceMapStore
     }
 
     /// <summary>
+    /// Saves an already validated imported Device Map package into the user folder.
+    ///
+    /// DeviceName, PidVid, hotspots, and callouts remain exactly as authored.
+    /// Only ImageFileName is changed so the imported image follows the launcher's
+    /// normal per-device user-storage naming and cannot collide with another map.
+    /// </summary>
+    public string SaveImportedMap(
+        string baseDir,
+        DeviceBindingProfile device,
+        DeviceMapDefinition map,
+        Stream imageStream,
+        string imageExtension)
+    {
+        if (string.IsNullOrWhiteSpace(baseDir))
+        {
+            throw new ArgumentException(
+                "The BMS install folder is required.",
+                nameof(baseDir));
+        }
+
+        if (string.IsNullOrWhiteSpace(device.PidVid))
+        {
+            throw new InvalidOperationException(
+                "The matching device does not have a PID/VID identity.");
+        }
+
+        if (map is null)
+            throw new ArgumentNullException(nameof(map));
+
+        if (imageStream is null)
+            throw new ArgumentNullException(nameof(imageStream));
+
+        if (!IsSupportedImageExtension(imageExtension))
+        {
+            throw new InvalidOperationException(
+                "Device map images must be PNG, JPG, or JPEG files.");
+        }
+
+        string userMapDirectory =
+            GetUserMapDirectory(baseDir);
+
+        Directory.CreateDirectory(
+            userMapDirectory);
+
+        string normalizedExtension =
+            imageExtension.ToLowerInvariant();
+
+        string destinationImageFileName =
+            $"{SanitizeFileName(GetDeviceDisplayName(device))} {{{device.PidVid}}}{normalizedExtension}";
+
+        string destinationImagePath =
+            Path.Combine(
+                userMapDirectory,
+                destinationImageFileName);
+
+        string destinationMapPath =
+            Path.Combine(
+                userMapDirectory,
+                GetMapFileName(device));
+
+        /*
+         * Prepare both replacement files before touching an existing user map.
+         * This prevents a bad ZIP/image/write failure from deleting a working map.
+         */
+        string temporaryId =
+            Guid.NewGuid()
+                .ToString("N");
+
+        string temporaryImagePath =
+            Path.Combine(
+                userMapDirectory,
+                $".device-map-image-{temporaryId}.tmp");
+
+        string temporaryMapPath =
+            Path.Combine(
+                userMapDirectory,
+                $".device-map-json-{temporaryId}.tmp");
+
+        try
+        {
+            using (FileStream destinationImageStream =
+                   new FileStream(
+                       temporaryImagePath,
+                       FileMode.Create,
+                       FileAccess.Write,
+                       FileShare.None))
+            {
+                imageStream.CopyTo(
+                    destinationImageStream);
+            }
+
+            /*
+             * Preserve the imported hardware identity and map geometry.
+             * Only the image filename is launcher-controlled after import.
+             */
+            map.ImageFileName =
+                destinationImageFileName;
+
+            string json =
+                JsonSerializer.Serialize(
+                    map,
+                    MapJsonOptions);
+
+            File.WriteAllText(
+                temporaryMapPath,
+                json);
+
+            /*
+             * Everything required for the replacement now exists successfully,
+             * so the previous user package can be removed.
+             */
+            DeleteUserMap(
+                baseDir,
+                device);
+
+            if (File.Exists(destinationImagePath))
+            {
+                File.Delete(
+                    destinationImagePath);
+            }
+
+            if (File.Exists(destinationMapPath))
+            {
+                File.Delete(
+                    destinationMapPath);
+            }
+
+            File.Move(
+                temporaryImagePath,
+                destinationImagePath);
+
+            File.Move(
+                temporaryMapPath,
+                destinationMapPath);
+
+            // A previous user image for this PID/VID may have used another
+            // extension. Retain only the image referenced by the new map.
+            foreach (string existingPath in
+                     EnumerateMatchingImages(
+                         userMapDirectory,
+                         device.PidVid))
+            {
+                if (string.Equals(
+                        Path.GetFullPath(existingPath),
+                        Path.GetFullPath(destinationImagePath),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                File.Delete(
+                    existingPath);
+            }
+
+            return destinationMapPath;
+        }
+        finally
+        {
+            if (File.Exists(temporaryImagePath))
+            {
+                File.Delete(
+                    temporaryImagePath);
+            }
+
+            if (File.Exists(temporaryMapPath))
+            {
+                File.Delete(
+                    temporaryMapPath);
+            }
+        }
+    }
+
+    /// <summary>
     /// Loads the image fully into memory so WPF does not keep the source file
     /// locked. This allows the image to be replaced while the launcher runs.
     /// </summary>
@@ -465,6 +651,205 @@ public sealed class DeviceMapStore
     // ------------------------------------------------------------------
     // Matching (mirrors StockDeviceSetupMatcherService, kept separate on purpose)
     // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Finds the currently connected device represented by an imported Device Map.
+    ///
+    /// Matching follows the same Devices policy as normal map resolution:
+    ///   1. Device name first.
+    ///   2. PID/VID only as a fallback or disambiguator.
+    ///
+    /// Older maps do not necessarily contain the PidVid JSON property, so the
+    /// existing {PIDVID} filename/DeviceName token is also supported.
+    /// </summary>
+    public DeviceBindingProfile? FindMatchingConnectedDeviceForImport(
+        DeviceMapDefinition map,
+        string sourceMapFileName,
+        IEnumerable<DeviceBindingProfile> devices)
+    {
+        if (map is null)
+            throw new ArgumentNullException(nameof(map));
+
+        List<DeviceBindingProfile> connectedDevices =
+            devices
+                .Where(device =>
+                    device.IsConnected)
+                .ToList();
+
+        if (connectedDevices.Count == 0)
+            return null;
+
+        string importedFileIdentity =
+            Path.GetFileNameWithoutExtension(
+                sourceMapFileName ?? "");
+
+        List<DeviceBindingProfile> nameMatches =
+            connectedDevices
+                .Where(device =>
+                    ImportedIdentityMatchesDeviceName(
+                        importedFileIdentity,
+                        map.DeviceName,
+                        device.ProductName)
+                    ||
+                    ImportedIdentityMatchesDeviceName(
+                        importedFileIdentity,
+                        map.DeviceName,
+                        device.InstanceName))
+                .ToList();
+
+        string? importedPidVid =
+            NormalizePidVid(
+                map.PidVid)
+            ??
+            ExtractPidVidToken(
+                importedFileIdentity)
+            ??
+            ExtractPidVidToken(
+                map.DeviceName);
+
+        /*
+         * Name is authoritative when it identifies one connected device.
+         * This mirrors normal DeviceMapStore resolution, where the name tier
+         * runs before PID/VID fallback.
+         */
+        if (nameMatches.Count == 1)
+            return nameMatches[0];
+
+        /*
+         * More than one device can legitimately report the same product name.
+         * Use PID/VID to narrow that name match when the imported map supplies it.
+         */
+        if (nameMatches.Count > 1)
+        {
+            if (!string.IsNullOrWhiteSpace(importedPidVid))
+            {
+                List<DeviceBindingProfile> narrowedMatches =
+                    nameMatches
+                        .Where(device =>
+                            string.Equals(
+                                device.PidVid,
+                                importedPidVid,
+                                StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+
+                if (narrowedMatches.Count == 1)
+                    return narrowedMatches[0];
+            }
+
+            throw new InvalidOperationException(
+                "This Device Map matches more than one connected device. The Launcher cannot safely choose which device should receive it.");
+        }
+
+        /*
+         * Name did not resolve. PID/VID is the fallback for devices whose
+         * product name is reported differently by Windows, Wine, or a HID layer.
+         */
+        if (string.IsNullOrWhiteSpace(importedPidVid))
+            return null;
+
+        List<DeviceBindingProfile> pidVidMatches =
+            connectedDevices
+                .Where(device =>
+                    string.Equals(
+                        device.PidVid,
+                        importedPidVid,
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        if (pidVidMatches.Count == 1)
+            return pidVidMatches[0];
+
+        if (pidVidMatches.Count > 1)
+        {
+            throw new InvalidOperationException(
+                "This Device Map matches more than one connected device. The Launcher cannot safely choose which device should receive it.");
+        }
+
+        return null;
+    }
+
+    private static bool ImportedIdentityMatchesDeviceName(
+        string importedFileIdentity,
+        string importedDeviceName,
+        string? connectedDeviceName)
+    {
+        string normalizedConnectedName =
+            Normalize(
+                connectedDeviceName);
+
+        if (normalizedConnectedName.Length == 0)
+            return false;
+
+        string normalizedFileIdentity =
+            Normalize(
+                importedFileIdentity);
+
+        if (normalizedFileIdentity.Contains(
+                normalizedConnectedName))
+        {
+            return true;
+        }
+
+        string normalizedDeviceName =
+            Normalize(
+                importedDeviceName);
+
+        return normalizedDeviceName.Contains(
+            normalizedConnectedName);
+    }
+
+    private static string? NormalizePidVid(
+        string? value)
+    {
+        if (value is null)
+            return null;
+
+        string candidate =
+            value
+                .Trim()
+                .Trim('{', '}');
+
+        if (candidate.Length != 8 ||
+            !candidate.All(Uri.IsHexDigit))
+        {
+            return null;
+        }
+
+        return candidate.ToUpperInvariant();
+    }
+
+    private static string? ExtractPidVidToken(
+        string? value)
+    {
+        if (value is null ||
+            value.Length == 0)
+        {
+            return null;
+        }
+
+        for (int index = 0;
+             index <= value.Length - 10;
+             index++)
+        {
+            if (value[index] != '{' ||
+                value[index + 9] != '}')
+            {
+                continue;
+            }
+
+            string candidate =
+                value.Substring(
+                    index + 1,
+                    8);
+
+            if (candidate.All(Uri.IsHexDigit))
+            {
+                return candidate.ToUpperInvariant();
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Finds the map JSON in one folder that belongs to the device.

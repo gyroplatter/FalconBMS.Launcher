@@ -67,10 +67,12 @@
 
                         <Button Content="Import Map"
                                 Width="100"
-                                Margin="0,0,8,0"/>
+                                Margin="0,0,8,0"
+                                Command="{Binding ImportMapCommand}"/>
 
                         <Button Content="Export Map"
-                                Width="100"/>
+                                Width="100"
+                                Command="{Binding ExportMapCommand}"/>
                     </StackPanel>
                 </Grid>
 

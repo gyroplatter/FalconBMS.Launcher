@@ -23,6 +23,9 @@ public sealed class DevicesViewModel : ViewModelBase
     private readonly DeviceMapStore _deviceMapStore =
         new();
 
+    private readonly DeviceMapImportExportService _deviceMapImportExportService =
+        new();
+
     private readonly DeviceInputMappingResolver _inputMappingResolver =
         new();
 
@@ -30,6 +33,8 @@ public sealed class DevicesViewModel : ViewModelBase
         new();
 
     private Func<string?>? _getBaseDir;
+
+    private Func<System.Windows.Window?>? _getOwnerWindow;
 
     public ObservableCollection<BindingAircraftProfile> Profiles { get; } =
         new();
@@ -68,6 +73,10 @@ public sealed class DevicesViewModel : ViewModelBase
     public RelayCommand EditMapCommand { get; }
 
     public RelayCommand DeleteMapCommand { get; }
+
+    public RelayCommand ImportMapCommand { get; }
+
+    public RelayCommand ExportMapCommand { get; }
 
     public event EventHandler<DeviceMapEditorRequestEventArgs>? MapEditorRequested;
 
@@ -218,13 +227,27 @@ public sealed class DevicesViewModel : ViewModelBase
             new RelayCommand(
                 RequestDeleteMap,
                 CanDeleteMap);
+
+        ImportMapCommand =
+            new RelayCommand(
+                ImportMap,
+                CanImportMap);
+
+        ExportMapCommand =
+            new RelayCommand(
+                ExportMap,
+                CanExportMap);
     }
 
     public void ConfigureMapImages(
-        Func<string?> getBaseDir)
+        Func<string?> getBaseDir,
+        Func<System.Windows.Window?> getOwnerWindow)
     {
         _getBaseDir =
             getBaseDir;
+
+        _getOwnerWindow =
+            getOwnerWindow;
 
         RefreshDeviceMapState();
     }
@@ -277,6 +300,98 @@ public sealed class DevicesViewModel : ViewModelBase
         ClearCurrentInput();
         RefreshSelectedDeviceImage();
         RefreshMapCommandState();
+    }
+
+    private bool CanImportMap()
+    {
+        return !string.IsNullOrWhiteSpace(
+                   _getBaseDir?.Invoke())
+               &&
+               _bindingModel.DeviceProfiles.Any(device =>
+                   device.IsConnected);
+    }
+
+    private void ImportMap()
+    {
+        string? baseDir =
+            _getBaseDir?.Invoke();
+
+        if (baseDir is null ||
+            string.IsNullOrWhiteSpace(baseDir))
+        {
+            return;
+        }
+
+        DeviceBindingProfile? importedDevice =
+            _deviceMapImportExportService.Import(
+                baseDir,
+                _bindingModel,
+                _getOwnerWindow?.Invoke());
+
+        if (importedDevice is null)
+            return;
+
+        /*
+         * Import is not tied to whichever device happened to be selected when
+         * the button was clicked. After a successful import, show the device
+         * that actually matched the package.
+         */
+        DevicesDeviceListItemViewModel? importedDeviceItem =
+            ConnectedDevices.FirstOrDefault(item =>
+                string.Equals(
+                    item.Device.DurableDeviceKey,
+                    importedDevice.DurableDeviceKey,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (importedDeviceItem is not null)
+        {
+            SelectedDeviceItem =
+                importedDeviceItem;
+        }
+
+        ClearCurrentInput();
+        RefreshDeviceMapState();
+    }
+
+    private bool CanExportMap()
+    {
+        string? baseDir =
+            _getBaseDir?.Invoke();
+
+        DeviceBindingProfile? device =
+            SelectedDevice;
+
+        if (baseDir is null ||
+            string.IsNullOrWhiteSpace(baseDir) ||
+            device is null)
+        {
+            return false;
+        }
+
+        return _deviceMapStore.HasResolvedMap(
+            baseDir,
+            device);
+    }
+
+    private void ExportMap()
+    {
+        string? baseDir =
+            _getBaseDir?.Invoke();
+
+        DeviceBindingProfile? device =
+            SelectedDevice;
+
+        if (baseDir is null ||
+            string.IsNullOrWhiteSpace(baseDir) ||
+            device is null)
+        {
+            return;
+        }
+
+        _deviceMapImportExportService.Export(
+            baseDir,
+            device,
+            _getOwnerWindow?.Invoke());
     }
 
     /// <summary>
@@ -655,6 +770,8 @@ public sealed class DevicesViewModel : ViewModelBase
         CreateMapCommand.RaiseCanExecuteChanged();
         EditMapCommand.RaiseCanExecuteChanged();
         DeleteMapCommand.RaiseCanExecuteChanged();
+        ImportMapCommand.RaiseCanExecuteChanged();
+        ExportMapCommand.RaiseCanExecuteChanged();
     }
 
     private void ShowMapInput(

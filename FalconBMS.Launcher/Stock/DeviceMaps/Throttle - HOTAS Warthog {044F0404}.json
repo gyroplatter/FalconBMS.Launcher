@@ -1,0 +1,822 @@
+{
+  "Version": 2,
+  "DeviceName": "Throttle - HOTAS Warthog",
+  "PidVid": "044F0404",
+  "ImageFileName": "Throttle - HOTAS Warthog.png",
+  "Hotspots": [
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 13,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.024102564102563975,
+      "Y": 0.2635555555555556,
+      "Width": 0.064615384615384533,
+      "Height": 0.083999999999999728
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 12,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.024102564102564089,
+      "Y": 0.26355555555555527,
+      "Width": 0.064615384615384755,
+      "Height": 0.084000000000000172
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 14,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.92000000000000004,
+      "Y": 0.17688888888888865,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 4,
+      "X": 0.74547008547008542,
+      "Y": 0.15022222222222201,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 0,
+      "X": 0.74547008547008542,
+      "Y": 0.14577777777777759,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 6,
+      "X": 0.74888888888888894,
+      "Y": 0.14799999999999999,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 2,
+      "X": 0.75059829059829075,
+      "Y": 0.14799999999999977,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 3,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60529914529914552,
+      "Y": 0.15244444444444427,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 3,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.438846153846154,
+      "Y": 0.19522222222222219,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 5,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.6052991452991453,
+      "Y": 0.15466666666666659,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 5,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43884615384615394,
+      "Y": 0.19522222222222219,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 4,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60017094017093997,
+      "Y": 0.15244444444444422,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 4,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43713675213675207,
+      "Y": 0.19299999999999995,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 2,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60700854700854712,
+      "Y": 0.15688888888888877,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 2,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43371794871794883,
+      "Y": 0.1952222222222221,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 6,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43948717948717964,
+      "Y": 0.28799999999999998,
+      "Width": 0.071452991452991402,
+      "Height": 0.092888888888888771
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 6,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.62004273504273533,
+      "Y": 0.26855555555555538,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 7,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.61555555555555541,
+      "Y": 0.26800000000000002,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 7,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43884615384615394,
+      "Y": 0.28855555555555562,
+      "Width": 0.06803418803418794,
+      "Height": 0.088444444444444312
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 9,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.40529914529914529,
+      "Y": 0.35911111111111099,
+      "Width": 0.083418803418803464,
+      "Height": 0.063999999999999918
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 9,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.61149572649572637,
+      "Y": 0.35744444444444434,
+      "Width": 0.080000000000000002,
+      "Height": 0.070666666666666822
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 10,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38649572649572644,
+      "Y": 0.41688888888888881,
+      "Width": 0.09196581196581223,
+      "Height": 0.066222222222222168
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 10,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60807692307692263,
+      "Y": 0.42411111111111127,
+      "Width": 0.086837606837606648,
+      "Height": 0.066222222222222168
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 8,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.40700854700854699,
+      "Y": 0.35911111111111083,
+      "Width": 0.085128205128205084,
+      "Height": 0.07511111111111117
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 8,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60465811965811989,
+      "Y": 0.35522222222222211,
+      "Width": 0.086837606837606926,
+      "Height": 0.066222222222222168
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 11,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.37965811965811957,
+      "Y": 0.41688888888888881,
+      "Width": 0.090256410256410388,
+      "Height": 0.070666666666666669
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 11,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.60294871794871774,
+      "Y": 0.41966666666666663,
+      "Width": 0.097094017094017313,
+      "Height": 0.07511111111111117
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 23,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.020683760683760623,
+      "Y": 0.53466666666666662,
+      "Width": 0.062905982905982802,
+      "Height": 0.13511111111111107
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 24,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.080512820512820438,
+      "Y": 0.58577777777777762,
+      "Width": 0.057777777777777942,
+      "Height": 0.11955555555555568
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 25,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.12495726495726489,
+      "Y": 0.65022222222222237,
+      "Width": 0.066324786324786139,
+      "Height": 0.086222222222221978
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 27,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.14888888888888868,
+      "Y": 0.67688888888888876,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 26,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.15059829059829064,
+      "Y": 0.66577777777777769,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 20,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.25658119658119655,
+      "Y": 0.62133333333333307,
+      "Width": 0.061196581196581293,
+      "Height": 0.079555555555555671
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 19,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.33692307692307688,
+      "Y": 0.5457777777777777,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 30,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38478632478632468,
+      "Y": 0.48133333333333334,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 31,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.44119658119658123,
+      "Y": 0.52133333333333309,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 15,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.46170940170940189,
+      "Y": 0.41244444444444445,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 16,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.52837606837606832,
+      "Y": 0.45911111111111114,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 22,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.099316239316239258,
+      "Y": 0.43022222222222212,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 21,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.10615384615384607,
+      "Y": 0.43022222222222212,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 18,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43948717948717947,
+      "Y": 0.52799999999999991,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 17,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.37282051282051298,
+      "Y": 0.49466666666666637,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 1,
+      "X": 0.74547008547008542,
+      "Y": 0.14799999999999991,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 3,
+      "X": 0.74376068376068361,
+      "Y": 0.15244444444444427,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 5,
+      "X": 0.7454700854700852,
+      "Y": 0.15022222222222209,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 7,
+      "X": 0.75059829059829053,
+      "Y": 0.14799999999999983,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 1,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.6052991452991453,
+      "Y": 0.15244444444444427,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 1,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.43884615384615394,
+      "Y": 0.1952222222222221,
+      "Width": 0.080000000000000002,
+      "Height": 0.104
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 29,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.029230769230769282,
+      "Y": 0.13466666666666646,
+      "Width": 0.24581196581196582,
+      "Height": 0.47733333333333317
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 28,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.1882051282051283,
+      "Y": 0.068888888888889013,
+      "Width": 0.37230769230769228,
+      "Height": 0.56755555555555526
+    }
+  ],
+  "Callouts": [
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 13,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.15905982905982899,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 12,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.15735042735042748,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 14,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.46675213675213673,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 4,
+      "X": 0.27529914529914523,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 0,
+      "X": 0.27529914529914523,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 6,
+      "X": 0.2770085470085471,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 2,
+      "X": 0.27871794871794869,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 3,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.31290598290598276,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 5,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.31632478632478644,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 4,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.30264957264957271,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 2,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.30606837606837595,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 6,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38470085470085474,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 7,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38641025641025639,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 9,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.39837606837606815,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 10,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.41717948717948711,
+      "Y": 0.66556666666666686
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 8,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38811965811965815,
+      "Y": 0.0033444444444444368
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 11,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.41888888888888892,
+      "Y": 0.67001111111111089
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 23,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.27529914529914529,
+      "Y": 0.83223333333333338
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 24,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.29752136752136754,
+      "Y": 0.84556666666666669
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 25,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.31119658119658133,
+      "Y": 0.86668888888888895
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 27,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.3488034188034187,
+      "Y": 0.87780000000000002
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 26,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.34538461538461535,
+      "Y": 0.8522333333333334
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 20,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.35393162393162386,
+      "Y": 0.77445555555555545
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 19,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.46846153846153837,
+      "Y": 0.73001111111111106
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 30,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.54196581196581206,
+      "Y": 0.76112222222222226
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 31,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.5983760683760686,
+      "Y": 0.75223333333333353
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 15,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.56760683760683761,
+      "Y": 0.73445555555555553
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 16,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.62914529914529904,
+      "Y": 0.78112222222222227
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 22,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.085555555555555537,
+      "Y": 0.056677777777777799
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 21,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.1060683760683761,
+      "Y": 0.034455555555555656
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 18,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.57273504273504294,
+      "Y": 0.85667777777777776
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 17,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.50948717948717925,
+      "Y": 0.82556666666666678
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 1,
+      "X": 0.27700854700854693,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 3,
+      "X": 0.27871794871794869,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 5,
+      "X": 0.2787179487179488,
+      "Y": 0
+    },
+    {
+      "InputKind": "Pov",
+      "ButtonIndex": -1,
+      "PovIndex": 0,
+      "PovDirection": 7,
+      "X": 0.27700854700854699,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 1,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.38470085470085469,
+      "Y": 0
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 29,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.35905982905982908,
+      "Y": 0.79667777777777782
+    },
+    {
+      "InputKind": "Button",
+      "ButtonIndex": 28,
+      "PovIndex": -1,
+      "PovDirection": -1,
+      "X": 0.47871794871794848,
+      "Y": 0.77890000000000015
+    }
+  ]
+}
