@@ -77,7 +77,7 @@
                 </Grid>
 
                 <TextBlock Grid.Row="2"
-                           Text="Select an aircraft profile to view its current control mappings. Devices with a visual map can show mapped controls directly on the device image."
+                           Text="Select an aircraft profile to view its current control mappings. Devices with a map can show assigned controls directly on the device image."
                            Style="{StaticResource MutedTextBlockStyle}"
                            FontSize="{StaticResource FontSizeSmall}"
                            TextWrapping="Wrap"/>

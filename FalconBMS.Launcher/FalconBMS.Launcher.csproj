@@ -21,16 +21,16 @@
   </PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-		<Version>3.0.0.9999</Version>
-		<AssemblyVersion>3.0.0.9999</AssemblyVersion>
-		<FileVersion>3.0.0.9999</FileVersion>
+		<Version>3.1.0.9999</Version>
+		<AssemblyVersion>3.1.0.9999</AssemblyVersion>
+		<FileVersion>3.1.0.9999</FileVersion>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<Version>3.0.0-beta-15</Version>
-		<InformationalVersion>3.0.0-beta-15</InformationalVersion>
-		<AssemblyVersion>3.0.0.0</AssemblyVersion>
-		<FileVersion>3.0.0.0</FileVersion>
+		<Version>3.1.1-beta-1</Version>
+		<InformationalVersion>3.1.0-beta-1</InformationalVersion>
+		<AssemblyVersion>3.1.0.0</AssemblyVersion>
+		<FileVersion>3.1.0.0</FileVersion>
 
 		<DebugSymbols>false</DebugSymbols>
 		<DebugType>None</DebugType>
