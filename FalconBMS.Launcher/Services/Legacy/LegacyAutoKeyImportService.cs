@@ -154,8 +154,30 @@ public sealed class LegacyAutoKeyImportService
 
             if (targetRow is null)
             {
-                // More legacy occurrences than current Full-file rows.
-                result.MissingCallbacks.Add(callbackName);
+                // If the same callback has multiple bindings with different key combinations,
+                // retain each binding as a separate row using the FULL metadata.
+                BindingRow templateRow =
+                    matchingRows[matchingRows.Count - 1];
+
+                BindingRow importedRow =
+                    CreateImportedDuplicateCallbackRow(
+                        templateRow,
+                        match);
+
+                int insertIndex =
+                    aircraftProfile.Rows.FindLastIndex(row =>
+                        string.Equals(
+                            row.CallbackName,
+                            callbackName,
+                            StringComparison.OrdinalIgnoreCase));
+
+                if (insertIndex >= 0)
+                    aircraftProfile.Rows.Insert(insertIndex + 1, importedRow);
+                else
+                    aircraftProfile.Rows.Add(importedRow);
+
+                callbackUseCounts[callbackName] = useIndex + 1;
+                result.AssignmentsImported++;
                 continue;
             }
 
@@ -208,6 +230,32 @@ public sealed class LegacyAutoKeyImportService
             ChordModifierFlags = ParseNumber(match.Groups["chordModifierFlags"].Value),
             Visibility = ParseNumber(match.Groups["visibility"].Value),
             Description = match.Groups["description"].Value,
+            CategoryName = templateRow.CategoryName,
+            SectionName = templateRow.SectionName,
+            IsModified = true
+        };
+    }
+
+    private static BindingRow CreateImportedDuplicateCallbackRow(
+    BindingRow templateRow,
+    Match match)
+    {
+        return new BindingRow
+        {
+            SourceLineNumber = templateRow.SourceLineNumber,
+            SourceRawLine = templateRow.SourceRawLine,
+            RowKind = templateRow.RowKind,
+            CallbackName = templateRow.CallbackName,
+            SoundId = templateRow.SoundId,
+            Unused = templateRow.Unused,
+            KeyScancode = match.Groups["keyScancode"].Value,
+            KeyModifierFlags = ParseNumber(
+                match.Groups["keyModifierFlags"].Value),
+            ChordScancode = match.Groups["chordScancode"].Value,
+            ChordModifierFlags = ParseNumber(
+                match.Groups["chordModifierFlags"].Value),
+            Visibility = templateRow.Visibility,
+            Description = templateRow.Description,
             CategoryName = templateRow.CategoryName,
             SectionName = templateRow.SectionName,
             IsModified = true

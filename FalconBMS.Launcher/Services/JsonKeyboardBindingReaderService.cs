@@ -244,6 +244,36 @@ public sealed class JsonKeyboardBindingReaderService
                 continue;
             }
 
+            if (matchedRows.Contains(bindingRow))
+            {
+                // The FULL row was already matched by an earlier JSON entry.
+                // Preserve this additional binding as another row for the same callback.
+                bool duplicateRowIsUserModified =
+                    IsJsonRowUserModified(
+                        jsonRow,
+                        bindingRow);
+
+                if (duplicateRowIsUserModified)
+                {
+                    BindingRow restoredRow =
+                        CreateDuplicateCallbackRowFromJson(
+                            jsonRow,
+                            bindingRow);
+
+                    InsertAfterLastCallbackRow(
+                        profile,
+                        restoredRow);
+
+                    matchedRows.Add(restoredRow);
+                    userModifiedRows++;
+                    applied++;
+                    continue;
+                }
+
+                missing++;
+                continue;
+            }
+
             matchedRows.Add(bindingRow);
 
             bool jsonRowIsUserModified = IsJsonRowUserModified(jsonRow, bindingRow);
@@ -457,6 +487,55 @@ public sealed class JsonKeyboardBindingReaderService
             SectionName = templateRow?.SectionName ?? jsonRow.SectionName ?? "",
             IsModified = true
         };
+    }
+
+    private static BindingRow CreateDuplicateCallbackRowFromJson(
+    JsonKeyboardBindingRow jsonRow,
+    BindingRow templateRow)
+    {
+        return new BindingRow
+        {
+            SourceLineNumber = templateRow.SourceLineNumber,
+            SourceRawLine = templateRow.SourceRawLine,
+            RowKind = templateRow.RowKind,
+            CallbackName = templateRow.CallbackName,
+            SoundId = templateRow.SoundId,
+            Unused = templateRow.Unused,
+            KeyScancode =
+                jsonRow.KeyScancode ??
+                templateRow.KeyScancode,
+            KeyModifierFlags =
+                jsonRow.KeyModifierFlags ??
+                templateRow.KeyModifierFlags,
+            ChordScancode =
+                jsonRow.ChordScancode ??
+                templateRow.ChordScancode,
+            ChordModifierFlags =
+                jsonRow.ChordModifierFlags ??
+                templateRow.ChordModifierFlags,
+            Visibility = templateRow.Visibility,
+            Description = templateRow.Description,
+            CategoryName = templateRow.CategoryName,
+            SectionName = templateRow.SectionName,
+            IsModified = true
+        };
+    }
+
+    private static void InsertAfterLastCallbackRow(
+        BindingAircraftProfile profile,
+        BindingRow row)
+    {
+        int insertIndex =
+            profile.Rows.FindLastIndex(existingRow =>
+                string.Equals(
+                    existingRow.CallbackName,
+                    row.CallbackName,
+                    StringComparison.OrdinalIgnoreCase));
+
+        if (insertIndex >= 0)
+            profile.Rows.Insert(insertIndex + 1, row);
+        else
+            profile.Rows.Add(row);
     }
 
     private static void InsertAfterLastKeyComboRow(
