@@ -147,24 +147,17 @@ public partial class LegacyImportCompleteWindow : Window
 
         if (importResult.Warnings.Count > 0)
         {
-            builder.AppendLine(
-                "Warnings");
-
             foreach (string warning in importResult.Warnings)
             {
                 builder.AppendLine(
                     $"- {warning}");
             }
-
-            builder.AppendLine();
         }
 
         if (importResult.HasSkippedItems)
         {
-            builder.AppendLine(
-                "These controls were not imported correctly, please remap them manaully:");
-
-            builder.AppendLine();
+            if (importResult.Warnings.Count > 0)
+                builder.AppendLine();
 
             builder.Append(
                 BuildSkippedControlsText(

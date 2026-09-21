@@ -335,7 +335,7 @@ public sealed class LegacyImportService
                     new LegacyImportSkippedItem
                     {
                         SourceName =
-                            "Keyboard controls",
+                            "Keyboard",
                         ControlName =
                             callbackName,
                         Reason =
@@ -343,11 +343,20 @@ public sealed class LegacyImportService
                     });
             }
 
-            if (missingCallbacks.Count > 0)
+            if (result.SkippedItems.Count > 0)
             {
+                int skippedCount =
+                    result.SkippedItems.Count;
+
+                string controlText =
+                    skippedCount == 1
+                        ? "control was"
+                        : "controls were";
+
                 result.Warnings.Add(
-                    $"{missingCallbacks.Count} controls were skipped because " +
-                    "they are not available in the current BMS Full key files.");
+                    $"{skippedCount} {controlText} skipped because " +
+                    $"{(skippedCount == 1 ? "it is" : "they are")} not available " +
+                    "in the current BMS controls.");
             }
 
             return result;
