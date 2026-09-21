@@ -985,17 +985,8 @@ public sealed class MainViewModel : ViewModelBase
             var arguments = BuildFalconArguments();
             DebugDiagnosticsService.Info($"Falcon launch arguments: {arguments}");
 
-            var p = _proc.StartFalcon(SelectedInstall.FalconExePath, arguments);
-            DebugDiagnosticsService.Info($"Falcon process started. Id: {p.Id}");
+            var p = _proc.CreateFalconProcess(SelectedInstall.FalconExePath, arguments);
 
-            var mainWindow = Application.Current.MainWindow;
-            if (mainWindow is not null)
-            {
-                mainWindow.WindowState = WindowState.Minimized;
-                DebugDiagnosticsService.Info("Launcher minimized after Falcon process start.");
-            }
-
-            p.EnableRaisingEvents = true;
             p.Exited += (_, _) =>
             {
                 DebugDiagnosticsService.Info("Falcon process exited.");
@@ -1012,6 +1003,23 @@ public sealed class MainViewModel : ViewModelBase
                     StatusText = "";
                 });
             };
+
+            p.EnableRaisingEvents = true;
+
+            DebugDiagnosticsService.Info(
+                $"Launching EXE: {SelectedInstall.FalconExePath} {arguments}".TrimEnd());
+
+            if (!p.Start())
+                throw new InvalidOperationException("Failed to start Falcon BMS.");
+
+            DebugDiagnosticsService.Info($"Falcon process started. Id: {p.Id}");
+
+            var mainWindow = Application.Current.MainWindow;
+            if (mainWindow is not null)
+            {
+                mainWindow.WindowState = WindowState.Minimized;
+                DebugDiagnosticsService.Info("Launcher minimized after Falcon process start.");
+            }
         }
         catch (Exception ex)
         {

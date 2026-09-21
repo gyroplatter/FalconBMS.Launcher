@@ -56,10 +56,8 @@ public sealed class ProcessService
         return false;
     }
 
-    public Process StartFalcon(string exePath, string? arguments = null)
+    public Process CreateFalconProcess(string exePath, string? arguments = null)
     {
-        DebugDiagnosticsService.Info($"Launching EXE: {exePath} {arguments}".TrimEnd());
-
         var psi = new ProcessStartInfo
         {
             FileName = exePath,
@@ -70,7 +68,10 @@ public sealed class ProcessService
         if (!string.IsNullOrWhiteSpace(arguments))
             psi.Arguments = arguments;
 
-        return Process.Start(psi) ?? throw new InvalidOperationException("Failed to start Falcon BMS.");
+        return new Process
+        {
+            StartInfo = psi
+        };
     }
 
     public void StartUpdater(string baseDir)
