@@ -512,6 +512,126 @@ public sealed class MainViewModel : ViewModelBase
         ShowJsonReadFailureStartupWarningIfNeeded();
     }
 
+    public void RefreshBindingModelForDeviceChange()
+    {
+        if (SelectedInstall is null)
+            return;
+
+        try
+        {
+            DebugDiagnosticsService.Info(
+                "Live DirectInput device refresh started.");
+
+            // Enumerate once here so we can ignore unrelated WM_DEVICECHANGE
+            // notifications and reuse the same result if the game-controller
+            // device set actually changed
+            IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches =
+                _deviceDiscovery.DiscoverAndMatchStockXml(
+                    SelectedInstall.BaseDir);
+
+            if (!HasConnectedDeviceSetChanged(
+                    stockDeviceMatches))
+            {
+                DebugDiagnosticsService.Info(
+                    "Live DirectInput device refresh skipped because the connected game-controller set did not change.");
+
+                return;
+            }
+
+            // The normal model reload reads JSON back from disk. Persist any
+            // current in-memory edits/sync work first so hot-plugging cannot
+            // revert user changes back to an older disk copy
+            if (!SaveBindingJsonBeforeDeviceRefresh())
+                return;
+
+            DebugDiagnosticsService.Info(
+                "Connected DirectInput device set changed. Rebuilding binding model.");
+
+            LoadFullBindingModelForInstall(
+                SelectedInstall,
+                stockDeviceMatches);
+
+            OnPropertyChanged(
+                nameof(CurrentBindingModel));
+
+            ShowJsonReadFailureStartupWarningIfNeeded();
+
+            DebugDiagnosticsService.Info(
+                "Live DirectInput device refresh complete.");
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                "Live DirectInput device refresh failed.");
+        }
+    }
+
+    private bool SaveBindingJsonBeforeDeviceRefresh()
+    {
+        bool hasUserBindingChanges =
+            ControlsViewModel?.IsDirty == true;
+
+        bool needsJsonSync =
+            _needsKeyboardJsonCatalogSync ||
+            _needsDeviceJsonSync;
+
+        if (!hasUserBindingChanges &&
+            !needsJsonSync)
+        {
+            return true;
+        }
+
+        if (IsOutputSaveBlockedByJsonReadFailure())
+        {
+            DebugDiagnosticsService.Warn(
+                "Live device refresh canceled because binding JSON saving is blocked by an earlier JSON read failure.");
+
+            return false;
+        }
+
+        DebugDiagnosticsService.Info(
+            $"Saving Launcher binding JSON before live device refresh. UserBindingChanges={hasUserBindingChanges} | KeyboardJsonCatalogSync={_needsKeyboardJsonCatalogSync} | DeviceJsonSync={_needsDeviceJsonSync}");
+
+        _launchPrep.SaveBindingJson(
+            SelectedInstall!.BaseDir,
+            CurrentBindingModel);
+
+        _needsKeyboardJsonCatalogSync = false;
+        _needsDeviceJsonSync = false;
+
+        ControlsViewModel?.ResetDirty();
+
+        return true;
+    }
+
+    private bool HasConnectedDeviceSetChanged(
+        IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches)
+    {
+        string[] currentDevices =
+            CurrentBindingModel.DeviceProfiles
+                .Where(device => device.IsConnected)
+                .Select(device =>
+                    $"{device.DurableDeviceKey}|{device.InstanceGuid:D}")
+                .OrderBy(
+                    value => value,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+        string[] discoveredDevices =
+            stockDeviceMatches
+                .Select(match =>
+                    $"{match.Device.DurableDeviceKey}|{match.Device.InstanceGuid:D}")
+                .OrderBy(
+                    value => value,
+                    StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+        return !currentDevices.SequenceEqual(
+            discoveredDevices,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
     private bool HandleStartupLegacyImport(
         BmsInstall install)
     {
@@ -631,16 +751,23 @@ public sealed class MainViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Builds the complete in-memory binding model for the given install in one pass:
+    /// Builds the complete in-memory binding model for the given install in one pass.
+    /// 
+    /// Steps:
     ///   1. Load BMS - Full*.key catalogs (read-only structure and defaults)
     ///   2. Overlay saved keyboard JSON onto the catalog rows
     ///   3. Discover DirectInput devices and match stock XMLs
     ///   4. Load or build device binding profiles from device JSON (falling back to stock XML)
     ///
+    /// When stockDeviceMatches is supplied, device discovery has already been
+    /// performed by the live-device refresh and is reused here.
+    ///
     /// Deliberately does NOT fire OnPropertyChanged. The caller owns notification timing
     /// so subscribers always see a complete model on the first notification.
     /// </summary>
-    private void LoadFullBindingModelForInstall(BmsInstall install)
+    private void LoadFullBindingModelForInstall(
+        BmsInstall install,
+        IReadOnlyList<StockDeviceSetupMatch>? stockDeviceMatches = null)
     {
         _needsDeviceJsonSync = false;
         _jsonReadFailureBlocksOutputSave = false;
@@ -654,7 +781,10 @@ public sealed class MainViewModel : ViewModelBase
         // JSON overlays saved keyboard state onto that current structure.
         // If FULL and JSON no longer match, remember that JSON needs a catalog sync
         // even if the user does not edit any binding this session.
-        _needsKeyboardJsonCatalogSync = _jsonKeyboardBindingReader.Apply(install.BaseDir, CurrentBindingModel);
+        _needsKeyboardJsonCatalogSync =
+            _jsonKeyboardBindingReader.Apply(
+                install.BaseDir,
+                CurrentBindingModel);
 
         if (_needsKeyboardJsonCatalogSync)
         {
@@ -662,16 +792,26 @@ public sealed class MainViewModel : ViewModelBase
                 "Keyboard JSON catalog sync required. FULL key catalog differences will be synced on close or launch.");
         }
 
-        // Step 3+4: device bindings
-        IReadOnlyList<StockDeviceSetupMatch> stockDeviceMatches =
-            _deviceDiscovery.DiscoverAndMatchStockXml(install.BaseDir);
+        // Step 3+4: device bindings.
+        // A live device refresh can provide the discovery result so DirectInput
+        // is enumerated only once for that device-change operation.
+        stockDeviceMatches ??=
+            _deviceDiscovery.DiscoverAndMatchStockXml(
+                install.BaseDir);
 
         CurrentBindingModel.DeviceProfiles.Clear();
 
-        foreach (DeviceBindingProfile deviceProfile in _deviceJsonReader.LoadOrBuild(install.BaseDir, stockDeviceMatches))
-            CurrentBindingModel.DeviceProfiles.Add(deviceProfile);
+        foreach (DeviceBindingProfile deviceProfile
+                 in _deviceJsonReader.LoadOrBuild(
+                     install.BaseDir,
+                     stockDeviceMatches))
+        {
+            CurrentBindingModel.DeviceProfiles.Add(
+                deviceProfile);
+        }
 
-        _needsDeviceJsonSync = _deviceJsonReader.NeedsJsonSync;
+        _needsDeviceJsonSync =
+            _deviceJsonReader.NeedsJsonSync;
 
         if (_needsDeviceJsonSync)
         {
@@ -684,18 +824,26 @@ public sealed class MainViewModel : ViewModelBase
             CurrentBindingModel.HasJsonReadFailureBlockingSave = true;
 
             foreach (string message in _deviceJsonReader.ReadFailureMessages)
-                CurrentBindingModel.JsonReadFailureMessages.Add(message);
+            {
+                CurrentBindingModel.JsonReadFailureMessages.Add(
+                    message);
+            }
         }
 
-        _jsonReadFailureBlocksOutputSave = CurrentBindingModel.HasJsonReadFailureBlockingSave;
+        _jsonReadFailureBlocksOutputSave =
+            CurrentBindingModel.HasJsonReadFailureBlockingSave;
 
         if (_jsonReadFailureBlocksOutputSave)
         {
             DebugDiagnosticsService.Warn(
                 $"Output saving disabled for this launcher run because one or more JSON files failed to read. Failures={CurrentBindingModel.JsonReadFailureMessages.Count}");
 
-            foreach (string message in CurrentBindingModel.JsonReadFailureMessages)
-                DebugDiagnosticsService.Warn($"JSON read failure blocking output save: {message}");
+            foreach (string message
+                     in CurrentBindingModel.JsonReadFailureMessages)
+            {
+                DebugDiagnosticsService.Warn(
+                    $"JSON read failure blocking output save: {message}");
+            }
         }
     }
 

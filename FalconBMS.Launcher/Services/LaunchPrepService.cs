@@ -41,13 +41,9 @@ public sealed class LaunchPrepService
 
         // JSON is the Launcher's persistent source of truth.
         // Always save this, even during a control-override bypass.
-        _jsonKeyboardBindingWriter.Write(
+        SaveBindingJson(
             baseDir,
             bindingModel);
-
-        _deviceJsonWriter.Write(
-            baseDir,
-            bindingModel.DeviceProfiles);
 
         IReadOnlyList<DeviceBindingProfile> connectedDeviceProfiles =
             bindingModel.DeviceProfiles
@@ -118,6 +114,24 @@ public sealed class LaunchPrepService
 
         DebugDiagnosticsService.Info(
             $"PREPARE FOR LAUNCH END | ActionId={actionId}");
+    }
+
+    /// <summary>
+    /// Save only the Launcher's persistent keyboard/device binding JSON.
+    /// This is separate from generated BMS compatibility outputs
+    /// so runtime device refreshes can preserve in-memory edits safely.
+    /// </summary>
+    public void SaveBindingJson(
+        string baseDir,
+        BindingModel bindingModel)
+    {
+        _jsonKeyboardBindingWriter.Write(
+            baseDir,
+            bindingModel);
+
+        _deviceJsonWriter.Write(
+            baseDir,
+            bindingModel.DeviceProfiles);
     }
 
     private static bool HasAnyAssignedBinding(

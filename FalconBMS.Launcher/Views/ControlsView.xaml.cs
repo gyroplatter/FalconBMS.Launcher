@@ -105,16 +105,28 @@ public partial class ControlsView : UserControl
 
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.DeviceColumns.CollectionChanged -= DeviceColumns_CollectionChanged;
-            _subscribedViewModel.PropertyChanged -= ControlsViewModel_PropertyChanged;
+            _subscribedViewModel.DeviceColumns.CollectionChanged -=
+                DeviceColumns_CollectionChanged;
+
+            _subscribedViewModel.PropertyChanged -=
+                ControlsViewModel_PropertyChanged;
+
+            _subscribedViewModel.BindingModelLoaded -=
+                ControlsViewModel_BindingModelLoaded;
         }
 
         _subscribedViewModel = viewModel;
 
         if (_subscribedViewModel is not null)
         {
-            _subscribedViewModel.DeviceColumns.CollectionChanged += DeviceColumns_CollectionChanged;
-            _subscribedViewModel.PropertyChanged += ControlsViewModel_PropertyChanged;
+            _subscribedViewModel.DeviceColumns.CollectionChanged +=
+                DeviceColumns_CollectionChanged;
+
+            _subscribedViewModel.PropertyChanged +=
+                ControlsViewModel_PropertyChanged;
+
+            _subscribedViewModel.BindingModelLoaded +=
+                ControlsViewModel_BindingModelLoaded;
         }
     }
 
@@ -122,6 +134,20 @@ public partial class ControlsView : UserControl
     {
         if (e.PropertyName == nameof(ControlsViewModel.IsUnassignedKeysCategory))
             RebuildDeviceColumns();
+    }
+
+    private void ControlsViewModel_BindingModelLoaded(
+    object? sender,
+    EventArgs e)
+    {
+        if (!IsLoaded)
+            return;
+
+        // DeviceColumns already raised collection notifications while the model
+        // was rebuilding. Rebuild once more against the completed collection,
+        // then restart Controls own capture with the new connected devices.
+        RebuildDeviceColumns();
+        StartKeyboardSearchCapture();
     }
 
     private void DeviceColumns_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

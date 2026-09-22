@@ -25,6 +25,8 @@ public sealed class ControlsViewModel : ViewModelBase
 
     private readonly List<ControlGridRowViewModel> _allRows = new();
 
+    public event EventHandler? BindingModelLoaded;
+
     private Func<string?>? _getBaseDir;
     private Func<BindingModel>? _getBindingModel;
     private Func<Window?>? _getOwnerWindow;
@@ -195,6 +197,20 @@ public sealed class ControlsViewModel : ViewModelBase
 
     public void LoadBindingModel(BindingModel bindingModel)
     {
+        // Full binding-model reloads can happen while the user is working in
+        // Controls, such as when a DirectInput device is plugged in or removed.
+        //
+        // Preserve the current Controls context so an unrelated device change
+        // does not move the user back to F-16 / ALL.
+        string? previousAircraftProfile =
+            SelectedProfile?.AircraftProfile;
+
+        string previousCategory =
+            SelectedCategory;
+
+        ControlGridRowViewModel? previousSelectedRow =
+            SelectedRow;
+
         Profiles.Clear();
         DeviceColumns.Clear();
         DeviceNavigationItems.Clear();
@@ -203,24 +219,182 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (var profile in bindingModel.AircraftProfiles)
             Profiles.Add(profile);
 
-        foreach (var deviceProfile in bindingModel.DeviceProfiles.OrderBy(device => device.DiscoveryIndex))
+        foreach (var deviceProfile
+                 in bindingModel.DeviceProfiles.OrderBy(
+                     device => device.DiscoveryIndex))
         {
             DeviceColumns.Add(deviceProfile);
-            DeviceNavigationItems.Add(new ControlsDeviceNavigationItem(deviceProfile));
+
+            DeviceNavigationItems.Add(
+                new ControlsDeviceNavigationItem(
+                    deviceProfile));
         }
 
-        // Set the backing field directly during full model reload so the SelectedProfile
-        // setter does not rebuild/filter the grid once here and then again below.
-        _selectedProfile = Profiles.FirstOrDefault(
-            profile => string.Equals(profile.AircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase))
+        // Restore the aircraft profile the user was viewing when it still exists.
+        // On initial load, or if the previous profile no longer exists, retain the
+        // existing F-16 fallback behavior.
+        BindingAircraftProfile? restoredProfile =
+            !string.IsNullOrWhiteSpace(previousAircraftProfile)
+                ? Profiles.FirstOrDefault(
+                    profile =>
+                        string.Equals(
+                            profile.AircraftProfile,
+                            previousAircraftProfile,
+                            StringComparison.OrdinalIgnoreCase))
+                : null;
+
+        bool restoredPreviousProfile =
+            restoredProfile is not null;
+
+        // Set the backing field directly during full model reload so the
+        // SelectedProfile setter does not rebuild/filter the grid here and then
+        // rebuild/filter it again below.
+        _selectedProfile =
+            restoredProfile
+            ?? Profiles.FirstOrDefault(
+                profile =>
+                    string.Equals(
+                        profile.AircraftProfile,
+                        "F-16",
+                        StringComparison.OrdinalIgnoreCase))
             ?? Profiles.FirstOrDefault();
 
-        OnPropertyChanged(nameof(SelectedProfile));
+        OnPropertyChanged(
+            nameof(SelectedProfile));
 
         RebuildRowsFromSelectedProfile();
         RebuildCategories();
-        SelectedCategory = AllActionsLabel;
+
+        // Restore the previous category only when the previous aircraft profile
+        // was successfully restored. Otherwise use ALL for the fallback profile.
+        _selectedCategory =
+            restoredPreviousProfile
+                ? Categories.FirstOrDefault(
+                      category =>
+                          string.Equals(
+                              category,
+                              previousCategory,
+                              StringComparison.OrdinalIgnoreCase))
+                  ?? AllActionsLabel
+                : AllActionsLabel;
+
+        OnPropertyChanged(
+            nameof(SelectedCategory));
+
+        OnPropertyChanged(
+            nameof(IsUnassignedKeysCategory));
+
+        OnPropertyChanged(
+            nameof(HelperText));
+
+        // FilterText already survives a model reload, so just apply it again
+        // against the restored profile and category.
         ApplyFilters();
+
+        // Grid rows are recreated during a full binding-model reload, so the old
+        // SelectedRow instance cannot survive by reference. Restore the equivalent
+        // row when it is still visible in the rebuilt table.
+        if (restoredPreviousProfile &&
+            previousSelectedRow is not null)
+        {
+            SelectedRow =
+                Rows.FirstOrDefault(
+                    row =>
+                        IsSameControlRow(
+                            row,
+                            previousSelectedRow));
+        }
+
+        // Notify the active Controls view only after the complete model and all
+        // device columns have been rebuilt. This lets it restart buffered
+        // DirectInput once against the final connected-device set.
+        BindingModelLoaded?.Invoke(
+            this,
+            EventArgs.Empty);
+    }
+
+    private static bool IsSameControlRow(
+    ControlGridRowViewModel candidate,
+    ControlGridRowViewModel previousRow)
+    {
+        // Unassigned key rows are generated rather than loaded from the .key file.
+        // Their displayed keyboard combination is their stable identity.
+        if (candidate.IsUnassignedKeyRow ||
+            previousRow.IsUnassignedKeyRow)
+        {
+            return candidate.IsUnassignedKeyRow &&
+                   previousRow.IsUnassignedKeyRow &&
+                   string.Equals(
+                       candidate.UnassignedKey,
+                       previousRow.UnassignedKey,
+                       StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(
+                       candidate.UnassignedModifier,
+                       previousRow.UnassignedModifier,
+                       StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(
+                       candidate.UnassignedBaseKey,
+                       previousRow.UnassignedBaseKey,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Axis pair rows are generated and do not have a normal .key source row.
+        // PairId remains stable across a full model rebuild.
+        if (candidate.IsAxisPairRow ||
+            previousRow.IsAxisPairRow)
+        {
+            return candidate.IsAxisPairRow &&
+                   previousRow.IsAxisPairRow &&
+                   string.Equals(
+                       candidate.AxisPairDefinition?.PairId,
+                       previousRow.AxisPairDefinition?.PairId,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Individual axis rows are also generated, so use the logical BMS axis
+        // name as their stable identity.
+        if (candidate.IsAxisRow ||
+            previousRow.IsAxisRow)
+        {
+            return candidate.IsAxisRow &&
+                   previousRow.IsAxisRow &&
+                   string.Equals(
+                       candidate.AxisLogicalAxisName,
+                       previousRow.AxisLogicalAxisName,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (candidate.SourceRow is null ||
+            previousRow.SourceRow is null)
+        {
+            return false;
+        }
+
+        // Normal .KEY rows can usually be identified by their source line.
+        //
+        // Additional keyboard bindings for the same callback can intentionally
+        // share the source line of their template row, so include the callback
+        // and complete keyboard combination to keep those rows distinct.
+        return candidate.RowKind ==
+                   previousRow.RowKind &&
+               candidate.SourceLineNumber ==
+                   previousRow.SourceLineNumber &&
+               string.Equals(
+                   candidate.SourceRow.CallbackName,
+                   previousRow.SourceRow.CallbackName,
+                   StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(
+                   candidate.SourceRow.KeyScancode,
+                   previousRow.SourceRow.KeyScancode,
+                   StringComparison.OrdinalIgnoreCase) &&
+               candidate.SourceRow.KeyModifierFlags ==
+                   previousRow.SourceRow.KeyModifierFlags &&
+               string.Equals(
+                   candidate.SourceRow.ChordScancode,
+                   previousRow.SourceRow.ChordScancode,
+                   StringComparison.OrdinalIgnoreCase) &&
+               candidate.SourceRow.ChordModifierFlags ==
+                   previousRow.SourceRow.ChordModifierFlags;
     }
 
     private void RebuildRowsFromSelectedProfile()

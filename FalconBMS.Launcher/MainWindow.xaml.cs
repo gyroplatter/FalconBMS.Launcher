@@ -6,13 +6,21 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace FalconBMS.Launcher;
 
 public partial class MainWindow : Window
 {
     private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private const int WM_DEVICECHANGE = 0x0219;
+    private const int DBT_DEVNODES_CHANGED = 0x0007;
 
+    private readonly DispatcherTimer _deviceChangeDebounceTimer;
+    private HwndSource? _windowSource;
+
+    private bool _deviceChangePending;
+    private bool _isClosing;
     private int _modalOverlayDepth;
 
     [DllImport("dwmapi.dll")]
@@ -26,6 +34,17 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = new MainWindowViewModel();
+
+        _deviceChangeDebounceTimer =
+            new DispatcherTimer(
+                DispatcherPriority.Background)
+            {
+                Interval =
+                    TimeSpan.FromMilliseconds(500)
+            };
+
+        _deviceChangeDebounceTimer.Tick +=
+            DeviceChangeDebounceTimer_Tick;
 
         Closing += MainWindow_Closing;
         Closed += MainWindow_Closed;
@@ -55,7 +74,84 @@ public partial class MainWindow : Window
         base.OnSourceInitialized(e);
 
         // The native title bar can only be themed after WPF has created the window handle.
-        ApplyNativeTitleBarTheme(ThemeService.IsCurrentEffectiveThemeDark());
+        ApplyNativeTitleBarTheme(
+            ThemeService.IsCurrentEffectiveThemeDark());
+
+        IntPtr hwnd =
+            new WindowInteropHelper(this).Handle;
+
+        _windowSource =
+            HwndSource.FromHwnd(hwnd);
+
+        _windowSource?.AddHook(
+            MainWindow_WndProc);
+    }
+
+    private IntPtr MainWindow_WndProc(
+        IntPtr hwnd,
+        int msg,
+        IntPtr wParam,
+        IntPtr lParam,
+        ref bool handled)
+    {
+        if (_isClosing ||
+            msg != WM_DEVICECHANGE ||
+            wParam.ToInt32() != DBT_DEVNODES_CHANGED)
+        {
+            return IntPtr.Zero;
+        }
+
+        _deviceChangePending = true;
+
+        // Assignment windows intentionally keep their original device/capture
+        // snapshot. Do not replace the BindingModel underneath one.
+        // The pending hardware refresh runs immediately after the modal closes.
+        if (_modalOverlayDepth > 0)
+        {
+            _deviceChangeDebounceTimer.Stop();
+
+            DebugDiagnosticsService.Info(
+                "WM_DEVICECHANGE detected while a modal Launcher window is open. Device refresh deferred until the window closes.");
+
+            return IntPtr.Zero;
+        }
+
+        ScheduleDeviceChangeRefresh();
+
+        return IntPtr.Zero;
+    }
+
+    private void ScheduleDeviceChangeRefresh()
+    {
+        if (_isClosing)
+            return;
+
+        _deviceChangeDebounceTimer.Stop();
+        _deviceChangeDebounceTimer.Start();
+    }
+
+    private void DeviceChangeDebounceTimer_Tick(
+        object? sender,
+        EventArgs e)
+    {
+        _deviceChangeDebounceTimer.Stop();
+
+        if (_isClosing ||
+            !_deviceChangePending)
+        {
+            return;
+        }
+
+        // A modal may have opened during the debounce interval
+        if (_modalOverlayDepth > 0)
+            return;
+
+        _deviceChangePending = false;
+
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.Main.RefreshBindingModelForDeviceChange();
+        }
     }
 
     private void ThemeService_EffectiveDarkThemeChanged(bool isDarkTheme)
@@ -80,6 +176,15 @@ public partial class MainWindow : Window
         {
             ModalOverlay.Visibility =
                 Visibility.Collapsed;
+
+            if (_deviceChangePending &&
+                !_isClosing)
+            {
+                DebugDiagnosticsService.Info(
+                    "Processing deferred WM_DEVICECHANGE after modal Launcher window closed.");
+
+                ScheduleDeviceChangeRefresh();
+            }
         }
     }
 
@@ -141,6 +246,11 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closing(object? sender, CancelEventArgs e)
     {
+        _isClosing = true;
+        _deviceChangePending = false;
+
+        _deviceChangeDebounceTimer.Stop();
+
         if (DataContext is not MainWindowViewModel viewModel)
             return;
 
@@ -149,11 +259,23 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
-        ThemeService.EffectiveDarkThemeChanged -= ThemeService_EffectiveDarkThemeChanged;
+        _deviceChangeDebounceTimer.Tick -=
+            DeviceChangeDebounceTimer_Tick;
 
-    #if DEBUG
-            PreviewKeyDown -= MainWindow_DebugPreviewKeyDown;
-    #endif
+        if (_windowSource is not null)
+        {
+            _windowSource.RemoveHook(
+                MainWindow_WndProc);
+
+            _windowSource = null;
+        }
+
+        ThemeService.EffectiveDarkThemeChanged -=
+            ThemeService_EffectiveDarkThemeChanged;
+
+#if DEBUG
+        PreviewKeyDown -= MainWindow_DebugPreviewKeyDown;
+#endif
     }
 
     private sealed class ModalOverlayScope : IDisposable
