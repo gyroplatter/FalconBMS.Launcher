@@ -52,6 +52,10 @@
                      x:Name="TextBox_Callsign"
                      Text="Viper"
                      MaxLength="12"
+                     FontFamily="{StaticResource AppFontFamily}"
+                     FontSize="{StaticResource FontSizeSmall}"
+                     VerticalScrollBarVisibility="Disabled"
+                     HorizontalScrollBarVisibility="Disabled"
                      Margin="0,0,0,4"
                      TextChanged="Callsign_Changed"/>
 
@@ -68,10 +72,14 @@
 
             <StackPanel Grid.Row="5">
                 <TextBox x:Name="TextBox_PilotName"
-                         Text="Joe Pilot"
-                         MaxLength="20"
-                         Margin="0,0,0,4"
-                         TextChanged="PilotName_Changed"/>
+                     Text="Joe Pilot"
+                     MaxLength="20"
+                     FontFamily="{StaticResource AppFontFamily}"
+                     FontSize="{StaticResource FontSizeSmall}"
+                     VerticalScrollBarVisibility="Disabled"
+                     HorizontalScrollBarVisibility="Disabled"
+                     Margin="0,0,0,4"
+                     TextChanged="PilotName_Changed"/>
 
                 <TextBlock x:Name="Label_Error_PilotName"
                            Text="Seriously your name is &quot;Joe Pilot&quot; !?"

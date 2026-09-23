@@ -91,6 +91,10 @@
 
                     <TextBox Text="{Binding SampleText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              Width="260"
+                             FontFamily="{StaticResource AppFontFamily}"
+                             FontSize="{StaticResource FontSizeSmall}"
+                             VerticalScrollBarVisibility="Disabled"
+                             HorizontalScrollBarVisibility="Disabled"
                              HorizontalAlignment="Left"
                              Margin="0,0,0,12"/>
 

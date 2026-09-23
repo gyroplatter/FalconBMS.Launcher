@@ -50,8 +50,12 @@
                    Margin="0,0,8,0"/>
 
                         <TextBox Width="260"
-                 Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 Margin="0,0,12,0"/>
+                             Text="{Binding FilterText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="{StaticResource AppFontFamily}"
+                             FontSize="{StaticResource FontSizeSmall}"
+                             VerticalScrollBarVisibility="Disabled"
+                             HorizontalScrollBarVisibility="Disabled"
+                             Margin="0,0,12,0"/>
 
                         <Button Content="Clear"
                 Width="70"
