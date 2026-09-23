@@ -39,6 +39,143 @@ public sealed class LegacyImportService
     private readonly DeviceJsonWriterService
         _deviceJsonWriter = new();
 
+
+    public int ImportLegacyXmlForNewlyConnectedDevices(
+    string baseDir,
+    IReadOnlyList<StockDeviceSetupMatch> connectedMatches,
+    IReadOnlyCollection<string> existingDurableDeviceKeys)
+    {
+        string configDirectory =
+            GetConfigDirectory(
+                baseDir);
+
+        if (!Directory.Exists(configDirectory))
+            return 0;
+
+        var existingDeviceKeys =
+            new HashSet<string>(
+                existingDurableDeviceKeys
+                    .Where(key =>
+                        !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+
+        IReadOnlyList<LegacyDeviceXmlFile> legacyXmlFiles =
+            _deviceXmlImporter.FindLegacyXmlFiles(
+                configDirectory);
+
+        if (legacyXmlFiles.Count == 0)
+            return 0;
+
+        var usedLegacyXmlPaths =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        var importCandidates =
+            new List<(
+                StockDeviceSetupMatch Match,
+                LegacyDeviceXmlFile LegacyXml)>();
+
+        foreach (StockDeviceSetupMatch match in
+                 connectedMatches)
+        {
+            string durableDeviceKey =
+                match.Device.DurableDeviceKey;
+
+            // Devices already present in the current binding model have an existing
+            // V3 profile. Only devices missing from the model are candidates for a
+            // legacy XML mini-import when they are connected.
+            if (!string.IsNullOrWhiteSpace(
+                    durableDeviceKey) &&
+                existingDeviceKeys.Contains(
+                    durableDeviceKey))
+            {
+                continue;
+            }
+
+            LegacyDeviceXmlFile? legacyXml =
+                FindBestLegacyXml(
+                    match,
+                    legacyXmlFiles,
+                    usedLegacyXmlPaths);
+
+            if (legacyXml is null)
+                continue;
+
+            usedLegacyXmlPaths.Add(
+                legacyXml.Path);
+
+            importCandidates.Add(
+                (match, legacyXml));
+        }
+
+        if (importCandidates.Count == 0)
+            return 0;
+
+        // Match the normal v2-to-v3 import safety behavior: create a
+        // backup before writing any new V3 device JSON
+        LegacyImportBackupResult backupResult =
+            _backupService.CreateBackupForFiles(
+                configDirectory,
+                importCandidates
+                    .Select(candidate =>
+                        candidate.LegacyXml.Path)
+                    .ToArray());
+
+        if (!backupResult.Succeeded)
+        {
+            throw new IOException(
+                "The legacy device files could not be backed up. " +
+                "The hotplug migration was stopped before any changes were made. " +
+                backupResult.ErrorMessage);
+        }
+
+        var skippedItems =
+            new List<LegacyImportSkippedItem>();
+
+        var importedProfiles =
+            new List<DeviceBindingProfile>();
+
+        foreach (var candidate in
+                 importCandidates)
+        {
+            if (!_deviceXmlImporter.CanReadXml(
+                    candidate.LegacyXml.Path))
+            {
+                DebugDiagnosticsService.Warn(
+                    $"Legacy device mini-import skipped unreadable XML. Normal stock/empty fallback will be used | Device=\"{candidate.Match.Device.ProductName}\" | Xml=\"{candidate.LegacyXml.Path}\"");
+
+                continue;
+            }
+
+            // The legacy user XML is the complete source
+            DeviceBindingProfile profile =
+                _deviceXmlImporter.BuildConnectedProfile(
+                    candidate.Match,
+                    candidate.LegacyXml.Path,
+                    skippedItems);
+
+            importedProfiles.Add(
+                profile);
+        }
+
+        if (importedProfiles.Count == 0)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Legacy device mini-import found matching XML but imported no device profiles. Candidates={importCandidates.Count} Backup=\"{backupResult.BackupDirectory}\"");
+
+            return 0;
+        }
+
+        _deviceJsonWriter.Write(
+            baseDir,
+            importedProfiles);
+
+        DebugDiagnosticsService.Info(
+            $"Legacy device mini-import complete. Candidates={importCandidates.Count} Imported={importedProfiles.Count} SkippedItems={skippedItems.Count} Backup=\"{backupResult.BackupDirectory}\"");
+
+        return importedProfiles.Count;
+    }
+
     public bool HasLegacyControlFiles(
         string baseDir)
     {

@@ -109,6 +109,106 @@ public sealed class LegacyImportBackupService
         }
     }
 
+    public LegacyImportBackupResult CreateBackupForFiles(
+    string configDirectory,
+    IReadOnlyCollection<string> sourcePaths)
+    {
+        if (string.IsNullOrWhiteSpace(configDirectory))
+        {
+            return LegacyImportBackupResult.Failed(
+                "The BMS control folder could not be found.");
+        }
+
+        if (!Directory.Exists(configDirectory))
+        {
+            return LegacyImportBackupResult.Failed(
+                "The BMS control folder does not exist.");
+        }
+
+        if (sourcePaths is null ||
+            sourcePaths.Count == 0)
+        {
+            return LegacyImportBackupResult.Failed(
+                "No legacy device files were provided for backup.");
+        }
+
+        try
+        {
+            List<string> sourceFiles =
+                sourcePaths
+                    .Where(path =>
+                        !string.IsNullOrWhiteSpace(path))
+                    .Distinct(
+                        StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(path =>
+                        Path.GetFileName(path),
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            if (sourceFiles.Count == 0)
+            {
+                return LegacyImportBackupResult.Failed(
+                    "No legacy device files were provided for backup.");
+            }
+
+            string? missingSourcePath =
+                sourceFiles.FirstOrDefault(path =>
+                    !File.Exists(path));
+
+            if (!string.IsNullOrWhiteSpace(
+                    missingSourcePath))
+            {
+                return LegacyImportBackupResult.Failed(
+                    $"The legacy device file could not be found: {missingSourcePath}");
+            }
+
+            string backupDirectory =
+                CreateBackupDirectory(
+                    configDirectory);
+
+            int filesCopied =
+                0;
+
+            foreach (string sourcePath in sourceFiles)
+            {
+                string fileName =
+                    Path.GetFileName(
+                        sourcePath);
+
+                if (string.IsNullOrWhiteSpace(fileName))
+                    continue;
+
+                string destinationPath =
+                    Path.Combine(
+                        backupDirectory,
+                        fileName);
+
+                File.Copy(
+                    sourcePath,
+                    destinationPath,
+                    overwrite: false);
+
+                filesCopied++;
+            }
+
+            DebugDiagnosticsService.Info(
+                $"Legacy device mini-import backup created. FilesCopied={filesCopied} Path={backupDirectory}");
+
+            return LegacyImportBackupResult.Success(
+                backupDirectory,
+                filesCopied);
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                "Legacy device mini-import backup failed.");
+
+            return LegacyImportBackupResult.Failed(
+                ex.Message);
+        }
+    }
+
     private static string CreateBackupDirectory(
         string configDirectory)
     {

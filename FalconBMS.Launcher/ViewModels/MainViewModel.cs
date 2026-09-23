@@ -544,6 +544,32 @@ public sealed class MainViewModel : ViewModelBase
             if (!SaveBindingJsonBeforeDeviceRefresh())
                 return;
 
+            if (IsOutputSaveBlockedByJsonReadFailure())
+            {
+                // Do not attempt a legacy mini-import while any V3 JSON is in an
+                // unknown/broken state. The normal refresh may still continue,
+                // but no new JSON should be created from legacy data this session.
+                DebugDiagnosticsService.Warn(
+                    "Legacy device mini-import skipped because a binding JSON read failure is blocking safe JSON writes.");
+            }
+            else
+            {
+                string[] existingDurableDeviceKeys =
+                    CurrentBindingModel.DeviceProfiles
+                        .Select(device =>
+                            device.DurableDeviceKey)
+                        .Where(key =>
+                            !string.IsNullOrWhiteSpace(key))
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+
+                _legacyImport.ImportLegacyXmlForNewlyConnectedDevices(
+                    SelectedInstall.BaseDir,
+                    stockDeviceMatches,
+                    existingDurableDeviceKeys);
+            }
+
             DebugDiagnosticsService.Info(
                 "Connected DirectInput device set changed. Rebuilding binding model.");
 
