@@ -5,6 +5,11 @@
     "pidvid": "044F0402"
   },
   {
+    "displayName": "Throttle - HOTAS Warthog",
+    "stockFile": "Setup.v100.Throttle - HOTAS Warthog {Stock}.xml",
+    "pidvid": "044F0404"
+  },
+  {
     "displayName": "F16 MFD 1",
     "stockFile": "Setup.v100.F16 MFD 1 {Stock}.xml",
     "pidvid": "044FB351"
