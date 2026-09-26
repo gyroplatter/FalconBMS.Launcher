@@ -1538,8 +1538,18 @@ public partial class ControlsView : UserControl
         return null;
     }
 
+    private void ControlsGrid_PreviewKeyDown(
+    object sender,
+    KeyEventArgs e)
+    {
+        // DataGrid's built-in Excel-style key nav (Enter, arrows, Ctrl+Arrow,
+        // Ctrl+Shift+Arrow) reuses BMS keybind keystrokes. Suppress those.
+        // DirectInput capture reads raw device state and is unaffected.
+        e.Handled = true;
+    }
 
-     private void CategoryListBox_PreviewMouseLeftButtonUp(
+
+    private void CategoryListBox_PreviewMouseLeftButtonUp(
     object sender,
     MouseButtonEventArgs e)
     {

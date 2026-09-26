@@ -154,7 +154,8 @@
                       HorizontalScrollBarVisibility="Auto"
                       VerticalScrollBarVisibility="Auto"
                       MouseDoubleClick="ControlsGrid_MouseDoubleClick"
-                      ColumnReordered="ControlsGrid_ColumnReordered">
+                      ColumnReordered="ControlsGrid_ColumnReordered"
+                      PreviewKeyDown="ControlsGrid_PreviewKeyDown">
 
                 <DataGrid.Columns/>
                 
