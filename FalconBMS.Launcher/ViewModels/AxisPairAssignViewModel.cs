@@ -5,6 +5,7 @@ using FalconBMS.Launcher.Services.Controls;
 using FalconBMS.Launcher.Utils;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows.Threading;
 
@@ -217,7 +218,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         ClearCenterCommand =
             new RelayCommand(
-                ClearCenter);
+                ClearCenter,
+                CanClearCenter);
 
         SaveCommand =
             new RelayCommand(
@@ -227,6 +229,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         CancelCommand =
             new RelayCommand(
                 CancelAndClose);
+
+        // Update Reset Center when either axis offset changes
+        Primary.PropertyChanged += AxisCenter_PropertyChanged;
+
+        if (HasSecondaryAxis)
+            Secondary.PropertyChanged += AxisCenter_PropertyChanged;
 
         DebugDiagnosticsService.Info(
             $"Advanced axis popup created. | " +
@@ -238,6 +246,22 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             $"PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
             $"SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
             $"SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
+    }
+
+    private bool CanClearCenter()
+    {
+        return Primary.CenterOffset != 0 ||
+               (HasSecondaryAxis && Secondary.CenterOffset != 0);
+    }
+
+    private void AxisCenter_PropertyChanged(
+        object? sender,
+        PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AxisEditViewModel.CenterOffset))
+        {
+            ClearCenterCommand.RaiseCanExecuteChanged();
+        }
     }
 
     private bool CanRecenter()
@@ -1380,8 +1404,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        Primary.PropertyChanged -= AxisCenter_PropertyChanged;
+        Secondary.PropertyChanged -= AxisCenter_PropertyChanged;
+
         // Stop the graph timer and release its event handler before
-        // disposing the DirectInput capture session
+        // disposing the DirectInput capture session.
         Stop();
         _captureHost.Dispose();
     }
