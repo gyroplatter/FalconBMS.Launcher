@@ -211,6 +211,17 @@ public sealed class DeviceJsonWriterService
             WriteProperty(sb, itemIndentLevel + 1, "deadzone", axis.Deadzone, comma: true);
             WriteProperty(sb, itemIndentLevel + 1, "curve", axis.Curve, comma: true);
 
+            // Center calibration is persisted with the logical axis binding.
+            // An unassigned axis always has the default center.
+            WriteProperty(
+                sb,
+                itemIndentLevel + 1,
+                "center_offset",
+                axis.PhysicalAxisIndex.HasValue
+                    ? Math.Max(-10000, Math.Min(10000, axis.CenterOffset))
+                    : 0,
+                comma: true);
+
             if (string.Equals(axis.LogicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase))
             {
                 WriteProperty(sb, itemIndentLevel + 1, "invert", axis.Invert, comma: true);

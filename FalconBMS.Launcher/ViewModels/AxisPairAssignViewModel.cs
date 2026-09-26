@@ -138,9 +138,16 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     public RelayCommand ClearCommand { get; }
 
+    public RelayCommand RecenterCommand { get; }
+
+    public RelayCommand ClearCenterCommand { get; }
+
     public RelayCommand SaveCommand { get; }
 
     public RelayCommand CancelCommand { get; }
+
+    // Avoid raising CanExecuteChanged on every 16 ms graph update.
+    private bool _canRecenterCached;
 
     // BMS currently has one axismapping.dat table shared by all aircraft, so editing an
     // axis pair from the F-15 profile also changes it for F-16 (and vice versa). Only the
@@ -178,6 +185,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             initialDeviceKey,
             _deviceProfiles);
 
+        // The calibration offset is stored in the raw physical axis scale.
+        // The graph needs to know whether to reverse the displayed direction.
+        Primary.IsVerticalAxis = !IsHorizontalAxis(Primary);
+        Secondary.IsVerticalAxis = !IsHorizontalAxis(Secondary);
+
         MapPrimaryCommand =
             new RelayCommand(
                 () => StartCapture(
@@ -198,11 +210,21 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             new RelayCommand(
                 ClearAxes);
 
+        RecenterCommand =
+            new RelayCommand(
+                RecenterAxes,
+                CanRecenter);
+
+        ClearCenterCommand =
+            new RelayCommand(
+                ClearCenter);
+
         SaveCommand =
             new RelayCommand(
                 SaveAndClose,
                 CanSave);
-    CancelCommand =
+
+        CancelCommand =
             new RelayCommand(
                 CancelAndClose);
 
@@ -216,6 +238,121 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             $"PrimaryAxis={FormatPhysicalAxis(Primary.SelectedPhysicalAxisIndex)} | " +
             $"SecondaryDeviceKey={Secondary.SelectedDeviceKey ?? "<null>"} | " +
             $"SecondaryAxis={FormatPhysicalAxis(Secondary.SelectedPhysicalAxisIndex)}");
+    }
+
+    private bool CanRecenter()
+    {
+        if (_captureTarget != AxisPairCaptureTarget.None)
+            return false;
+
+        if (!CanRecenterAxis(Primary))
+            return false;
+
+        return !HasSecondaryAxis ||
+               CanRecenterAxis(Secondary);
+    }
+
+    private static bool CanRecenterAxis(
+        AxisEditViewModel axis)
+    {
+        return !axis.IsCleared &&
+               !string.IsNullOrWhiteSpace(axis.SelectedDeviceKey) &&
+               axis.SelectedPhysicalAxisIndex.HasValue &&
+               axis.LastRawAxisValue.HasValue;
+    }
+
+    private void RecenterAxes()
+    {
+        // Require a live sample from every axis before changing anything.
+        // This prevents half of a pair from being recentered.
+        if (!CanRecenter())
+            return;
+
+        RecenterAxis(Primary);
+
+        if (HasSecondaryAxis)
+            RecenterAxis(Secondary);
+
+        DebugDiagnosticsService.Info(
+            $"Advanced axis recentered. | " +
+            $"ActionId={_actionId} | " +
+            $"DefinitionId={PairDefinition.PairId} | " +
+            $"PrimaryOffset={Primary.CenterOffset} | " +
+            $"SecondaryOffset={(HasSecondaryAxis ? Secondary.CenterOffset.ToString() : "<none>")}");
+
+        RefreshCalibratedPlot();
+    }
+
+    private static void RecenterAxis(
+        AxisEditViewModel axis)
+    {
+        if (!axis.LastRawAxisValue.HasValue)
+            return;
+
+        int rawValue = Math.Max(
+            AxisMin,
+            Math.Min(
+                AxisMax,
+                axis.LastRawAxisValue.Value));
+
+        // Physical minimum -> +10000, midpoint -> 0,
+        // physical maximum -> -10000.
+        //
+        // This matches the isolated BMS cursor calibration samples.
+        axis.CenterOffset = (int)Math.Round(
+            (AxisMax / 2.0 - rawValue) *
+            20000.0 / AxisMax,
+            MidpointRounding.AwayFromZero);
+    }
+
+    private void ClearCenter()
+    {
+        Primary.CenterOffset = 0;
+
+        if (HasSecondaryAxis)
+            Secondary.CenterOffset = 0;
+
+        DebugDiagnosticsService.Info(
+            $"Advanced axis center cleared. | " +
+            $"ActionId={_actionId} | " +
+            $"DefinitionId={PairDefinition.PairId}");
+
+        RefreshCalibratedPlot();
+    }
+
+    private void RefreshCalibratedPlot()
+    {
+        if (Primary.LastRawAxisValue.HasValue)
+        {
+            UpdatePlotValue(
+                Primary,
+                RawAxisToSigned(
+                    Primary.LastRawAxisValue.Value,
+                    Primary.LogicalAxisName,
+                    Primary.IsVerticalAxis));
+        }
+
+        if (HasSecondaryAxis &&
+            Secondary.LastRawAxisValue.HasValue)
+        {
+            UpdatePlotValue(
+                Secondary,
+                RawAxisToSigned(
+                    Secondary.LastRawAxisValue.Value,
+                    Secondary.LogicalAxisName,
+                    Secondary.IsVerticalAxis));
+        }
+    }
+
+    private void RefreshRecenterAvailability()
+    {
+        bool canRecenter = CanRecenter();
+
+        if (_canRecenterCached == canRecenter)
+            return;
+
+        _canRecenterCached = canRecenter;
+        RecenterCommand.RaiseCanExecuteChanged();
     }
 
     private bool CanSave()
@@ -261,6 +398,7 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         UpdateAxisConflicts();
         UpdateLiveGraphFromCurrentAssignments();
+        RefreshRecenterAvailability();
     }
 
     public void Stop()
@@ -372,6 +510,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         axis.SaturationCurve = AxCurve.None;
         axis.CurveValue = 1;
 
+        axis.CenterOffset = 0;
+        axis.LastRawAxisValue = null;
+
         axis.StatusText = statusText;
         axis.ConflictText = "";
         axis.HasAxisConflict = false;
@@ -459,12 +600,15 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 axisValues,
                 out int primaryValue))
         {
+            // Store the physical value, not the inverted or curved graph value.
+            Primary.LastRawAxisValue = primaryValue;
+
             UpdatePlotValue(
                 Primary,
                 RawAxisToSigned(
                     primaryValue,
                     Primary.LogicalAxisName,
-                    isVerticalAxis: !IsHorizontalAxis(Primary)));
+                    Primary.IsVerticalAxis));
 
             updated = true;
         }
@@ -476,12 +620,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 axisValues,
                 out int secondaryValue))
         {
+            Secondary.LastRawAxisValue = secondaryValue;
+
             UpdatePlotValue(
                 Secondary,
                 RawAxisToSigned(
                     secondaryValue,
                     Secondary.LogicalAxisName,
-                    isVerticalAxis: !IsHorizontalAxis(Secondary)));
+                    Secondary.IsVerticalAxis));
 
             updated = true;
         }
@@ -497,6 +643,8 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                             Secondary.DeadzoneCurve))
                     : GetDeadzoneRadius(
                         Primary.DeadzoneCurve);
+
+            RefreshRecenterAvailability();
         }
 
         return updated;
@@ -716,13 +864,29 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         if (stableHits < StableHitCountRequired)
             return;
 
+        bool assignmentChanged =
+            !string.Equals(
+                targetAxis.SelectedDeviceKey,
+                best.Device.DurableDeviceKey,
+                StringComparison.OrdinalIgnoreCase) ||
+            targetAxis.SelectedPhysicalAxisIndex != best.AxisIndex;
+
         targetAxis.SelectedDeviceKey =
             best.Device.DurableDeviceKey;
 
         targetAxis.SelectedPhysicalAxisIndex =
             best.AxisIndex;
 
+        if (assignmentChanged)
+        {
+            // Calibration belongs to the physical axis that was calibrated.
+            targetAxis.CenterOffset = 0;
+            targetAxis.LastRawAxisValue = null;
+        }
+
         targetAxis.IsCleared = false;
+
+        RefreshRecenterAvailability();
 
         targetAxis.StatusText =
             GetDeviceDisplayName(best.Device) +
@@ -1064,10 +1228,34 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         double rawSignedValue,
         AxisEditViewModel axis)
     {
+        double centeredValue = rawSignedValue;
+
+        if (axis.CenterOffset != 0)
+        {
+            // Reconstruct the physical value that the user selected as center,
+            // then convert it using the same orientation as the live graph.
+            // This keeps the graph independent of axis inversion.
+            double centerRawValue =
+                AxisMax / 2.0 -
+                axis.CenterOffset * AxisMax / 20000.0;
+
+            double centerSignedValue =
+                RawAxisToSigned(
+                    (int)Math.Round(centerRawValue),
+                    axis.LogicalAxisName,
+                    axis.IsVerticalAxis);
+
+            centeredValue = Math.Max(
+                -1.0,
+                Math.Min(
+                    1.0,
+                    rawSignedValue - centerSignedValue));
+        }
+
         double value =
             axis.Invert
-                ? -rawSignedValue
-                : rawSignedValue;
+                ? -centeredValue
+                : centeredValue;
 
         double sign = Math.Sign(value);
         double magnitude = Math.Abs(value);
@@ -1192,6 +1380,9 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        // Stop the graph timer and release its event handler before
+        // disposing the DirectInput capture session
+        Stop();
         _captureHost.Dispose();
     }
 
@@ -1217,6 +1408,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         private int _curveValue = 1;
         private bool _invert;
         private bool _isCleared;
+
+        private int _centerOffset;
+
+        // This is the latest physical DirectInput value for the currently
+        // selected axis. It is never written directly to device JSON.
+        public int? LastRawAxisValue { get; set; }
+
+        public bool IsVerticalAxis { get; set; }
 
         public AxisEditViewModel(
             string logicalAxisName,
@@ -1277,6 +1476,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         public string MapButtonText { get; }
 
+        public int CenterOffset
+        {
+            get => _centerOffset;
+
+            set => Set(
+                ref _centerOffset,
+                Math.Max(-10000, Math.Min(10000, value)));
+        }
         public string? SelectedDeviceKey
         {
             get => _selectedDeviceKey;
@@ -1542,6 +1749,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
             Invert =
                 mappedBinding.Invert;
+
+            // Load the saved center into the popup's working copy.
+            // Cancel leaves the original binding untouched.
+            CenterOffset =
+                mappedBinding.CenterOffset;
 
             StatusText =
                 GetDeviceDisplayName(

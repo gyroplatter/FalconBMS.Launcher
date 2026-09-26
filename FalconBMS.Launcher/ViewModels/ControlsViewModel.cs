@@ -1508,6 +1508,7 @@ public sealed class ControlsViewModel : ViewModelBase
                             axis.Saturation ?? "",
                             axis.Curve.ToString(),
                             axis.Invert.ToString(),
+                            axis.CenterOffset.ToString(),
                             axis.IdleDetent.ToString(),
                             axis.AfterburnerDetent.ToString()))));
     }
@@ -1552,6 +1553,7 @@ public sealed class ControlsViewModel : ViewModelBase
                 }
 
                 binding.PhysicalAxisIndex = null;
+                binding.CenterOffset = 0;
 
                 // Clear means the entire logical-axis record returns to its
                 // default state, not only that its physical assignment is removed.
@@ -1655,6 +1657,7 @@ public sealed class ControlsViewModel : ViewModelBase
                 conflict.LogicalAxisName);
 
             conflict.PhysicalAxisIndex = null;
+            conflict.CenterOffset = 0;
         }
 
         DeviceAxisBinding selectedBinding =
@@ -1682,6 +1685,9 @@ public sealed class ControlsViewModel : ViewModelBase
 
         selectedBinding.Invert =
             axisEdit.Invert;
+
+        selectedBinding.CenterOffset =
+            axisEdit.CenterOffset;
 
         changedLogicalAxisNames.Add(
             selectedBinding.LogicalAxisName);

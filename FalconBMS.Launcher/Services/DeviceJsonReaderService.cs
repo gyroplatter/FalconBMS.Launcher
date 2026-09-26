@@ -335,6 +335,12 @@ public sealed class DeviceJsonReaderService
                 Deadzone = axis?.Deadzone ?? "None",
                 Curve = NormalizeAxisCurve(axis?.Curve),
                 Invert = axis?.Invert.GetValueOrDefault() ?? false,
+
+                // Unassigned axes must not retain a center offset
+                CenterOffset = axis?.PhysicalAxisIndex.HasValue == true
+                    ? Math.Max(-10000, Math.Min(10000, axis.CenterOffset ?? 0))
+                    : 0,
+
                 AfterburnerDetent = axis?.AfterburnerDetent,
                 IdleDetent = axis?.IdleDetent
             });
@@ -788,6 +794,9 @@ public sealed class DeviceJsonReaderService
 
         [DataMember(Name = "invert")]
         public bool? Invert { get; set; }
+
+        [DataMember(Name = "center_offset")]
+        public int? CenterOffset { get; set; }
 
         [DataMember(Name = "afterburner_detent")]
         public int? AfterburnerDetent { get; set; }

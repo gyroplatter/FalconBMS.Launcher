@@ -28,6 +28,15 @@ public sealed class DeviceAxisBinding
 
     public bool Invert { get; set; }
 
+    /// <summary>
+    /// Persistent BMS center offset in the -10000..10000 calibration scale.
+    /// Zero is the default center.
+    ///
+    /// The offset belongs to this logical axis binding. Clearing or
+    /// reassigning the physical axis resets its calibration.
+    /// </summary>
+    public int CenterOffset { get; set; }
+
     public int? AfterburnerDetent { get; set; }
     public int? IdleDetent { get; set; }
 }

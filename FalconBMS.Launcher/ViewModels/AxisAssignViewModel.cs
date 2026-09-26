@@ -674,6 +674,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        // Stop the graph timer and release its event handler before
+        // disposing the DirectInput capture session
+        Stop();
         _captureHost.Dispose();
     }
 }

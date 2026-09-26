@@ -104,6 +104,7 @@ public sealed class JoystickCalService
             actionId);
     }
 
+
     private byte[] BuildJoystickCalBytes(IReadOnlyList<DeviceBindingProfile> deviceProfiles)
     {
         var bytes = new byte[TotalSize];
@@ -112,27 +113,93 @@ public sealed class JoystickCalService
         {
             byte[] block = CreateDefaultBlock();
 
-            string? logicalAxisName = JoystickCalOrder[joystickCalIndex];
+            string logicalAxisName = JoystickCalOrder[joystickCalIndex];
 
-            if (!string.IsNullOrWhiteSpace(logicalAxisName))
+            DeviceAxisBinding? binding =
+                FindAssignedAxisBinding(deviceProfiles, logicalAxisName);
+
+            if (binding is not null)
             {
-                DeviceAxisBinding? binding = FindAssignedAxisBinding(deviceProfiles, logicalAxisName);
+                ApplyAssignedAndInvertFlags(block, binding);
 
-                if (binding is not null)
+                // Write the persistent center calibration stored in the
+                // device JSON. Unassigned axes retain the default zero offset.
+                ApplyCenterOffset(block, binding);
+
+                // Only the primary Throttle axis has detents in this launcher.
+                // Throttle_Right remains assignable, but does not expose or write detents.
+                if (string.Equals(
+                    binding.LogicalAxisName,
+                    "Throttle",
+                    StringComparison.OrdinalIgnoreCase))
                 {
-                    ApplyAssignedAndInvertFlags(block, binding);
-
-                    // Only the primary Throttle axis has detents in this launcher.
-                    // Throttle_Right remains assignable, but does not expose or write detents.
-                    if (string.Equals(binding.LogicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase))
-                        ApplyThrottleDetents(block, binding);
+                    ApplyThrottleDetents(block, binding);
                 }
             }
 
-            Buffer.BlockCopy(block, 0, bytes, joystickCalIndex * EntrySize, EntrySize);
+            Buffer.BlockCopy(
+                block,
+                0,
+                bytes,
+                joystickCalIndex * EntrySize,
+                EntrySize);
         }
 
         return bytes;
+    }
+
+    private static void ApplyCenterOffset(
+        byte[] block,
+        DeviceAxisBinding binding)
+    {
+        int centerOffset = Math.Max(
+            -10000,
+            Math.Min(10000, binding.CenterOffset));
+
+        if (centerOffset == 0)
+            return;
+
+        string logicalAxisName = binding.LogicalAxisName;
+
+        bool isMainControl =
+            string.Equals(logicalAxisName, "Pitch", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(logicalAxisName, "Roll", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(logicalAxisName, "Yaw", StringComparison.OrdinalIgnoreCase);
+
+        bool isCursor =
+            string.Equals(logicalAxisName, "Cursor_X", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(logicalAxisName, "Cursor_Y", StringComparison.OrdinalIgnoreCase);
+
+        if (!isMainControl && !isCursor)
+            return;
+
+        // BMS stores the signed center offset at bytes 0-3
+        WriteInt32LittleEndian(block, 0, centerOffset);
+
+        if (isMainControl)
+        {
+            // Pitch, Roll and Yaw also store the opposite value at bytes 8-11
+            WriteInt32LittleEndian(block, 8, -centerOffset);
+
+            // The additional calibration field at bytes 16-19 is not
+            // generated yet. Its calculation requires further research.
+        }
+
+        // Cursor X and Y use the first integer field only in testing
+    }
+
+    private static void WriteInt32LittleEndian(
+        byte[] block,
+        int offset,
+        int value)
+    {
+        unchecked
+        {
+            block[offset + 0] = (byte)value;
+            block[offset + 1] = (byte)(value >> 8);
+            block[offset + 2] = (byte)(value >> 16);
+            block[offset + 3] = (byte)(value >> 24);
+        }
     }
 
     private DeviceAxisBinding? FindAssignedAxisBinding(
