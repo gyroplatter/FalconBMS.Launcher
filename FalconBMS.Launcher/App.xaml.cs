@@ -10,6 +10,7 @@ namespace FalconBMS.Launcher
     public partial class App : Application
     {
         private static Mutex? _mutex;
+        private static bool _ownsMutex;
         private static EventWaitHandle? _showWindowEvent;
         private static RegisteredWaitHandle? _showWindowRegistration;
 
@@ -35,6 +36,8 @@ namespace FalconBMS.Launcher
             bool createdNew;
 
             _mutex = new Mutex(true, MutexName, out createdNew);
+            _ownsMutex = createdNew;
+
             _showWindowEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowWindowEventName);
 
             if (!createdNew)
@@ -52,10 +55,15 @@ namespace FalconBMS.Launcher
                 Timeout.Infinite,
                 false);
 
-            // Apply the saved launcher theme before the main window is created.
+            // Apply the saved Launcher theme before the main window is created
             ThemeService.ApplySavedThemeOnStartup();
 
             base.OnStartup(e);
+
+            // StartupUri removed from App.xaml
+            // Construct the window explicitly (first instance only)
+            MainWindow = new MainWindow();
+            MainWindow.Show();
         }
 
         protected override void OnExit(ExitEventArgs e)
@@ -68,7 +76,13 @@ namespace FalconBMS.Launcher
                 _showWindowEvent?.Dispose();
                 _showWindowEvent = null;
 
-                _mutex?.ReleaseMutex();
+                // Only release the mutex if this instance actually owns it
+                if (_ownsMutex)
+                {
+                    _mutex?.ReleaseMutex();
+                    _ownsMutex = false;
+                }
+
                 _mutex?.Dispose();
                 _mutex = null;
             }
