@@ -139,22 +139,26 @@
                                    Style="{StaticResource DialogOptionLabelStyle}"
                                    Margin="0,0,14,0"/>
 
+                        <!-- The ViewModel controls the selection. Each RadioButton
+                             has a separate parent to prevent WPF's automatic
+                             grouping from changing the other button's state. -->
                         <StackPanel Grid.Row="0"
                                     Grid.Column="1"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
-                            <RadioButton Content="Unshifted"
-                                         GroupName="ShiftState"
-                                         IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,18,0"/>
+                            <Border Margin="0,0,18,0">
+                                <RadioButton Content="Unshifted"
+                                             IsChecked="{Binding IsUnshifted, Mode=TwoWay}"
+                                             IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                             VerticalAlignment="Center"/>
+                            </Border>
 
-                            <RadioButton Content="Shifted"
-                                         GroupName="ShiftState"
-                                         IsChecked="{Binding IsShifted, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"/>
+                            <Border>
+                                <RadioButton Content="Shifted"
+                                             IsChecked="{Binding IsShifted, Mode=TwoWay}"
+                                             IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                             VerticalAlignment="Center"/>
+                            </Border>
                         </StackPanel>
 
                         <TextBlock Grid.Row="2"
@@ -167,18 +171,19 @@
                                     Grid.Column="1"
                                     Orientation="Horizontal"
                                     VerticalAlignment="Center">
-                            <RadioButton Content="Press"
-                                         GroupName="TriggerState"
-                                         IsChecked="{Binding IsOnPress, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,18,0"/>
+                            <Border Margin="0,0,18,0">
+                                <RadioButton Content="Press"
+                                             IsChecked="{Binding IsOnPress, Mode=TwoWay}"
+                                             IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                             VerticalAlignment="Center"/>
+                            </Border>
 
-                            <RadioButton Content="Release"
-                                         GroupName="TriggerState"
-                                         IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
-                                         IsEnabled="{Binding IsDxOptionSelectionEnabled}"
-                                         VerticalAlignment="Center"/>
+                            <Border>
+                                <RadioButton Content="Release"
+                                             IsChecked="{Binding IsOnRelease, Mode=TwoWay}"
+                                             IsEnabled="{Binding IsDxOptionSelectionEnabled}"
+                                             VerticalAlignment="Center"/>
+                            </Border>
                         </StackPanel>
                     </Grid>
 
