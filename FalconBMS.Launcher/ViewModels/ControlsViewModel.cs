@@ -1361,7 +1361,15 @@ public sealed class ControlsViewModel : ViewModelBase
 
                 parts.AddRange(aircraftProfile.PovBindings
                     .Where(binding => string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase))
-                    .Select(binding => "POV" + (binding.PovIndex + 1) + " " + GetPovDirectionName(binding.Direction)));
+                    .Select(binding =>
+                    {
+                        string displayText = "POV" + (binding.PovIndex + 1) + " " + GetPovDirectionName(binding.Direction);
+
+                        if (string.Equals(binding.Invoke, "Shift", StringComparison.OrdinalIgnoreCase))
+                            displayText += " SHIFT";
+
+                        return displayText;
+                    }));
 
                 cell.DisplayText = string.Join(", ", parts);
             }

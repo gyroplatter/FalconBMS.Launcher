@@ -117,7 +117,12 @@ public sealed class KeyControlsGridBuilderService
         foreach (DevicePovBinding pov in aircraftProfile.PovBindings.Where(binding =>
                      string.Equals(binding.CallbackName, callbackName, StringComparison.OrdinalIgnoreCase)))
         {
-            parts.Add("POV" + (pov.PovIndex + 1) + " " + GetPovDirectionName(pov.Direction));
+            string displayText = "POV" + (pov.PovIndex + 1) + " " + GetPovDirectionName(pov.Direction);
+
+            if (string.Equals(pov.Invoke, "Shift", StringComparison.OrdinalIgnoreCase))
+                displayText += " SHIFT";
+
+            parts.Add(displayText);
         }
 
         return string.Join(", ", parts);
