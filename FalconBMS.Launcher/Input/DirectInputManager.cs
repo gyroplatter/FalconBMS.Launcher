@@ -354,6 +354,8 @@ public sealed class KeyboardSession : IDisposable
     private bool _rightControlPressed;
     private bool _leftAltPressed;
     private bool _rightAltPressed;
+    private bool _leftWindowsPressed;
+    private bool _rightWindowsPressed;
 
     private bool _disposed;
 
@@ -430,6 +432,22 @@ public sealed class KeyboardSession : IDisposable
                 key,
                 update.IsPressed);
 
+            // The Windows key reserved by the OS and can never be a
+            // bindable key or part of a bindable combo.
+            // While either Windows key is held, swallow every other
+            // keyboard event so the Launcher does not try to capture
+            // anything
+            if (_leftWindowsPressed || _rightWindowsPressed)
+                continue;
+
+            // Release event lands after UpdateModifierState clears the flag,
+            // so filter it too, it must never reach InputReceived
+            if (key == Key.LeftWindowsKey ||
+                key == Key.RightWindowsKey)
+            {
+                continue;
+            }
+
             InputReceived?.Invoke(
                 key,
                 update.IsPressed,
@@ -465,6 +483,14 @@ public sealed class KeyboardSession : IDisposable
 
             case Key.RightAlt:
                 _rightAltPressed = isPressed;
+                break;
+
+            case Key.LeftWindowsKey:
+                _leftWindowsPressed = isPressed;
+                break;
+
+            case Key.RightWindowsKey:
+                _rightWindowsPressed = isPressed;
                 break;
         }
     }
