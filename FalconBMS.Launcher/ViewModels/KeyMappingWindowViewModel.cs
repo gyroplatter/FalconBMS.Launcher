@@ -30,6 +30,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
     private int _tempModifierFlags;
     private string _tempChordScancode;
     private int _tempChordModifierFlags;
+    private bool _isReservedKeyWarningActive;
 
     private readonly List<PendingDxButton> _pendingDxButtons = new();
     private readonly List<PendingDxPov> _pendingDxPovs = new();
@@ -258,6 +259,11 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         object? sender,
         BufferedKeyboardInputEventArgs e)
     {
+        // Ignore capture input while the reserved-key warning is showing, 
+        // so repeated key events don't display more warning windows
+        if (_isReservedKeyWarningActive)
+            return;
+
         // Existing Key Mapping behavior creates an assignment on the
         // non-modifier key DOWN event. Modifier-only presses do not map.
         if (!e.IsPressed)
@@ -280,18 +286,27 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         int modifierFlags =
             e.ModifierFlags;
 
-        // Reserve keys for BMS and Windows.
+        // Reserve keys for BMS and Windows
         if (ReservedKeyboardBindings.TryGetDisplayText(
                 caught,
                 modifierFlags,
                 out string reservedBinding))
         {
-            MessageBox.Show(
-                reservedBinding +
-                " is reserved and cannot be reassigned.",
-                "Reserved Key",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            _isReservedKeyWarningActive = true;
+
+            try
+            {
+                MessageBox.Show(
+                    reservedBinding +
+                    " is reserved and cannot be reassigned.",
+                    "Reserved Key",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+            finally
+            {
+                _isReservedKeyWarningActive = false;
+            }
 
             return;
         }
