@@ -18,11 +18,13 @@ public sealed class DeviceAxisBinding
     public string Deadzone { get; set; } = "None";
 
     /// <summary>
-    /// BMS exponential-axis value used as x in:
-    /// output = (input^3 * (x - 1) + input) / x
+    /// BMS exponential axis setting, supporting values from 0 through 100
     ///
-    /// 1 means no curve.
-    /// The AxisPair UI currently exposes values 1 through 5.
+    /// 0 disables the exponential curve
+    /// 1 produces a linear response
+    ///
+    /// The Launcher preserves imported values and writes non-linear
+    /// curve settings to User.cfg
     /// </summary>
     public int Curve { get; set; } = 1;
 

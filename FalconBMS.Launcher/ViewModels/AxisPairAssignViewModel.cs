@@ -1629,11 +1629,14 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
             set
             {
+                // BMS accepts exponential curve values from 0 through 100.
+                // Preserve every integer value, including imported values
+                // that were not available in the old five-step slider.
                 int clampedValue =
                     Math.Max(
-                        1,
+                        0,
                         Math.Min(
-                            5,
+                            100,
                             value));
 
                 if (!Set(
@@ -1644,36 +1647,13 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
                 }
 
                 OnPropertyChanged(
-                    nameof(CurveStep));
-
-                OnPropertyChanged(
                     nameof(CurvePercentageText));
             }
         }
 
-        public int CurveStep
-        {
-            get => CurveValue - 1;
-
-            set =>
-                CurveValue =
-                    Math.Max(
-                        0,
-                        Math.Min(
-                            4,
-                            value)) +
-                    1;
-        }
-
+        // This is a BMS configuration value, not a percentage.
         public string CurvePercentageText =>
-            CurveValue switch
-            {
-                2 => "25%",
-                3 => "50%",
-                4 => "75%",
-                5 => "100%",
-                _ => "0%"
-            };
+            CurveValue.ToString();
 
         public bool Invert
         {

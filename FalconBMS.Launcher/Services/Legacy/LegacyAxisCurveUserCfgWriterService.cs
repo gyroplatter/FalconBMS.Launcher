@@ -72,8 +72,8 @@ public static class LegacyAxisCurveUserCfgWriterService
             deviceProfiles,
             logicalAxisName);
 
-        // Curve 1 is the Falcon BMS default linear response.
-        // Do not add to User.cfg if default.
+        // BMS disables the exponential curve at 0.
+        // A value of 1 also produces a linear response.
         if (curveValue <= 1)
             return;
 
@@ -98,11 +98,14 @@ public static class LegacyAxisCurveUserCfgWriterService
             if (binding is null)
                 continue;
 
-            // BMS requires x to be greater than zero.
-            // x = 1 produces a linear response with no curve.
-            return Math.Max(1, binding.Curve);
+            // Preserve the BMS range
+            return Math.Max(
+                0,
+                Math.Min(
+                    100,
+                    binding.Curve));
         }
 
-        return 1;
+        return 0;
     }
 }

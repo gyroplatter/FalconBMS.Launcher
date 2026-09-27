@@ -349,10 +349,16 @@ public sealed class DeviceJsonReaderService
 
     private static int NormalizeAxisCurve(int? curve)
     {
-        if (!curve.HasValue || curve.Value < 1)
+        // Older JSON without a curve field retains its existing
+        // linear default of 1. An explicit 0 must remain disabled.
+        if (!curve.HasValue)
             return 1;
 
-        return curve.Value;
+        return Math.Max(
+            0,
+            Math.Min(
+                100,
+                curve.Value));
     }
 
     private static void ApplyAircraftProfiles(

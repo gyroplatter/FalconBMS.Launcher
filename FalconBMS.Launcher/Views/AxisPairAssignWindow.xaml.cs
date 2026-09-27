@@ -132,9 +132,7 @@ public partial class AxisPairAssignWindow : Window
                propertyName ==
                    nameof(AxisPairAssignViewModel.AxisEditViewModel.SaturationStep) ||
                propertyName ==
-                   nameof(AxisPairAssignViewModel.AxisEditViewModel.CurveValue) ||
-               propertyName ==
-                   nameof(AxisPairAssignViewModel.AxisEditViewModel.CurveStep);
+                   nameof(AxisPairAssignViewModel.AxisEditViewModel.CurveValue);
     }
 
     private void AxisPairPlotCanvas_SizeChanged(

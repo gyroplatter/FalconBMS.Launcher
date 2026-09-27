@@ -58,8 +58,13 @@ public sealed class LegacyUserCfgImportService
                     settingName,
                     out string? logicalAxisName))
             {
+                // Preserve BMS's 0–100 curve value
                 result.AxisCurves[logicalAxisName] =
-                    Math.Max(1, settingValue);
+                    Math.Max(
+                        0,
+                        Math.Min(
+                            100,
+                            settingValue));
 
                 continue;
             }
@@ -98,7 +103,11 @@ public sealed class LegacyUserCfgImportService
                 continue;
 
             axisBinding.Curve =
-                Math.Max(1, curve.Value);
+                Math.Max(
+                    0,
+                    Math.Min(
+                        100,
+                        curve.Value));
         }
     }
 }

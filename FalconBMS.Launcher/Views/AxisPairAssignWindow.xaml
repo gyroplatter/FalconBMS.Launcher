@@ -371,11 +371,11 @@
                                         <Slider Grid.Column="1"
         Style="{StaticResource AxisPairPercentageSliderStyle}"
         Minimum="0"
-        Maximum="4"
+        Maximum="100"
         TickFrequency="1"
         IsSnapToTickEnabled="True"
         Margin="8,0,10,0"
-        Value="{Binding Primary.CurveStep,
+        Value="{Binding Primary.CurveValue,
                         Mode=TwoWay,
                         UpdateSourceTrigger=PropertyChanged}"/>
 
@@ -602,11 +602,11 @@
                                         <Slider Grid.Column="1"
         Style="{StaticResource AxisPairPercentageSliderStyle}"
         Minimum="0"
-        Maximum="4"
+        Maximum="100"
         TickFrequency="1"
         IsSnapToTickEnabled="True"
         Margin="8,0,10,0"
-        Value="{Binding Secondary.CurveStep,
+        Value="{Binding Secondary.CurveValue,
                         Mode=TwoWay,
                         UpdateSourceTrigger=PropertyChanged}"/>
 
