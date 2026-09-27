@@ -28,7 +28,10 @@ public static class KeyAssgn
             assignmentStatus += int2enum + "\t: ";
         }
 
-        if (keyboard != "0xFFFFFFFF")
+        if (!string.Equals(
+                keyboard,
+                "0xFFFFFFFF",
+                StringComparison.OrdinalIgnoreCase))
         {
             assignmentStatus += ModFlagsToText(modifier.ToString());
 

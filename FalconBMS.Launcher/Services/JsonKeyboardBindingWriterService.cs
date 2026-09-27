@@ -211,9 +211,9 @@ public sealed class JsonKeyboardBindingWriterService
                 ? row.SuppressedDefaultChordModifierFlags
                 : row.ChordModifierFlags;
 
-            WriteProperty(sb, 3, "key_scancode", jsonKeyScancode, comma: true);
+            WriteProperty(sb, 3, "key_scancode", NormalizeUnassignedScancode(jsonKeyScancode), comma: true);
             WriteProperty(sb, 3, "key_modifier_flags", jsonKeyModifierFlags, comma: true);
-            WriteProperty(sb, 3, "chord_scancode", jsonChordScancode, comma: true);
+            WriteProperty(sb, 3, "chord_scancode", NormalizeUnassignedScancode(jsonChordScancode), comma: true);
             WriteProperty(sb, 3, "chord_modifier_flags", jsonChordModifierFlags, comma: true);
 
             WriteProperty(sb, 3, "unused", row.Unused, comma: true);
@@ -235,6 +235,18 @@ public sealed class JsonKeyboardBindingWriterService
         sb.AppendLine("}");
 
         return sb.ToString();
+    }
+
+    // Ensure JSON always uses the canonical unassigned sentinel,
+    // regardless of the original BMS key file or imported JSON format.
+    private static string NormalizeUnassignedScancode(string value)
+    {
+        return string.Equals(
+            value,
+            "0xFFFFFFFF",
+            StringComparison.OrdinalIgnoreCase)
+            ? "0xFFFFFFFF"
+            : value;
     }
 
     private static HashSet<string> BuildUserModifiedComboSet(

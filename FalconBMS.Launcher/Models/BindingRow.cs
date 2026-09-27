@@ -22,11 +22,37 @@ public sealed class BindingRow
     public int SoundId { get; set; }
     public int Unused { get; set; }
 
-    public string KeyScancode { get; set; } = "";
+    private string _keyScancode = "";
+    private string _chordScancode = "";
+
+    public string KeyScancode
+    {
+        get => _keyScancode;
+        set => _keyScancode = NormalizeUnassignedScancode(value);
+    }
+
     public int KeyModifierFlags { get; set; }
 
-    public string ChordScancode { get; set; } = "";
+    public string ChordScancode
+    {
+        get => _chordScancode;
+        set => _chordScancode = NormalizeUnassignedScancode(value);
+    }
+
     public int ChordModifierFlags { get; set; }
+
+    // BMS key files may use either 0XFFFFFFFF or 0xFFFFFFFF.
+    // Normalize the unassigned sentinel when it enters the binding model
+    // so both JSON and AUTO.key writers receive the same value.
+    private static string NormalizeUnassignedScancode(string value)
+    {
+        return string.Equals(
+            value,
+            "0xFFFFFFFF",
+            StringComparison.OrdinalIgnoreCase)
+            ? "0xFFFFFFFF"
+            : value;
+    }
 
     public int Visibility { get; init; }
     public string Description { get; init; } = "";
@@ -41,9 +67,25 @@ public sealed class BindingRow
     // cleared, but these values preserve the real FULL default so suppression
     // is not accidentally stored as a user modification.
     public bool IsKeyboardDefaultSuppressed { get; set; }
-    public string SuppressedDefaultKeyScancode { get; set; } = "";
+
+    private string _suppressedDefaultKeyScancode = "";
+
+    public string SuppressedDefaultKeyScancode
+    {
+        get => _suppressedDefaultKeyScancode;
+        set => _suppressedDefaultKeyScancode = NormalizeUnassignedScancode(value);
+    }
+
     public int SuppressedDefaultKeyModifierFlags { get; set; }
-    public string SuppressedDefaultChordScancode { get; set; } = "";
+
+    private string _suppressedDefaultChordScancode = "";
+
+    public string SuppressedDefaultChordScancode
+    {
+        get => _suppressedDefaultChordScancode;
+        set => _suppressedDefaultChordScancode = NormalizeUnassignedScancode(value);
+    }
+
     public int SuppressedDefaultChordModifierFlags { get; set; }
 
     public void ClearKeyboardDefaultSuppression()
