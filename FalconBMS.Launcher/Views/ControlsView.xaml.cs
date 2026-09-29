@@ -28,6 +28,16 @@ public partial class ControlsView : UserControl
     // does not block WPF from rendering the Controls tab.
     private readonly SemaphoreSlim _captureStartGate = new(1, 1);
 
+
+    // Window whose activated/deactivated events gate Controls capture.
+    // Stored, so unloaded can unhook even after the view has left the visual tree.
+    private Window? _activationWindow;
+
+    // True while an Axis / AxisPair / Key Mapping popup is open. Those popups
+    // own their own capture hosts (which intentionally keep running when another
+    // app has focus), so the Controls host must stay stopped until they close
+    private bool _isMappingPopupOpen;
+
     private DirectInputCaptureHost? _captureHost;
     private CancellationTokenSource? _captureStartCancellation;
 
@@ -79,13 +89,73 @@ public partial class ControlsView : UserControl
     {
         SubscribeToViewModel(DataContext as ControlsViewModel);
         RebuildDeviceColumns();
+
+        // Capture only runs while the Launcher window is the active window.
+        HookOwnerWindowActivation();
+
+        // No-op if the window is not currently active (see the guards in
+        // StartKeyboardSearchCapture); OwnerWindow_Activated starts it later.
         StartKeyboardSearchCapture();
     }
 
     private void ControlsView_Unloaded(object sender, RoutedEventArgs e)
     {
+        UnhookOwnerWindowActivation();
         StopKeyboardSearchCapture();
         SubscribeToViewModel(null);
+    }
+
+    private void HookOwnerWindowActivation()
+    {
+        Window? window = Window.GetWindow(this);
+
+        if (window is null ||
+            ReferenceEquals(_activationWindow, window))
+        {
+            return;
+        }
+
+        UnhookOwnerWindowActivation();
+
+        _activationWindow = window;
+        window.Activated += OwnerWindow_Activated;
+        window.Deactivated += OwnerWindow_Deactivated;
+    }
+
+    private void UnhookOwnerWindowActivation()
+    {
+        if (_activationWindow is null)
+            return;
+
+        _activationWindow.Activated -= OwnerWindow_Activated;
+        _activationWindow.Deactivated -= OwnerWindow_Deactivated;
+        _activationWindow = null;
+    }
+
+    private void OwnerWindow_Activated(object? sender, EventArgs e)
+    {
+        // A capture already exists, nothing to do.
+        // This also covers the first activation right after Loaded
+        if (_captureHost is not null ||
+            _captureStartCancellation is not null)
+        {
+            return;
+        }
+
+        if (!IsLoaded)
+            return;
+
+        // The guards inside StartKeyboardSearchCapture handle popup open state
+        StartKeyboardSearchCapture();
+    }
+
+    private void OwnerWindow_Deactivated(object? sender, EventArgs e)
+    {
+        // Launcher lost focus (minimized, different app restored).
+        // Tear down DirectInput completely: no keyboard hook, no listener
+        // threads, no joystick sessions.
+        // Harmless if already stopped (for example while a mapping popup is open)
+        StopKeyboardSearchCapture();
     }
 
     private void ControlsView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -758,6 +828,8 @@ public partial class ControlsView : UserControl
 
             try
             {
+                _isMappingPopupOpen = true;
+
                 using (MainWindow.BeginModalOverlay(popupOwnerWindow))
                 {
                     axisPairWindow.ShowDialog();
@@ -765,6 +837,7 @@ public partial class ControlsView : UserControl
             }
             finally
             {
+                _isMappingPopupOpen = false;
                 StartKeyboardSearchCapture();
             }
 
@@ -804,6 +877,8 @@ public partial class ControlsView : UserControl
 
             try
             {
+                _isMappingPopupOpen = true;
+
                 using (MainWindow.BeginModalOverlay(popupOwnerWindow))
                 {
                     axisWindow.ShowDialog();
@@ -811,6 +886,7 @@ public partial class ControlsView : UserControl
             }
             finally
             {
+                _isMappingPopupOpen = false;
                 StartKeyboardSearchCapture();
             }
 
@@ -850,6 +926,8 @@ public partial class ControlsView : UserControl
 
         try
         {
+            _isMappingPopupOpen = true;
+
             using (MainWindow.BeginModalOverlay(popupOwnerWindow))
             {
                 window.ShowDialog();
@@ -857,6 +935,7 @@ public partial class ControlsView : UserControl
         }
         finally
         {
+            _isMappingPopupOpen = false;
             StartKeyboardSearchCapture();
         }
     }
@@ -870,6 +949,16 @@ public partial class ControlsView : UserControl
 
         Window? window = Window.GetWindow(this);
         if (window is null)
+            return;
+
+        // A mapping popup owns input while it is open
+        if (_isMappingPopupOpen)
+            return;
+
+        // Never capture while the Launcher is not the active window. This is the
+        // single choke point, so every Start call site (Loaded, model reload,
+        // popup close, reactivation) respects it.
+        if (!window.IsActive)
             return;
 
         IntPtr hwnd = new WindowInteropHelper(window).Handle;
@@ -933,11 +1022,18 @@ public partial class ControlsView : UserControl
                 }
             }, cancellation.Token);
 
-            // Controls may have been unloaded or switched to another DataContext
-            // while native DirectInput startup was still completing
+            // Controls may have been unloaded, switched to another DataContext,
+            // lost focus, or had a mapping popup open while native DirectInput
+            // startup was still completing.
+            // Recheck activity as a safeguard in case the Deactivate
+            // event was missed or delayed.
+            // Returning here is safe: the finally block disposes the
+            // unpromoted host.
             if (cancellation.IsCancellationRequested ||
                 !IsLoaded ||
-                !ReferenceEquals(DataContext, viewModel))
+                !ReferenceEquals(DataContext, viewModel) ||
+                _isMappingPopupOpen ||
+                !window.IsActive)
             {
                 return;
             }
