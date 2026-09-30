@@ -1,7 +1,11 @@
-﻿using FalconBMS.Launcher.Services;
+﻿using FalconBMS.Launcher.Input;
+using FalconBMS.Launcher.Services;
 using FalconBMS.Launcher.ViewModels;
 using System;
 using System.ComponentModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -17,11 +21,21 @@ public partial class MainWindow : Window
     private const int DBT_DEVNODES_CHANGED = 0x0007;
 
     private readonly DispatcherTimer _deviceChangeDebounceTimer;
+
     private HwndSource? _windowSource;
 
     private bool _deviceChangePending;
-    private bool _isClosing;
+    private volatile bool _isClosing;
+
     private int _modalOverlayDepth;
+
+    // Each refresh waits for its predecessor.
+    // Only the newest discovery result is applied to persistent hardware.
+    private readonly object _refreshSync = new();
+
+    private Task _refreshTask = Task.CompletedTask;
+
+    private int _refreshVersion;
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(
@@ -34,6 +48,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = new MainWindowViewModel();
+
+        ((MainWindowViewModel)DataContext)
+            .Main.PropertyChanged +=
+                MainViewModel_PropertyChanged;
 
         _deviceChangeDebounceTimer =
             new DispatcherTimer(
@@ -73,7 +91,6 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
 
-        // The native title bar can only be themed after WPF has created the window handle.
         ApplyNativeTitleBarTheme(
             ThemeService.IsCurrentEffectiveThemeDark());
 
@@ -85,6 +102,100 @@ public partial class MainWindow : Window
 
         _windowSource?.AddHook(
             MainWindow_WndProc);
+
+        // Only the main window initializes persistent hardware
+        PersistentDirectInputManager.Initialize(hwnd);
+
+        QueuePersistentDeviceRefresh();
+    }
+
+    private void MainViewModel_PropertyChanged(
+        object? sender,
+        PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName ==
+            nameof(MainViewModel.CurrentBindingModel))
+        {
+            QueuePersistentDeviceRefresh();
+        }
+    }
+
+    private void QueuePersistentDeviceRefresh()
+    {
+        if (_isClosing ||
+            DataContext is not MainWindowViewModel viewModel)
+        {
+            return;
+        }
+
+        // Model notifications can occur before WPF creates
+        // the main window's native handle
+        if (new WindowInteropHelper(this).Handle == IntPtr.Zero)
+            return;
+
+        Guid[] connectedDevices =
+            viewModel.Main.CurrentBindingModel.DeviceProfiles
+                .Where(device =>
+                    device.IsConnected &&
+                    device.InstanceGuid != Guid.Empty)
+                .Select(device => device.InstanceGuid)
+                .Distinct()
+                .ToArray();
+
+        lock (_refreshSync)
+        {
+            if (_isClosing)
+                return;
+
+            int version =
+                ++_refreshVersion;
+
+            Task previous =
+                _refreshTask;
+
+            _refreshTask =
+                SynchronizePersistentDevicesAsync(
+                    previous,
+                    version,
+                    connectedDevices);
+        }
+    }
+
+    private async Task SynchronizePersistentDevicesAsync(
+        Task previous,
+        int version,
+        Guid[] connectedDevices)
+    {
+        // Serialize refreshes without blocking the UI thread
+        await previous.ConfigureAwait(false);
+
+        if (_isClosing ||
+            version != Volatile.Read(ref _refreshVersion))
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                if (!_isClosing &&
+                    version == Volatile.Read(ref _refreshVersion))
+                {
+                    PersistentDirectInputManager.Current
+                        .Synchronize(connectedDevices);
+                }
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (!_isClosing)
+            {
+                DebugDiagnosticsService.Exception(
+                    ex,
+                    "Persistent DirectInput synchronization failed.");
+            }
+        }
     }
 
     private IntPtr MainWindow_WndProc(
@@ -257,8 +368,43 @@ public partial class MainWindow : Window
         viewModel.SaveOutputsForClose();
     }
 
-    private void MainWindow_Closed(object? sender, EventArgs e)
+    private void MainWindow_Closed(
+        object? sender,
+        EventArgs e)
     {
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.Main.PropertyChanged -=
+                MainViewModel_PropertyChanged;
+        }
+
+        Task pendingRefresh;
+
+        lock (_refreshSync)
+        {
+            _isClosing = true;
+
+            ++_refreshVersion;
+
+            pendingRefresh = _refreshTask;
+        }
+
+        // Refresh continuations explicitly avoid the WPF
+        // synchronization context, so waiting here cannot
+        // deadlock against the UI dispatcher.
+        try
+        {
+            pendingRefresh.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            DebugDiagnosticsService.Exception(
+                ex,
+                "Persistent DirectInput shutdown synchronization failed.");
+        }
+
+        PersistentDirectInputManager.Shutdown();
+
         _deviceChangeDebounceTimer.Tick -=
             DeviceChangeDebounceTimer_Tick;
 
@@ -273,9 +419,9 @@ public partial class MainWindow : Window
         ThemeService.EffectiveDarkThemeChanged -=
             ThemeService_EffectiveDarkThemeChanged;
 
-#if DEBUG
-        PreviewKeyDown -= MainWindow_DebugPreviewKeyDown;
-#endif
+        #if DEBUG
+                PreviewKeyDown -= MainWindow_DebugPreviewKeyDown;
+        #endif
     }
 
     private sealed class ModalOverlayScope : IDisposable

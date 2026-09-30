@@ -348,6 +348,10 @@ public sealed class KeyboardSession : IDisposable
 
     private readonly Thread _listenerThread;
 
+    // Maintained continuously, including when no capture window
+    // is subscribed. Duplicate DOWN and UP reports are ignored.
+    private readonly HashSet<Key> _pressedKeys = new();
+
     private bool _leftShiftPressed;
     private bool _rightShiftPressed;
     private bool _leftControlPressed;
@@ -363,6 +367,8 @@ public sealed class KeyboardSession : IDisposable
     public event Action<Exception>? Faulted;
     public event Action<int>? BufferCapacityReached;
 
+    private bool _started;
+
     internal KeyboardSession(
         IDirectInputDevice8 device)
     {
@@ -371,15 +377,28 @@ public sealed class KeyboardSession : IDisposable
         _device.SetEventNotification(
             _dataAvailable);
 
-        _device.Acquire();
-
         _listenerThread =
             new Thread(ListenLoop)
             {
                 IsBackground = true,
                 Name = "DirectInput Keyboard"
             };
+    }
 
+    // The hardware owner attaches fault handlers before starting
+    // the listener. Capture windows never call this method.
+    internal void Start()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(
+                nameof(KeyboardSession));
+
+        if (_started)
+            return;
+
+        _device.Acquire();
+
+        _started = true;
         _listenerThread.Start();
     }
 
@@ -428,20 +447,30 @@ public sealed class KeyboardSession : IDisposable
             if (key == Key.Unknown)
                 continue;
 
+            // Only genuine transitions reach capture subscribers.
+            // This state belongs to the persistent hardware listener,
+            // not an individual Controls or Key Mapping window.
+            bool stateChanged = update.IsPressed
+                ? _pressedKeys.Add(key)
+                : _pressedKeys.Remove(key);
+
+            if (!stateChanged)
+                continue;
+
             UpdateModifierState(
                 key,
                 update.IsPressed);
 
-            // The Windows key reserved by the OS and can never be a
-            // bindable key or part of a bindable combo.
-            // While either Windows key is held, swallow every other
-            // keyboard event so the Launcher does not try to capture
-            // anything
-            if (_leftWindowsPressed || _rightWindowsPressed)
+            // Windows keys are reserved. Continue tracking state
+            // but never pass combinations containing either key.
+            if (_leftWindowsPressed ||
+                _rightWindowsPressed)
+            {
                 continue;
+            }
 
-            // Release event lands after UpdateModifierState clears the flag,
-            // so filter it too, it must never reach InputReceived
+            // Also suppress the Windows key's own release event,
+            // which occurs after its modifier state is cleared.
             if (key == Key.LeftWindowsKey ||
                 key == Key.RightWindowsKey)
             {
@@ -537,7 +566,10 @@ public sealed class KeyboardSession : IDisposable
         {
         }
 
-        if (Thread.CurrentThread != _listenerThread)
+        // Initialization can fail before the listener thread starts.
+        // Only wait for a thread that was actually started.
+        if (_started &&
+            Thread.CurrentThread != _listenerThread)
         {
             try
             {
@@ -601,6 +633,8 @@ public sealed class JoystickSession : IDisposable
     public event Action<Exception>? Faulted;
     public event Action<int>? BufferCapacityReached;
 
+    private bool _started;
+
     internal JoystickSession(
         IDirectInputDevice8 device)
     {
@@ -609,17 +643,30 @@ public sealed class JoystickSession : IDisposable
         _device.SetEventNotification(
             _dataAvailable);
 
-        _device.Acquire();
-
-        SeedInitialState();
-
         _listenerThread =
             new Thread(ListenLoop)
             {
                 IsBackground = true,
                 Name = "DirectInput Joystick"
             };
+    }
 
+    // Initialization completes before buffered events are processed.
+    // The snapshot remains the existing single startup poll.
+    internal void Start()
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(
+                nameof(JoystickSession));
+
+        if (_started)
+            return;
+
+        _device.Acquire();
+
+        SeedInitialState();
+
+        _started = true;
         _listenerThread.Start();
     }
 
@@ -760,15 +807,26 @@ public sealed class JoystickSession : IDisposable
                 bool isPressed =
                     (update.Value & 0x80) != 0;
 
+                bool stateChanged;
+
                 lock (_stateSync)
                 {
+                    stateChanged =
+                        _buttonStates[buttonIndex] != isPressed;
+
                     _buttonStates[buttonIndex] =
                         isPressed;
                 }
 
-                ButtonChanged?.Invoke(
-                    buttonIndex,
-                    isPressed);
+                // A duplicate is not a new physical input.
+                // The persistent listener maintains this state
+                // independently of capture-window subscriptions.
+                if (stateChanged)
+                {
+                    ButtonChanged?.Invoke(
+                        buttonIndex,
+                        isPressed);
+                }
             }
         }
     }
@@ -857,7 +915,8 @@ public sealed class JoystickSession : IDisposable
         {
         }
 
-        if (Thread.CurrentThread != _listenerThread)
+        if (_started &&
+            Thread.CurrentThread != _listenerThread)
         {
             try
             {

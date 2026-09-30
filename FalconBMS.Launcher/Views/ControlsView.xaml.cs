@@ -810,18 +810,11 @@ public partial class ControlsView : UserControl
                     e.OriginalSource as DependencyObject,
                     viewModel);
 
-            IntPtr hwnd =
-                popupOwnerWindow is not null
-                    ? new WindowInteropHelper(
-                        popupOwnerWindow).Handle
-                    : IntPtr.Zero;
-
             axisPairWindow.DataContext =
                             new AxisPairAssignViewModel(
                                 advancedAxisDefinition,
                                 viewModel.DeviceColumns,
                                 clickedDeviceKey,
-                                hwnd,
                                 viewModel.SelectedProfile?.AircraftProfile ?? "",
                                 viewModel.ApplyAxisPairMappingFromPopup,
                                 () => axisPairWindow.Close());
@@ -859,18 +852,11 @@ public partial class ControlsView : UserControl
                     e.OriginalSource as DependencyObject,
                     viewModel);
 
-            IntPtr hwnd =
-                popupOwnerWindow is not null
-                    ? new WindowInteropHelper(
-                        popupOwnerWindow).Handle
-                    : IntPtr.Zero;
-
             axisWindow.DataContext =
                             new AxisAssignViewModel(
                                 selectedRow,
                                 viewModel.DeviceColumns,
                                 clickedDeviceKey,
-                                hwnd,
                                 viewModel.SelectedProfile?.AircraftProfile ?? "",
                                 viewModel.ApplyAxisMappingFromPopup,
                                 () => axisWindow.Close());
@@ -1007,7 +993,6 @@ public partial class ControlsView : UserControl
                 {
                     host.Start(
                         Dispatcher,
-                        hwnd,
                         captureKeyboard: true,
                         joystickDevices: joystickDevices);
 
@@ -1501,9 +1486,11 @@ public partial class ControlsView : UserControl
             return;
         }
 
+        // DirectInput axis slots can be sparse. AxisCount is the number of
+        // axes on the device, not the highest populated slot in the state array.
         int axisLimit = Math.Min(
-            Math.Min(axisValues.Length, baseline.Length),
-            Math.Max(0, deviceProfile.AxisCount));
+            axisValues.Length,
+            baseline.Length);
 
         for (int axisIndex = 0;
              axisIndex < axisLimit;

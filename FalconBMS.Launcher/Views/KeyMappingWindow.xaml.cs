@@ -1,7 +1,5 @@
 ﻿using FalconBMS.Launcher.ViewModels;
-using System;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace FalconBMS.Launcher.Views;
 
@@ -15,8 +13,7 @@ public partial class KeyMappingWindow : Window
         {
             if (DataContext is KeyMappingWindowViewModel vm)
             {
-                IntPtr hwnd = new WindowInteropHelper(this).Handle;
-                vm.StartCapture(hwnd);
+                vm.StartCapture();
             }
         };
 

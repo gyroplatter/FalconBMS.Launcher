@@ -31,7 +31,6 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
     private readonly IReadOnlyList<DeviceBindingProfile> _deviceProfiles;
     private readonly Action<AxisPairAssignViewModel> _saveAxisAssignment;
     private readonly Action _closeWindow;
-    private readonly IntPtr _hwnd;
 
     private readonly string _actionId =
         DebugDiagnosticsService.CreateActionId("AXISPAIRUI");
@@ -159,14 +158,12 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
         AxisPairDefinition pairDefinition,
         IEnumerable<DeviceBindingProfile> deviceProfiles,
         string? initialDeviceKey,
-        IntPtr hwnd,
         string aircraftProfile,
         Action<AxisPairAssignViewModel> saveAxisAssignment,
         Action closeWindow)
     {
         PairDefinition = pairDefinition;
         _deviceProfiles = deviceProfiles.ToList();
-        _hwnd = hwnd;
         _saveAxisAssignment = saveAxisAssignment;
         _closeWindow = closeWindow;
 
@@ -403,7 +400,6 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
 
         _captureHost.Start(
             System.Windows.Application.Current.Dispatcher,
-            _hwnd,
             captureKeyboard: false,
             joystickDevices: joystickDevices);
 
@@ -796,11 +792,11 @@ public sealed class AxisPairAssignViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        // DirectInput axis slots can be sparse. AxisCount is the number of
+        // axes on the device, not the highest populated slot in the state array.
         int axisLimit = Math.Min(
             axisValues.Length,
-            Math.Max(
-                0,
-                device.AxisCount));
+            baseline.Length);
 
         for (int axisIndex = 0;
              axisIndex < axisLimit;

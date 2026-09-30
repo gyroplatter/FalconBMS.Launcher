@@ -1,29 +1,91 @@
-﻿using System;
+﻿using FalconBMS.Launcher.Services;
+using System;
 using System.Collections.Generic;
 using System.Windows.Threading;
+using Vortice.DirectInput;
 
 namespace FalconBMS.Launcher.Input;
 
 /// <summary>
-/// Reusable owner for one buffered DirectInput capture lifecycle.
-/// The DirectInput manager lives for the lifetime of the host, while each
-/// start/stop cycle creates and disposes only the active capture session.
+/// One capture window's subscriptions to persistent DirectInput.
+///
+/// The host never creates, acquires, or disposes hardware.
+/// Stopping capture only releases its subscriptions.
 /// </summary>
 public sealed class DirectInputCaptureHost : IDisposable
 {
-    private readonly DirectInputManager _directInputManager = new();
+    private readonly Dictionary<string, JoystickCapture>
+        _joysticks =
+            new(StringComparer.OrdinalIgnoreCase);
 
-    private DirectInputCaptureSession? _captureSession;
+    private PersistentDirectInputManager.ListenerLease<KeyboardSession>?
+        _keyboardLease;
+
+    private Action<Key, bool, int>? _keyboardHandler;
+
+    private Dispatcher? _dispatcher;
+
+    private int _generation;
+
     private bool _disposed;
 
-    public event EventHandler<BufferedKeyboardInputEventArgs>? KeyboardInput;
-    public event EventHandler<BufferedJoystickButtonEventArgs>? JoystickButtonInput;
-    public event EventHandler<BufferedJoystickPovEventArgs>? JoystickPovInput;
-    public event EventHandler<BufferedJoystickAxisEventArgs>? JoystickAxisInput;
+    public event EventHandler<BufferedKeyboardInputEventArgs>?
+        KeyboardInput;
+
+    public event EventHandler<BufferedJoystickButtonEventArgs>?
+        JoystickButtonInput;
+
+    public event EventHandler<BufferedJoystickPovEventArgs>?
+        JoystickPovInput;
+
+    public event EventHandler<BufferedJoystickAxisEventArgs>?
+        JoystickAxisInput;
+
+    /// <summary>
+    /// Keeps one joystick and its exact event handlers together.
+    /// This makes unsubscription deterministic when capture stops.
+    /// </summary>
+    private sealed class JoystickCapture : IDisposable
+    {
+        private readonly PersistentDirectInputManager
+            .ListenerLease<JoystickSession> _lease;
+
+        private readonly Action<int, bool> _buttonHandler;
+        private readonly Action<int, int> _povHandler;
+        private readonly Action<DirectInputAxis, int> _axisHandler;
+
+        public JoystickSession Session => _lease.Session;
+
+        public JoystickCapture(
+            PersistentDirectInputManager
+                .ListenerLease<JoystickSession> lease,
+            Action<int, bool> buttonHandler,
+            Action<int, int> povHandler,
+            Action<DirectInputAxis, int> axisHandler)
+        {
+            _lease = lease;
+
+            _buttonHandler = buttonHandler;
+            _povHandler = povHandler;
+            _axisHandler = axisHandler;
+
+            Session.ButtonChanged += _buttonHandler;
+            Session.PovChanged += _povHandler;
+            Session.AxisChanged += _axisHandler;
+        }
+
+        public void Dispose()
+        {
+            Session.ButtonChanged -= _buttonHandler;
+            Session.PovChanged -= _povHandler;
+            Session.AxisChanged -= _axisHandler;
+
+            _lease.Dispose();
+        }
+    }
 
     public void Start(
         Dispatcher dispatcher,
-        IntPtr hwnd,
         bool captureKeyboard,
         IEnumerable<DirectInputCaptureDevice> joystickDevices)
     {
@@ -37,144 +99,232 @@ public sealed class DirectInputCaptureHost : IDisposable
 
         Stop();
 
-        var captureSession =
-            new DirectInputCaptureSession(
-                _directInputManager,
-                dispatcher,
-                hwnd);
+        _dispatcher = dispatcher;
 
-        captureSession.KeyboardInput +=
-            CaptureSession_KeyboardInput;
+        int generation = ++_generation;
 
-        captureSession.JoystickButtonInput +=
-            CaptureSession_JoystickButtonInput;
-
-        captureSession.JoystickPovInput +=
-            CaptureSession_JoystickPovInput;
-
-        captureSession.JoystickAxisInput +=
-            CaptureSession_JoystickAxisInput;
-
-        _captureSession = captureSession;
+        PersistentDirectInputManager manager =
+            PersistentDirectInputManager.Current;
 
         if (captureKeyboard)
         {
             try
             {
-                captureSession.OpenKeyboard();
+                _keyboardLease =
+                    manager.AcquireKeyboard();
+
+                _keyboardHandler =
+                    (key, isPressed, modifierFlags) =>
+                    {
+                        DispatchToUi(
+                            generation,
+                            () =>
+                            {
+                                KeyboardInput?.Invoke(
+                                    this,
+                                    new BufferedKeyboardInputEventArgs(
+                                        key,
+                                        isPressed,
+                                        modifierFlags));
+                            });
+                    };
+
+                _keyboardLease.Session.InputReceived +=
+                    _keyboardHandler;
             }
-            catch
+            catch (Exception ex)
             {
-                // Keyboard failure must not prevent joystick capture.
+                DebugDiagnosticsService.Exception(
+                    ex,
+                    "Keyboard capture subscription failed.");
             }
         }
 
         foreach (DirectInputCaptureDevice device in joystickDevices)
         {
+            if (string.IsNullOrWhiteSpace(device.DeviceKey) ||
+                device.InstanceGuid == Guid.Empty ||
+                _joysticks.ContainsKey(device.DeviceKey))
+            {
+                continue;
+            }
+
+            PersistentDirectInputManager
+                .ListenerLease<JoystickSession>? lease = null;
+
             try
             {
-                captureSession.OpenJoystick(
-                    device.DeviceKey,
-                    device.InstanceGuid);
+                lease =
+                    manager.AcquireJoystick(
+                        device.InstanceGuid);
+
+                string deviceKey = device.DeviceKey;
+
+                Action<int, bool> buttonHandler =
+                    (buttonIndex, isPressed) =>
+                    {
+                        DispatchToUi(
+                            generation,
+                            () =>
+                            {
+                                JoystickButtonInput?.Invoke(
+                                    this,
+                                    new BufferedJoystickButtonEventArgs(
+                                        deviceKey,
+                                        buttonIndex,
+                                        isPressed));
+                            });
+                    };
+
+                Action<int, int> povHandler =
+                    (povIndex, value) =>
+                    {
+                        DispatchToUi(
+                            generation,
+                            () =>
+                            {
+                                JoystickPovInput?.Invoke(
+                                    this,
+                                    new BufferedJoystickPovEventArgs(
+                                        deviceKey,
+                                        povIndex,
+                                        value));
+                            });
+                    };
+
+                Action<DirectInputAxis, int> axisHandler =
+                    (axis, value) =>
+                    {
+                        DispatchToUi(
+                            generation,
+                            () =>
+                            {
+                                JoystickAxisInput?.Invoke(
+                                    this,
+                                    new BufferedJoystickAxisEventArgs(
+                                        deviceKey,
+                                        axis,
+                                        value));
+                            });
+                    };
+
+                _joysticks.Add(
+                    deviceKey,
+                    new JoystickCapture(
+                        lease,
+                        buttonHandler,
+                        povHandler,
+                        axisHandler));
             }
-            catch
+            catch (Exception ex)
             {
-                // One controller failing to open must not prevent capture
-                // from the remaining devices.
+                lease?.Dispose();
+
+                DebugDiagnosticsService.Exception(
+                    ex,
+                    "Joystick capture subscription failed. " +
+                    $"DeviceKey={device.DeviceKey} " +
+                    $"InstanceGuid={device.InstanceGuid}");
             }
         }
     }
 
     public void Stop()
     {
-        if (_captureSession is null)
-            return;
+        // Invalidate events already queued to the dispatcher.
+        // They cannot reach a newly opened capture session.
+        ++_generation;
 
-        DirectInputCaptureSession captureSession =
-            _captureSession;
-
-        _captureSession = null;
-
-        captureSession.KeyboardInput -=
-            CaptureSession_KeyboardInput;
-
-        captureSession.JoystickButtonInput -=
-            CaptureSession_JoystickButtonInput;
-
-        captureSession.JoystickPovInput -=
-            CaptureSession_JoystickPovInput;
-
-        captureSession.JoystickAxisInput -=
-            CaptureSession_JoystickAxisInput;
-
-        try
+        if (_keyboardLease is not null)
         {
-            captureSession.Dispose();
+            if (_keyboardHandler is not null)
+            {
+                _keyboardLease.Session.InputReceived -=
+                    _keyboardHandler;
+            }
+
+            _keyboardLease.Dispose();
+
+            _keyboardLease = null;
+            _keyboardHandler = null;
         }
-        catch
+
+        foreach (JoystickCapture capture in _joysticks.Values)
         {
+            capture.Dispose();
         }
+
+        _joysticks.Clear();
+
+        _dispatcher = null;
     }
 
     public bool IsJoystickButtonPressed(
         string durableDeviceKey,
         int buttonIndex)
     {
-        return _captureSession?.IsJoystickButtonPressed(
+        return _joysticks.TryGetValue(
                    durableDeviceKey,
-                   buttonIndex) ??
-               false;
+                   out JoystickCapture? capture) &&
+               capture.Session.IsButtonPressed(buttonIndex);
     }
 
     public bool TryGetJoystickAxisValues(
         string durableDeviceKey,
         out int[] axisValues)
     {
-        if (_captureSession is not null)
-        {
-            return _captureSession.TryGetJoystickAxisValues(
+        if (_joysticks.TryGetValue(
                 durableDeviceKey,
-                out axisValues);
+                out JoystickCapture? capture))
+        {
+            axisValues =
+                capture.Session.GetAxisValues();
+
+            return true;
         }
 
         axisValues = Array.Empty<int>();
+
         return false;
     }
 
-    private void CaptureSession_KeyboardInput(
-        object? sender,
-        BufferedKeyboardInputEventArgs e)
+    private void DispatchToUi(
+        int generation,
+        Action action)
     {
-        KeyboardInput?.Invoke(
-            this,
-            e);
-    }
+        Dispatcher? dispatcher = _dispatcher;
 
-    private void CaptureSession_JoystickButtonInput(
-        object? sender,
-        BufferedJoystickButtonEventArgs e)
-    {
-        JoystickButtonInput?.Invoke(
-            this,
-            e);
-    }
+        if (_disposed || dispatcher is null)
+            return;
 
-    private void CaptureSession_JoystickPovInput(
-        object? sender,
-        BufferedJoystickPovEventArgs e)
-    {
-        JoystickPovInput?.Invoke(
-            this,
-            e);
-    }
+        if (dispatcher.CheckAccess())
+        {
+            if (!_disposed &&
+                generation == _generation)
+            {
+                action();
+            }
 
-    private void CaptureSession_JoystickAxisInput(
-        object? sender,
-        BufferedJoystickAxisEventArgs e)
-    {
-        JoystickAxisInput?.Invoke(
-            this,
-            e);
+            return;
+        }
+
+        try
+        {
+            dispatcher.BeginInvoke(
+                DispatcherPriority.Input,
+                new Action(() =>
+                {
+                    if (!_disposed &&
+                        generation == _generation)
+                    {
+                        action();
+                    }
+                }));
+        }
+        catch
+        {
+            // WPF may already be shutting down.
+        }
     }
 
     private void ThrowIfDisposed()
@@ -192,7 +342,7 @@ public sealed class DirectInputCaptureHost : IDisposable
             return;
 
         Stop();
-        _directInputManager.Dispose();
+
         _disposed = true;
     }
 }
@@ -200,6 +350,7 @@ public sealed class DirectInputCaptureHost : IDisposable
 public sealed class DirectInputCaptureDevice
 {
     public string DeviceKey { get; }
+
     public Guid InstanceGuid { get; }
 
     public DirectInputCaptureDevice(

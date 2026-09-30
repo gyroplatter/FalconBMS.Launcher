@@ -40,7 +40,6 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
     private readonly DeviceAxisDefinition? _definition;
     private readonly Action<AxisAssignViewModel> _saveAxisAssignment;
     private readonly Action _closeWindow;
-    private readonly IntPtr _hwnd;
 
     // Correlates every log line from one Assign Axis popup session
     private readonly string _actionId = DebugDiagnosticsService.CreateActionId("AXISUI");
@@ -191,14 +190,12 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         ControlGridRowViewModel axisRow,
         IEnumerable<DeviceBindingProfile> deviceProfiles,
         string? initialDeviceKey,
-        IntPtr hwnd,
         string aircraftProfile,
         Action<AxisAssignViewModel> saveAxisAssignment,
         Action closeWindow)
     {
         _axisRow = axisRow;
         _deviceProfiles = deviceProfiles.ToList();
-        _hwnd = hwnd;
         _saveAxisAssignment = saveAxisAssignment;
         _closeWindow = closeWindow;
 
@@ -247,7 +244,6 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
         _captureHost.Start(
             Application.Current.Dispatcher,
-            _hwnd,
             captureKeyboard: false,
             joystickDevices: joystickDevices);
 
@@ -380,7 +376,9 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
         if (!_baselineByDeviceKey.TryGetValue(device.DurableDeviceKey, out int[] baseline))
             return;
 
-        int axisLimit = Math.Min(axisValues.Length, Math.Max(0, device.AxisCount));
+        // DirectInput axis slots can be sparse. AxisCount is the number of
+        // axes on the device, not the highest populated slot in the state array.
+        int axisLimit = Math.Min(axisValues.Length, baseline.Length);
 
         for (int axisIndex = 0; axisIndex < axisLimit; axisIndex++)
         {

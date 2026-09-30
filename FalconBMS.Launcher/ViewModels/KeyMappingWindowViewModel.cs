@@ -228,7 +228,7 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
         CancelCommand = new RelayCommand(_closeWindow);
     }
 
-    public void StartCapture(IntPtr hwnd)
+    public void StartCapture()
     {
         StopCapture();
 
@@ -245,7 +245,6 @@ public sealed class KeyMappingWindowViewModel : ViewModelBase, IDisposable
 
         _captureHost.Start(
             Application.Current.Dispatcher,
-            hwnd,
             captureKeyboard: true,
             joystickDevices: joystickDevices);
     }
