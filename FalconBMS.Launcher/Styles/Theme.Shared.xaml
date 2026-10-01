@@ -921,7 +921,47 @@
            TargetType="ListBoxItem">
         <Setter Property="Padding" Value="8,6"/>
         <Setter Property="Margin" Value="0,1"/>
-        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Foreground"
+                Value="{DynamicResource AppForegroundBrush}"/>
+        <Setter Property="Background"
+                Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment"
+                Value="Stretch"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="ItemBorder"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ItemBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource AppSurfaceAltBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ItemBorder"
+                                    Property="Background"
+                                    Value="{DynamicResource ControlsTableSubsectionBackgroundBrush}"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource ControlsTableSubsectionForegroundBrush}"/>
+                        </Trigger>
+
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity"
+                                    Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Controls table: shared DataGrid styling. Brush values come from the active light/dark theme. -->
