@@ -397,9 +397,9 @@ public sealed class BindingJsonImportExportService
         MessageBoxResult result =
             MessageBox.Show(
                 owner,
-                "A matching control file already exists.\n\n" +
+                "A matching device was found.\n\n" +
                 Path.GetFileName(destinationPath) + "\n\n" +
-                "A backup will be created before it is replaced.",
+                "A backup of your original device mappings will be created before the import begins.",
                 "Import Controls",
                 MessageBoxButton.OKCancel,
                 MessageBoxImage.Warning);
