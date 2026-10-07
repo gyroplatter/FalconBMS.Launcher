@@ -662,9 +662,9 @@ public sealed class BindingJsonImportExportService
             new Button
             {
                 Content = "Export Selected",
-                Width = 120,
+                Width = 130,
                 IsDefault = true,
-                Margin = new Thickness(0, 0, 8, 0)
+                Style = (Style)Application.Current.FindResource("TertiaryButtonStyle")
             };
 
         var cancelButton =
@@ -672,7 +672,8 @@ public sealed class BindingJsonImportExportService
             {
                 Content = "Cancel",
                 Width = 80,
-                IsCancel = true
+                IsCancel = true,
+                Margin = new Thickness(0, 0, 8, 0)
             };
 
         var buttons =
