@@ -1,0 +1,32 @@
+[
+  {
+    "id": "trackir",
+    "displayName": "TrackIR",
+    "executableName": "TrackIR5.exe",
+    "executablePath": ""
+  },
+  {
+    "id": "ivc-client",
+    "displayName": "IVC Client",
+    "executableName": "IVC Client.exe",
+    "executablePath": "Bin\\x64\\IVC\\IVC Client.exe"
+  },
+  {
+    "id": "ivc-server",
+    "displayName": "IVC Server",
+    "executableName": "IVC Server.exe",
+    "executablePath": "Bin\\x64\\IVC\\IVC Server.exe"
+  },
+  {
+    "id": "rtt-client",
+    "displayName": "RTT Client",
+    "executableName": "RTTClient64.exe",
+    "executablePath": "Tools\\RTTRemote\\RTTClient64.exe"
+  },
+  {
+    "id": "rtt-server",
+    "displayName": "RTT Server",
+    "executableName": "RTTServer64.exe",
+    "executablePath": "Tools\\RTTRemote\\RTTServer64.exe"
+  }
+]

@@ -224,7 +224,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Width="88"
-                                                  Margin="0,0,8,0">
+                                                  Margin="0,0,8,0"
+                                                  Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                                                 <Button Tag="{Binding DisplayName}"
                                                         Style="{StaticResource CommunityToolEditableTileButtonStyle}"

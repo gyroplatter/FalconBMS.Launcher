@@ -924,8 +924,17 @@ public sealed class MainViewModel : ViewModelBase
     {
         ThirdPartyItems.Clear();
 
-        foreach (var item in _thirdPartyStrip.LoadTools())
+        foreach (ThirdPartyToolItem item in _thirdPartyStrip.LoadTools())
+        {
+            if (item.IsVisible)
+            {
+                _thirdPartyStrip.EnsureToolIcon(
+                    item,
+                    SelectedInstall?.BaseDir);
+            }
+
             ThirdPartyItems.Add(item);
+        }
     }
 
     // Set by MainWindowViewModel after construction, so SaveOutputsForClose
@@ -1356,12 +1365,116 @@ public sealed class MainViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(item.ExecutablePath) ||
-            !File.Exists(item.ExecutablePath))
+        string? executablePath =
+            _thirdPartyStrip.ResolveExecutablePath(
+                item,
+                SelectedInstall?.BaseDir);
+
+        if (executablePath is null ||
+            string.IsNullOrWhiteSpace(executablePath) ||
+            !File.Exists(executablePath))
+        {
+            if (!_thirdPartyStrip.IsStockTool(item))
+            {
+                MessageBox.Show(
+                    $"{item.DisplayName} could not be found.\n\n" +
+                    "Remove this application and add it again using the correct executable.",
+                    "Application Not Found",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            string? expectedFileName =
+                _thirdPartyStrip.GetExpectedExecutableName(
+                    item);
+
+            if (expectedFileName is null ||
+                string.IsNullOrWhiteSpace(expectedFileName))
+            {
+                MessageBox.Show(
+                    $"{item.DisplayName} could not be found.",
+                    "Application Not Found",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            var dialog =
+                new OpenFileDialog
+                {
+                    Title =
+                        $"Locate {item.DisplayName} - Select {expectedFileName}",
+                    Filter =
+                        $"{item.DisplayName} executable ({expectedFileName})|{expectedFileName}|Executable files (*.exe)|*.exe",
+                    CheckFileExists = true,
+                    Multiselect = false,
+                    FileName = expectedFileName
+                };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            string selectedExecutablePath =
+                dialog.FileName ?? "";
+
+            string previousExecutablePath =
+                item.ExecutablePath;
+
+            if (!_thirdPartyStrip.TrySetStockExecutablePath(
+                    item,
+                    selectedExecutablePath,
+                    SelectedInstall?.BaseDir,
+                    out string? mapError))
+            {
+                MessageBox.Show(
+                    mapError ??
+                    $"{item.DisplayName} could not be connected to the Launcher.",
+                    $"Locate {item.DisplayName}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            if (!_thirdPartyStrip.SaveTools(
+                    ThirdPartyItems,
+                    out string? saveError))
+            {
+                item.ExecutablePath =
+                    previousExecutablePath;
+
+                MessageBox.Show(
+                    saveError ??
+                    $"{item.DisplayName} could not be saved.",
+                    $"Locate {item.DisplayName}",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                return;
+            }
+
+            _thirdPartyStrip.RefreshToolIcon(
+                item,
+                SelectedInstall?.BaseDir);
+
+            executablePath =
+                _thirdPartyStrip.ResolveExecutablePath(
+                    item,
+                    SelectedInstall?.BaseDir);
+
+            DebugDiagnosticsService.Info(
+                $"Community stock tool located | Name={item.DisplayName} | Path={item.ExecutablePath}");
+        }
+
+        if (executablePath is null ||
+            string.IsNullOrWhiteSpace(executablePath) ||
+            !File.Exists(executablePath))
         {
             MessageBox.Show(
-                $"{item.DisplayName} could not be found.\n\n" +
-                "Remove this application and add it again using the correct executable.",
+                $"{item.DisplayName} could not be found.",
                 "Application Not Found",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -1372,7 +1485,7 @@ public sealed class MainViewModel : ViewModelBase
         try
         {
             _proc.StartExecutable(
-                item.ExecutablePath);
+                executablePath);
         }
         catch (Exception ex)
         {
@@ -1389,12 +1502,15 @@ public sealed class MainViewModel : ViewModelBase
     {
         try
         {
-            string executablePath =
-                item.ExecutablePath;
+            string? executablePath =
+                _thirdPartyStrip.ResolveExecutablePath(
+                    item,
+                    SelectedInstall?.BaseDir);
 
             // A previously mapped TrackIR executable disappeared.
-            // Return the seeded tile to its unmapped state and try again.
-            if (!string.IsNullOrWhiteSpace(executablePath) &&
+            // Return the stock tile to its unmapped state and try again.
+            if (executablePath is not null &&
+                !string.IsNullOrWhiteSpace(executablePath) &&
                 !File.Exists(executablePath))
             {
                 DebugDiagnosticsService.Warn(
@@ -1403,24 +1519,20 @@ public sealed class MainViewModel : ViewModelBase
                 _thirdPartyStrip.ClearSeededTrackIrMapping(
                     item);
 
-                executablePath = "";
-
-                RefreshThirdPartyTool(
-                    item);
+                executablePath = null;
 
                 _thirdPartyStrip.SaveTools(
                     ThirdPartyItems,
                     out _);
             }
 
-            if (string.IsNullOrWhiteSpace(executablePath))
+            if (executablePath is null ||
+                string.IsNullOrWhiteSpace(executablePath))
             {
-                // Detection runs only because this is the original seeded
-                // TrackIR tile with no working executable mapping.
                 string? detectedPath =
                     _thirdPartyStrip.TryFindTrackIrExecutable();
 
-                if (detectedPath != null &&
+                if (detectedPath is not null &&
                     !string.IsNullOrWhiteSpace(detectedPath))
                 {
                     if (!_thirdPartyStrip.TryMapSeededTrackIr(
@@ -1438,17 +1550,11 @@ public sealed class MainViewModel : ViewModelBase
                         return;
                     }
 
-                    executablePath =
-                        detectedPath;
-
                     if (!_thirdPartyStrip.SaveTools(
                             ThirdPartyItems,
                             out string? saveError))
                     {
                         _thirdPartyStrip.ClearSeededTrackIrMapping(
-                            item);
-
-                        RefreshThirdPartyTool(
                             item);
 
                         MessageBox.Show(
@@ -1461,32 +1567,55 @@ public sealed class MainViewModel : ViewModelBase
                         return;
                     }
 
-                    RefreshThirdPartyTool(
-                        item);
+                    _thirdPartyStrip.RefreshToolIcon(
+                        item,
+                        bmsBaseDirectory: null);
+
+                    executablePath =
+                        detectedPath;
 
                     DebugDiagnosticsService.Info(
                         $"TrackIR auto-detected | Path={executablePath}");
                 }
                 else
                 {
+                    string? expectedFileName =
+                        _thirdPartyStrip.GetExpectedExecutableName(
+                            item);
+
+                    if (expectedFileName is null ||
+                        string.IsNullOrWhiteSpace(expectedFileName))
+                    {
+                        MessageBox.Show(
+                            "TrackIR is missing its stock executable definition.",
+                            "TrackIR",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+
+                        return;
+                    }
+
                     var dialog =
                         new OpenFileDialog
                         {
                             Title =
                                 "Locate TrackIR - Select your TrackIR executable to connect it to the Launcher",
                             Filter =
-                                "TrackIR executable (TrackIR5.exe)|TrackIR5.exe|Executable files (*.exe)|*.exe",
+                                $"TrackIR executable ({expectedFileName})|{expectedFileName}|Executable files (*.exe)|*.exe",
                             CheckFileExists = true,
                             Multiselect = false,
-                            FileName = "TrackIR5.exe"
+                            FileName = expectedFileName
                         };
 
                     if (dialog.ShowDialog() != true)
                         return;
 
+                    string selectedExecutablePath =
+                        dialog.FileName ?? "";
+
                     if (!_thirdPartyStrip.TryMapSeededTrackIr(
                             item,
-                            dialog.FileName,
+                            selectedExecutablePath,
                             out string? mapError))
                     {
                         MessageBox.Show(
@@ -1499,17 +1628,11 @@ public sealed class MainViewModel : ViewModelBase
                         return;
                     }
 
-                    executablePath =
-                        dialog.FileName;
-
                     if (!_thirdPartyStrip.SaveTools(
                             ThirdPartyItems,
                             out string? saveError))
                     {
                         _thirdPartyStrip.ClearSeededTrackIrMapping(
-                            item);
-
-                        RefreshThirdPartyTool(
                             item);
 
                         MessageBox.Show(
@@ -1522,12 +1645,29 @@ public sealed class MainViewModel : ViewModelBase
                         return;
                     }
 
-                    RefreshThirdPartyTool(
-                        item);
+                    _thirdPartyStrip.RefreshToolIcon(
+                        item,
+                        bmsBaseDirectory: null);
+
+                    executablePath =
+                        selectedExecutablePath;
 
                     DebugDiagnosticsService.Info(
                         $"TrackIR located manually | Path={executablePath}");
                 }
+            }
+
+            if (executablePath is null ||
+                string.IsNullOrWhiteSpace(executablePath) ||
+                !File.Exists(executablePath))
+            {
+                MessageBox.Show(
+                    "TrackIR could not be found.",
+                    "Application Not Found",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
             }
 
             _proc.StartExecutable(
@@ -1543,17 +1683,6 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private void RefreshThirdPartyTool(
-        ThirdPartyToolItem item)
-    {
-        int index =
-            ThirdPartyItems.IndexOf(item);
-
-        if (index >= 0)
-            ThirdPartyItems[index] = item;
-    }
-
-
     private void AddThirdPartyTool()
     {
         var dialog =
@@ -1568,10 +1697,76 @@ public sealed class MainViewModel : ViewModelBase
         if (dialog.ShowDialog() != true)
             return;
 
-        var newTool =
-            _thirdPartyStrip.TryCreateTool(
-                dialog.FileName,
+        string selectedExecutablePath =
+            dialog.FileName ?? "";
+
+        ThirdPartyToolItem? matchingStockTool =
+            _thirdPartyStrip.FindStockToolForExecutable(
                 ThirdPartyItems,
+                selectedExecutablePath);
+
+        if (matchingStockTool is not null)
+        {
+            string previousExecutablePath =
+                matchingStockTool.ExecutablePath;
+
+            bool previousVisibility =
+                matchingStockTool.IsVisible;
+
+            if (!_thirdPartyStrip.TrySetStockExecutablePath(
+                    matchingStockTool,
+                    selectedExecutablePath,
+                    SelectedInstall?.BaseDir,
+                    out string? stockMapError))
+            {
+                MessageBox.Show(
+                    stockMapError ??
+                    "The Community Tool could not be connected.",
+                    "Community Tools",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                return;
+            }
+
+            matchingStockTool.IsVisible =
+                true;
+
+            if (_thirdPartyStrip.SaveTools(
+                    ThirdPartyItems,
+                    out string? stockSaveError))
+            {
+                _thirdPartyStrip.RefreshToolIcon(
+                    matchingStockTool,
+                    SelectedInstall?.BaseDir);
+
+                DebugDiagnosticsService.Info(
+                    $"Community stock tool mapped/restored | Name={matchingStockTool.DisplayName} | Path={matchingStockTool.ExecutablePath}");
+
+                return;
+            }
+
+            matchingStockTool.ExecutablePath =
+                previousExecutablePath;
+
+            matchingStockTool.IsVisible =
+                previousVisibility;
+
+            MessageBox.Show(
+                stockSaveError ??
+                "The Community Tool could not be saved.",
+                "Community Tools",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            return;
+        }
+
+        ThirdPartyToolItem? newTool =
+            _thirdPartyStrip.TryCreateTool(
+                selectedExecutablePath,
+                ThirdPartyItems,
+                SelectedInstall?.BaseDir,
                 out string? createError);
 
         if (newTool is null)
@@ -1591,7 +1786,7 @@ public sealed class MainViewModel : ViewModelBase
 
         if (_thirdPartyStrip.SaveTools(
                 ThirdPartyItems,
-                out string? saveError))
+                out string? addSaveError))
         {
             DebugDiagnosticsService.Info(
                 $"Community tool added | Name={newTool.DisplayName} | Path={newTool.ExecutablePath}");
@@ -1606,7 +1801,7 @@ public sealed class MainViewModel : ViewModelBase
             newTool);
 
         MessageBox.Show(
-            saveError ??
+            addSaveError ??
             "The Community Tools list could not be saved.",
             "Community Tools",
             MessageBoxButton.OK,
@@ -1618,6 +1813,34 @@ public sealed class MainViewModel : ViewModelBase
     {
         if (parameter is not ThirdPartyToolItem item)
             return;
+
+        if (_thirdPartyStrip.IsStockTool(item))
+        {
+            item.IsVisible =
+                false;
+
+            if (_thirdPartyStrip.SaveTools(
+                    ThirdPartyItems,
+                    out string? hideError))
+            {
+                DebugDiagnosticsService.Info(
+                    $"Community stock tool hidden | Name={item.DisplayName} | Id={item.Id}");
+
+                return;
+            }
+
+            item.IsVisible =
+                true;
+
+            MessageBox.Show(
+                hideError ??
+                "The Community Tool could not be hidden.",
+                "Community Tools",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            return;
+        }
 
         int removedIndex =
             ThirdPartyItems.IndexOf(item);
@@ -1713,27 +1936,6 @@ public sealed class MainViewModel : ViewModelBase
             "Community Tools",
             MessageBoxButton.OK,
             MessageBoxImage.Error);
-    }
-
-    private void MinimizeWindowUntilProcessEnds(Process process)
-    {
-        var window = Application.Current.MainWindow;
-        if (window is not null)
-            window.WindowState = WindowState.Minimized;
-
-        process.EnableRaisingEvents = true;
-        process.Exited += (_, _) =>
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var w = Application.Current.MainWindow;
-                if (w is not null)
-                {
-                    w.WindowState = WindowState.Normal;
-                    w.Activate();
-                }
-            });
-        };
     }
 
     private async Task LoadNewsAsync()

@@ -2240,7 +2240,7 @@
         </Setter>
     </Style>
 
-    <!-- Show only for the original unmapped TrackIR shortcut -->
+    <!-- Use the /Stock TrackIR image whenever no exe icon is available -->
     <Style x:Key="CommunityToolSeededTrackIrIconStyle"
            TargetType="Image">
         <Setter Property="Width"
@@ -2261,8 +2261,8 @@
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding IsSeededTrackIr}"
                                Value="True"/>
-                    <Condition Binding="{Binding ExecutablePath}"
-                               Value=""/>
+                    <Condition Binding="{Binding IconSource}"
+                               Value="{x:Null}"/>
                 </MultiDataTrigger.Conditions>
 
                 <Setter Property="Visibility"
