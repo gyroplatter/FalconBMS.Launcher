@@ -29,7 +29,6 @@ public sealed class MainViewModel : ViewModelBase
     private readonly CallsignService _callsign = new();
     private readonly TheaterDiscoveryService _theaterDiscovery = new();
     private readonly TheaterBackgroundService _theaterBackground = new();
-    private readonly FirstPartyLauncherStripService _firstPartyStrip = new();
     private readonly ThirdPartyLauncherStripService _thirdPartyStrip = new();
     private readonly KeyCatalogService _keyCatalogService = new();
     private readonly BindingModelBuilderService _bindingModelBuilder = new();
@@ -64,7 +63,6 @@ public sealed class MainViewModel : ViewModelBase
     public ObservableCollection<BmsInstall> Installs { get; } = new();
     public ObservableCollection<RssItemViewModel> NewsItems { get; } = new();
     public ObservableCollection<string> Theaters { get; } = new();
-    public ObservableCollection<LauncherStripItem> FirstPartyItems { get; } = new();
     public ObservableCollection<ThirdPartyToolItem> ThirdPartyItems { get; } = new();
 
     private bool _isEditingCommunityTools;
@@ -433,7 +431,6 @@ public sealed class MainViewModel : ViewModelBase
     public RelayCommand OpenUserCommand { get; }
     public RelayCommand OpenForumCommand { get; }
     public RelayCommand OpenScreenshotsCommand { get; }
-    public RelayCommandParam LaunchFirstPartyCommand { get; }
     public RelayCommandParam LaunchThirdPartyCommand { get; }
     public RelayCommand AddThirdPartyToolCommand { get; }
     public RelayCommand ToggleCommunityToolsEditCommand { get; }
@@ -449,7 +446,6 @@ public sealed class MainViewModel : ViewModelBase
         OpenUserCommand = new RelayCommand(OpenUser, () => SelectedInstall is not null);
         OpenScreenshotsCommand = new RelayCommand(OpenScreenshots, () => SelectedInstall is not null);
         OpenForumCommand = new RelayCommand(OpenForum);
-        LaunchFirstPartyCommand = new RelayCommandParam(LaunchFirstParty, CanLaunchFirstParty);
         LaunchThirdPartyCommand = new RelayCommandParam(LaunchThirdParty);
         AddThirdPartyToolCommand = new RelayCommand(AddThirdPartyTool);
         ToggleCommunityToolsEditCommand =
@@ -926,24 +922,11 @@ public sealed class MainViewModel : ViewModelBase
 
     private void RefreshLauncherStrips()
     {
-        FirstPartyItems.Clear();
-
-        if (SelectedInstall is not null)
-        {
-            foreach (var item in _firstPartyStrip.GetItems(SelectedInstall))
-                FirstPartyItems.Add(item);
-        }
-
         ThirdPartyItems.Clear();
 
         foreach (var item in _thirdPartyStrip.LoadTools())
             ThirdPartyItems.Add(item);
-
-        LaunchFirstPartyCommand.RaiseCanExecuteChanged();
     }
-
-    private bool CanLaunchFirstParty(object? parameter) =>
-        SelectedInstall is not null && parameter is string id && !string.IsNullOrWhiteSpace(id);
 
     // Set by MainWindowViewModel after construction, so SaveOutputsForClose
     // can check IsDirty and skip the write pipeline when nothing has changed.
@@ -1358,33 +1341,6 @@ public sealed class MainViewModel : ViewModelBase
         }
     }
 
-    private void LaunchFirstParty(object? parameter)
-    {
-        if (SelectedInstall is null) return;
-        if (parameter is not string id || string.IsNullOrWhiteSpace(id)) return;
-
-        try
-        {
-            if (string.Equals(id, "updater", StringComparison.OrdinalIgnoreCase))
-            {
-                RunUpdaterSelected();
-                return;
-            }
-
-            var item = _firstPartyStrip.GetItem(SelectedInstall, id);
-            if (item is null)
-                return;
-
-            var process = _proc.StartExecutable(item.ExePath, item.WorkingDirectory);
-
-            if (item.MinimizeLauncherUntilExit)
-                MinimizeWindowUntilProcessEnds(process);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message, "Tool Launch Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
 
     private void LaunchThirdParty(object? parameter)
     {
@@ -1850,6 +1806,5 @@ public sealed class MainViewModel : ViewModelBase
         OpenDocsCommand.RaiseCanExecuteChanged();
         OpenUserCommand.RaiseCanExecuteChanged();
         OpenScreenshotsCommand.RaiseCanExecuteChanged();
-        LaunchFirstPartyCommand.RaiseCanExecuteChanged();
     }
 }
