@@ -181,7 +181,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="18"/>
-                            <RowDefinition Height="108"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
@@ -207,162 +207,197 @@
                             </StackPanel>
                         </Grid>
 
-                        <ScrollViewer Grid.Row="2"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled"
-                                  CanContentScroll="False">
-                            <StackPanel Orientation="Horizontal">
+                            <!--
+    Tools and action buttons share one wrapping layout.
+    The action buttons always appear after the final tool.
+-->
+                            <Grid Grid.Row="2"
+      xmlns:models="clr-namespace:FalconBMS.Launcher.Models">
 
-                                <ItemsControl x:Name="CommunityToolsItemsControl"
-                                          ItemsSource="{Binding ThirdPartyItems}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
+                                <Grid.Resources>
+                                    <!-- Keep the tools collection binding local to this section. -->
+                                    <CollectionViewSource x:Key="ThirdPartyItemsView"
+                              Source="{Binding ThirdPartyItems}"/>
+                                </Grid.Resources>
 
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Width="88"
-                                                  Margin="0,0,8,0"
-                                                  Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ItemsControl x:Name="CommunityToolsItemsControl">
+
+                                    <ItemsControl.ItemsSource>
+                                        <CompositeCollection>
+
+                                            <!-- User-configured tools -->
+                                            <CollectionContainer
+                    Collection="{Binding Source={StaticResource ThirdPartyItemsView}}"/>
+
+                                            <!-- Normal mode: Customize -->
+                                            <Button Tag="Customize"
+                        Margin="0,0,8,0"
+                        DataContext="{Binding DataContext,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        Style="{StaticResource CommunityToolCustomizeButtonStyle}"
+                        Command="{Binding ToggleCommunityToolsEditCommand}">
+
+                                                <ContentControl Style="{StaticResource LinkCustomizeIconStyle}"
+                                    Width="30"
+                                    Height="30"/>
+                                            </Button>
+
+                                            <!-- Edit mode: Add -->
+                                            <Button Tag="Add"
+                        Margin="0,0,8,0"
+                        DataContext="{Binding DataContext,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
+                        Command="{Binding AddThirdPartyToolCommand}">
+
+                                                <Path Width="20"
+                          Height="20"
+                          Stretch="Uniform"
+                          Stroke="{DynamicResource AppForegroundBrush}"
+                          StrokeThickness="2"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M10,1 L10,19 M1,10 L19,10"/>
+                                            </Button>
+
+                                            <!-- Edit mode: Done -->
+                                            <Button Tag="Done"
+                        Margin="0,0,8,0"
+                        DataContext="{Binding DataContext,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
+                        Command="{Binding ToggleCommunityToolsEditCommand}">
+
+                                                <Path Width="21"
+                          Height="17"
+                          Stretch="Uniform"
+                          Stroke="{DynamicResource AppForegroundBrush}"
+                          StrokeThickness="2"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          Data="M1,9 L7,15 L20,1"/>
+                                            </Button>
+
+                                        </CompositeCollection>
+                                    </ItemsControl.ItemsSource>
+
+                                    <!--
+            The typed template applies to tool items only.
+            Customize, Add, and Done retain their own button styles.
+        -->
+                                    <ItemsControl.Resources>
+                                        <DataTemplate DataType="{x:Type models:ThirdPartyToolItem}">
+
+                                            <Grid Width="98"
+                      Margin="0,0,8,0"
+                      Visibility="{Binding IsVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                                                 <Button Tag="{Binding DisplayName}"
-                                                        Style="{StaticResource CommunityToolEditableTileButtonStyle}"
-                                                        PreviewMouseLeftButtonDown="CommunityToolTile_PreviewMouseLeftButtonDown"
-                                                        PreviewMouseMove="CommunityToolTile_PreviewMouseMove"
-                                                        PreviewMouseLeftButtonUp="CommunityToolTile_PreviewMouseLeftButtonUp">
+                            Style="{StaticResource CommunityToolEditableTileButtonStyle}"
+                            PreviewMouseLeftButtonDown="CommunityToolTile_PreviewMouseLeftButtonDown"
+                            PreviewMouseMove="CommunityToolTile_PreviewMouseMove"
+                            PreviewMouseLeftButtonUp="CommunityToolTile_PreviewMouseLeftButtonUp">
 
                                                     <Grid>
 
-                                                            <!-- Seeded TrackIR icon before its executable is mapped -->
-                                                            <Image Source="/Assets/trackir.png"
-                                                                   Style="{StaticResource CommunityToolSeededTrackIrIconStyle}"/>
+                                                        <!-- Seeded TrackIR icon before its executable is mapped -->
+                                                        <Image Source="/Assets/trackir.png"
+                                   Style="{StaticResource CommunityToolSeededTrackIrIconStyle}"/>
 
-                                                            <!-- Generic fallback for an application with no icon -->
-                                                            <ContentControl Style="{StaticResource CommunityToolFallbackIconStyle}"/>
+                                                        <!-- Generic fallback for an application with no icon -->
+                                                        <ContentControl Style="{StaticResource CommunityToolFallbackIconStyle}"/>
 
-                                                            <Image Source="{Binding IconSource}"
-                                                                   Width="38"
-                                                                   Height="38"
-                                                                   Stretch="Uniform"
-                                                                   HorizontalAlignment="Center"
-                                                                   VerticalAlignment="Center"/>
-                                                        </Grid>
+                                                        <Image Source="{Binding IconSource}"
+                                   Width="38"
+                                   Height="38"
+                                   Stretch="Uniform"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                                                    </Grid>
                                                 </Button>
 
                                                 <!--
-                                                    Drag handle remains visible in edit mode, but is
-                                                    visual-only. Mouse input passes through it to the
-                                                    full tile underneath, so you can drag anywhere
-                                                -->
+                        Drag handle remains visible in edit mode, but is
+                        visual-only. Mouse input passes through it to the
+                        full tile underneath, so you can drag anywhere.
+                    -->
                                                 <Border Width="16"
-                                                        Height="18"
-                                                        Margin="9,4,0,0"
-                                                        HorizontalAlignment="Left"
-                                                        VerticalAlignment="Top"
-                                                        Background="{DynamicResource AppSurfaceBrush}"
-                                                        BorderBrush="{DynamicResource AppBorderBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="8"
-                                                        IsHitTestVisible="False"
-                                                        Style="{StaticResource CommunityToolDragHandleStyle}">
+                            Height="18"
+                            Margin="9,4,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Top"
+                            Background="{DynamicResource AppSurfaceBrush}"
+                            BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            IsHitTestVisible="False"
+                            Style="{StaticResource CommunityToolDragHandleStyle}">
 
                                                     <UniformGrid Width="7"
-                                                                 Height="10"
-                                                                 Rows="3"
-                                                                 Columns="2"
-                                                                 HorizontalAlignment="Center"
-                                                                 VerticalAlignment="Center">
+                                     Height="10"
+                                     Rows="3"
+                                     Columns="2"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center">
+
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
                                                         <Ellipse Width="2"
-                                                                 Height="2"
-                                                                 Fill="{DynamicResource AppMutedForegroundBrush}"/>
+                                     Height="2"
+                                     Fill="{DynamicResource AppMutedForegroundBrush}"/>
+
                                                     </UniformGrid>
                                                 </Border>
 
                                                 <!-- Delete button -->
                                                 <Button Width="18"
-                                                        Height="18"
-                                                        Margin="0,4,5,0"
-                                                        Padding="0"
-                                                        HorizontalAlignment="Right"
-                                                        VerticalAlignment="Top"
-                                                        BorderThickness="0"
-                                                        Cursor="Hand"
-                                                        Style="{StaticResource CommunityToolDeleteButtonStyle}"
-                                                        Command="{Binding DataContext.RemoveThirdPartyToolCommand,
-                                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"/>
+                            Height="18"
+                            Margin="0,4,5,0"
+                            Padding="0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Style="{StaticResource CommunityToolDeleteButtonStyle}"
+                            Command="{Binding DataContext.RemoveThirdPartyToolCommand,
+                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}"/>
+
                                             </Grid>
                                         </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
+                                    </ItemsControl.Resources>
+
+                                    <!-- Wrap tools and action buttons within the available width. -->
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+
                                 </ItemsControl>
-
-                                <!-- Normal mode -->
-                                <Button Tag="Customize"
-                                        Margin="0,0,8,0"
-                                        Style="{StaticResource CommunityToolCustomizeButtonStyle}"
-                                        Command="{Binding ToggleCommunityToolsEditCommand}">
-                                    <ContentControl Style="{StaticResource LinkCustomizeIconStyle}"
-                                                    Width="30"
-                                                    Height="30"/>
-                                </Button>
-
-                                <!-- Modify/Add -->
-                                <Button Tag="Add"
-                                        Margin="0,0,8,0"
-                                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
-                                        Command="{Binding AddThirdPartyToolCommand}">
-                                    <Path Width="20"
-                                          Height="20"
-                                          Stretch="Uniform"
-                                          Stroke="{DynamicResource AppForegroundBrush}"
-                                          StrokeThickness="2"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          Data="M10,1 L10,19 M1,10 L19,10"/>
-                                </Button>
-
-                                <!-- Modify Done -->
-                                <Button Tag="Done"
-                                        Margin="0,0,8,0"
-                                        Style="{StaticResource CommunityToolEditActionButtonStyle}"
-                                        Command="{Binding ToggleCommunityToolsEditCommand}">
-                                    <Path Width="21"
-                                          Height="17"
-                                          Stretch="Uniform"
-                                          Stroke="{DynamicResource AppForegroundBrush}"
-                                          StrokeThickness="2"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          StrokeLineJoin="Round"
-                                          Data="M1,9 L7,15 L20,1"/>
-                                </Button>
-                            </StackPanel>
-                        </ScrollViewer>
-                    </Grid>
+                            </Grid>
+                        </Grid>
             </Border>
 
             <Border Grid.Column="2" Style="{StaticResource DashboardCardStyle}">
                 <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="18"/>
+                            <RowDefinition Height="12"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
