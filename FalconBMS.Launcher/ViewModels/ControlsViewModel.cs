@@ -266,9 +266,13 @@ public sealed class ControlsViewModel : ViewModelBase
         foreach (var profile in bindingModel.AircraftProfiles)
             Profiles.Add(profile);
 
+        // Only connected, non-suppressed devices are visible and editable
+        // in Controls. Keep all device profiles in the BindingModel so
+        // offline and suppressed mappings remain preserved in JSON.
         foreach (var deviceProfile
-                 in bindingModel.DeviceProfiles.OrderBy(
-                     device => device.DiscoveryIndex))
+                 in bindingModel.DeviceProfiles
+                     .Where(device => device.IsConnected && !device.IsSuppressed)
+                     .OrderBy(device => device.DiscoveryIndex))
         {
             DeviceColumns.Add(deviceProfile);
 
@@ -1184,7 +1188,9 @@ public sealed class ControlsViewModel : ViewModelBase
         // The popup uses this first, then re-adds every pending DX input one at a time.
         if (string.IsNullOrWhiteSpace(selectedDeviceKey) || !selectedButtonIndex.HasValue || !selectedAssignmentIndex.HasValue)
         {
-            foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+            // Only clear assignments from connected devices.
+            // Offline and suppressed devices retain their saved DX and POV mappings.
+            foreach (DeviceBindingProfile deviceProfile in DeviceColumns.Where(device => device.IsConnected))
             {
                 DeviceAircraftBindingProfile? aircraftProfile = deviceProfile.AircraftProfiles.FirstOrDefault(profile =>
                     string.Equals(profile.AircraftProfile, aircraftProfileName, StringComparison.OrdinalIgnoreCase));
@@ -1588,11 +1594,10 @@ public sealed class ControlsViewModel : ViewModelBase
         changedLogicalAxisNames.Add(
             logicalAxisName);
 
-        // A logical BMS axis should resolve to one physical device axis total.
-        // Clear this logical axis from every device before applying the edited
-        // assignment.
+        // Only connected devices participate in axis conflict resolution.
+        // Offline and suppressed devices retain their saved assignments and tuning.
         foreach (DeviceBindingProfile deviceProfile in
-                 DeviceColumns)
+                 DeviceColumns.Where(device => device.IsConnected))
         {
             foreach (DeviceAxisBinding binding in
                      deviceProfile.AxisBindings.Where(
@@ -1783,9 +1788,9 @@ public sealed class ControlsViewModel : ViewModelBase
             logicalAxisName
         };
 
-        // A logical BMS axis should resolve to one physical device axis total.
-        // Clear this logical axis from every device before applying the new assignment.
-        foreach (DeviceBindingProfile deviceProfile in DeviceColumns)
+        // Only connected devices participate in axis conflict resolution.
+        // Offline and suppressed devices retain their saved axis assignments.
+        foreach (DeviceBindingProfile deviceProfile in DeviceColumns.Where(device => device.IsConnected))
         {
             foreach (DeviceAxisBinding binding in deviceProfile.AxisBindings.Where(binding =>
                          string.Equals(binding.LogicalAxisName, logicalAxisName, StringComparison.OrdinalIgnoreCase)))
