@@ -77,18 +77,17 @@ public sealed class LegacyDeviceSetupXmlWriterService
             BuildDetentPosition(profile),
             BuildAxisBlock(profile),
 
-            // Legacy root POV/DX blocks carry the active/default F-16 bindings.
+            // Legacy root POV/DX blocks carry the active/default F-16 bindings
             BuildPovBlock(GetAircraftProfile(profile, "F-16")),
             BuildDxBlock(GetAircraftProfile(profile, "F-16")),
 
-            new XElement(
-                "profileDefaultF16",
-                BuildPovBlock(GetAircraftProfile(profile, "F-16")),
-                BuildDxBlock(GetAircraftProfile(profile, "F-16"))),
-            new XElement(
-                "profileF15ABCD",
-                BuildPovBlock(GetAircraftProfile(profile, "F-15ABCD")),
-                BuildDxBlock(GetAircraftProfile(profile, "F-15ABCD")))
+            // One section per registered aircraft, in registry order
+            // (same element order as before for F-16 and F-15ABCD)
+            SupportedAircraftService.GetAircraft().Select(aircraft =>
+                new XElement(
+                    aircraft.XmlProfileElementName,
+                    BuildPovBlock(GetAircraftProfile(profile, aircraft.AircraftProfile)),
+                    BuildDxBlock(GetAircraftProfile(profile, aircraft.AircraftProfile))))
         );
 
         var document = new XDocument(new XDeclaration("1.0", "utf-8", null), root);

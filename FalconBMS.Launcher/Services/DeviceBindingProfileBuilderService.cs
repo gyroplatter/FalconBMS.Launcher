@@ -83,15 +83,13 @@ public sealed class DeviceBindingProfileBuilderService
             });
         }
 
-        profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
+        foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
         {
-            AircraftProfile = "F-16"
-        });
-
-        profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
-        {
-            AircraftProfile = "F-15ABCD"
-        });
+            profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
+            {
+                AircraftProfile = aircraft.AircraftProfile
+            });
+        }
 
         return profile;
     }

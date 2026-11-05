@@ -13,11 +13,10 @@ public sealed class DeviceJsonReaderService
     // This aircraft profile supplies the authoritative axis block if files differ.
     private const string PrimarySharedAxisAircraftProfile = "F-16";
 
-        private static readonly string[] RequiredAircraftProfiles =
-        {
-            "F-16",
-            "F-15ABCD"
-        };
+    private static readonly string[] RequiredAircraftProfiles =
+        SupportedAircraftService.GetAircraft()
+            .Select(aircraft => aircraft.AircraftProfile)
+            .ToArray();
 
     private readonly DeviceBindingProfileBuilderService _fallbackBuilder = new();
 
@@ -374,15 +373,13 @@ public sealed class DeviceJsonReaderService
 
         if (aircraftProfilesByName.Count == 0)
         {
-            profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
+            foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
             {
-                AircraftProfile = "F-16"
-            });
-
-            profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
-            {
-                AircraftProfile = "F-15ABCD"
-            });
+                profile.AircraftProfiles.Add(new DeviceAircraftBindingProfile
+                {
+                    AircraftProfile = aircraft.AircraftProfile
+                });
+            }
 
             return;
         }
@@ -565,12 +562,22 @@ public sealed class DeviceJsonReaderService
 
     private static string GetAircraftSortKey(string aircraftProfile)
     {
-        if (string.Equals(aircraftProfile, "F-16", StringComparison.OrdinalIgnoreCase))
-            return "000_F-16";
+        // Registered aircraft sort in registry order (F-16 first)
+        IReadOnlyList<SupportedAircraft> aircraft = SupportedAircraftService.GetAircraft();
 
-        if (string.Equals(aircraftProfile, "F-15ABCD", StringComparison.OrdinalIgnoreCase))
-            return "001_F-15ABCD";
+        for (int index = 0; index < aircraft.Count; index++)
+        {
+            if (string.Equals(
+                aircraft[index].AircraftProfile,
+                aircraftProfile,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{index:D3}_{aircraftProfile}";
+            }
+        }
 
+        // Preserve aircraft profiles found in saved JSON folder, even if no longer registered.
+        // Sort them last. They are not available in Controls without a loaded FULL KEY.
         return "999_" + aircraftProfile;
     }
 

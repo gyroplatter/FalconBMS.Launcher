@@ -313,17 +313,14 @@ public sealed class LegacyDeviceXmlImportService
                 });
         }
 
-        profile.AircraftProfiles.Add(
-            new DeviceAircraftBindingProfile
-            {
-                AircraftProfile = "F-16"
-            });
-
-        profile.AircraftProfiles.Add(
-            new DeviceAircraftBindingProfile
-            {
-                AircraftProfile = "F-15ABCD"
-            });
+        foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+        {
+            profile.AircraftProfiles.Add(
+                new DeviceAircraftBindingProfile
+                {
+                    AircraftProfile = aircraft.AircraftProfile
+                });
+        }
     }
 
     private void ApplyXml(
@@ -396,11 +393,8 @@ public sealed class LegacyDeviceXmlImportService
                 .Count() ?? 0;
 
         foreach (string profileName in
-                 new[]
-                 {
-                     "profileDefaultF16",
-                     "profileF15ABCD"
-                 })
+                 SupportedAircraftService.GetAircraft()
+                     .Select(aircraft => aircraft.XmlProfileElementName))
         {
             int count =
                 document.Root?

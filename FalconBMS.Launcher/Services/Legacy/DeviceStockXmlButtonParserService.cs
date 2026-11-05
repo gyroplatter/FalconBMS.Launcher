@@ -47,8 +47,16 @@ public sealed class DeviceStockXmlButtonParserService
                 }
             }
 
-            ApplyAircraftSpecificDxSection(profile, document, "profileDefaultF16", "F-16", actionId);
-            ApplyAircraftSpecificDxSection(profile, document, "profileF15ABCD", "F-15ABCD", actionId);
+            // One section per registered aircraft. Root <dx> still means F-16 (handled above)
+            foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+            {
+                ApplyAircraftSpecificDxSection(
+                    profile,
+                    document,
+                    aircraft.XmlProfileElementName,
+                    aircraft.AircraftProfile,
+                    actionId);
+            }
 
             int totalButtons = profile.AircraftProfiles.Sum(aircraft => aircraft.ButtonBindings.Count);
 

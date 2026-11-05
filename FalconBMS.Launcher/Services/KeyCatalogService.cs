@@ -51,13 +51,12 @@ public sealed class KeyCatalogService
             return catalogs;
         }
 
-        // Only load the supported aircraft FULL key files.
-        // Ignore backup copies or other files with similar names.
-        string[] fullKeyFiles =
-        {
-            "BMS - Full.key",
-            "BMS - Full-F15ABCD.key"
-        };
+        // Only load explicitly registered FULL KEY files.
+        // Missing files are skipped; unregistered files are ignored.
+        string[] fullKeyFiles = SupportedAircraftService
+            .GetAircraft()
+            .Select(aircraft => aircraft.FullKeyFileName)
+            .ToArray();
 
         var keyFiles = fullKeyFiles
             .Select(fileName => Path.Combine(configDir, fileName))
@@ -219,12 +218,17 @@ public sealed class KeyCatalogService
 
     private static string GetAircraftProfile(string path)
     {
-        string fileName = Path.GetFileNameWithoutExtension(path);
+        string fileName = Path.GetFileName(path);
 
-        if (fileName.IndexOf("F15ABCD", StringComparison.OrdinalIgnoreCase) >= 0)
-            return "F-15ABCD";
+        SupportedAircraft? aircraft =
+            SupportedAircraftService.FindByFullKeyFileName(fileName);
 
-        return "F-16";
+        // Unreachable in normal use (the file list comes from the registry),
+        // and LoadForInstall catches per-file failures.
+        if (aircraft is null)
+            throw new InvalidDataException($"Unsupported FULL KEY file: {fileName}");
+
+        return aircraft.AircraftProfile;
     }
 
 }

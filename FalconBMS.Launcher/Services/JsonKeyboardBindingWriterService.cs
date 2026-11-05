@@ -29,19 +29,15 @@ public sealed class JsonKeyboardBindingWriterService
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
         Directory.CreateDirectory(jsonDir);
 
-        WriteProfile(
-            jsonDir,
-            bindingModel,
-            aircraftProfile: "F-16",
-            fileName: "KeyboardBindings_F-16.json",
-            actionId: actionId);
-
-        WriteProfile(
-            jsonDir,
-            bindingModel,
-            aircraftProfile: "F-15ABCD",
-            fileName: "KeyboardBindings_F-15ABCD.json",
-            actionId: actionId);
+        foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+        {
+            WriteProfile(
+                jsonDir,
+                bindingModel,
+                aircraftProfile: aircraft.AircraftProfile,
+                fileName: aircraft.KeyboardJsonFileName,
+                actionId: actionId);
+        }
 
         DeleteLegacyF16KeyboardJson(jsonDir, actionId);
 

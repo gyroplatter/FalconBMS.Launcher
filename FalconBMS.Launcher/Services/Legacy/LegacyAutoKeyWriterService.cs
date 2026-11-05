@@ -36,21 +36,16 @@ public sealed class LegacyAutoKeyWriterService
         string configDir = Path.Combine(baseDir, "User", "Config");
         Directory.CreateDirectory(configDir);
 
-        WriteProfile(
-            configDir,
-            bindingModel,
-            connectedDeviceProfiles,
-            aircraftProfile: "F-16",
-            fileName: "BMS - Auto.key",
-            actionId: actionId);
-
-        WriteProfile(
-            configDir,
-            bindingModel,
-            connectedDeviceProfiles,
-            aircraftProfile: "F-15ABCD",
-            fileName: "BMS - Auto-F15ABCD.key",
-            actionId: actionId);
+        foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+        {
+            WriteProfile(
+                configDir,
+                bindingModel,
+                connectedDeviceProfiles,
+                aircraftProfile: aircraft.AircraftProfile,
+                fileName: aircraft.AutoKeyFileName,
+                actionId: actionId);
+        }
 
         DebugDiagnosticsService.Info($"Legacy AUTO key write end. | ActionId={actionId}");
     }

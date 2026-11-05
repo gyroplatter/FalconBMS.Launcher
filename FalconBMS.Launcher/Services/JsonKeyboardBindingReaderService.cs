@@ -39,23 +39,21 @@ public sealed class JsonKeyboardBindingReaderService
 
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
 
-        bool f16NeedsCatalogSync = ApplyProfile(
-            jsonDir,
-            bindingModel,
-            "F-16",
-            "KeyboardBindings_F-16.json",
-            fallbackFileName: "KeyboardBindings.json",
-            actionId);
+        bool needsCatalogSync = false;
 
-        bool f15NeedsCatalogSync = ApplyProfile(
-            jsonDir,
-            bindingModel,
-            "F-15ABCD",
-            "KeyboardBindings_F-15ABCD.json",
-            fallbackFileName: null,
-            actionId);
+        foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+        {
+            // The legacy fallback name comes from the registry (F-16 only)
+            bool profileNeedsCatalogSync = ApplyProfile(
+                jsonDir,
+                bindingModel,
+                aircraft.AircraftProfile,
+                aircraft.KeyboardJsonFileName,
+                fallbackFileName: aircraft.LegacyKeyboardJsonFileName,
+                actionId);
 
-        bool needsCatalogSync = f16NeedsCatalogSync || f15NeedsCatalogSync;
+            needsCatalogSync |= profileNeedsCatalogSync;
+        }
 
         DebugDiagnosticsService.Info(
             $"Keyboard JSON read end. NeedsCatalogSync={needsCatalogSync} | ActionId={actionId}");

@@ -9,16 +9,32 @@ namespace FalconBMS.Launcher.Services;
 
 public sealed class DeviceJsonWriterService
 {
-    public void Write(string baseDir, IReadOnlyList<DeviceBindingProfile> deviceProfiles)
+    public void Write(
+        string baseDir,
+        IReadOnlyList<DeviceBindingProfile> deviceProfiles,
+        IEnumerable<string> availableAircraftProfiles)
     {
         string actionId = DebugDiagnosticsService.CreateActionId("JSONHOTAS");
         DebugDiagnosticsService.Info($"Device JSON write begin. DeviceCount={deviceProfiles.Count} | ActionId={actionId}");
+
+        // Only aircraft whose FULL KEY catalog loaded are eligible for device JSON output.
+        var availableAircraft = new HashSet<string>(
+            availableAircraftProfiles,
+            StringComparer.OrdinalIgnoreCase);
+
+        if (availableAircraft.Count == 0)
+        {
+            DebugDiagnosticsService.Warn(
+                $"Device JSON write skipped. No available aircraft profiles. | ActionId={actionId}");
+
+            return;
+        }
 
         string jsonDir = Path.Combine(baseDir, "User", "Config", "JSON");
         Directory.CreateDirectory(jsonDir);
 
         foreach (DeviceBindingProfile profile in deviceProfiles)
-            WriteProfile(jsonDir, profile, actionId);
+            WriteProfile(jsonDir, profile, availableAircraft, actionId);
 
         DebugDiagnosticsService.Info($"Device JSON write end. | ActionId={actionId}");
     }
@@ -55,14 +71,30 @@ public sealed class DeviceJsonWriterService
             actionId);
     }
 
-    private static void WriteProfile(string configDir, DeviceBindingProfile profile, string actionId)
+    private static void WriteProfile(
+        string configDir,
+        DeviceBindingProfile profile,
+        HashSet<string> availableAircraft,
+        string actionId)
     {
-        // Persist one JSON file per physical device + aircraft profile.
-        // This makes each file a shareable binding set for one device in one aircraft.
-        foreach (DeviceAircraftBindingProfile aircraft in profile.AircraftProfiles)
-            WriteAircraftProfile(configDir, profile, aircraft, actionId);
+        bool wroteAircraftProfile = false;
 
-        DeleteLegacySingleDeviceProfile(configDir, profile, actionId);
+        // Persist one JSON file per physical device + aircraft profile, but only
+        // for aircraft with a loaded FULL KEY. Existing JSON for other aircraft
+        // is left untouched.
+        foreach (DeviceAircraftBindingProfile aircraft in profile.AircraftProfiles)
+        {
+            if (!availableAircraft.Contains(aircraft.AircraftProfile))
+                continue;
+
+            WriteAircraftProfile(configDir, profile, aircraft, actionId);
+            wroteAircraftProfile = true;
+        }
+
+        // Keep the legacy single-device JSON cleanup, but only after at least
+        // one aircraft file was written
+        if (wroteAircraftProfile)
+            DeleteLegacySingleDeviceProfile(configDir, profile, actionId);
     }
 
     private static void WriteAircraftProfile(

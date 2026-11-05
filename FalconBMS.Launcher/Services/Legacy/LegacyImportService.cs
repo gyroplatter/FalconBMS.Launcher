@@ -169,9 +169,15 @@ public sealed class LegacyImportService
             return 0;
         }
 
+        // Safety measure because the mini-import doesn't receive the main BindingModel,
+        // so load the FULL KEY catalogs to learn which aircraft are available
+        IReadOnlyList<KeyCatalog> availableCatalogs =
+            _keyCatalogService.LoadForInstall(baseDir);
+
         _deviceJsonWriter.Write(
             baseDir,
-            importedProfiles);
+            importedProfiles,
+            availableCatalogs.Select(catalog => catalog.AircraftProfile));
 
         DebugDiagnosticsService.Info(
             $"Legacy device mini-import complete. Candidates={importCandidates.Count} Imported={importedProfiles.Count} SkippedItems={skippedItems.Count} Backup=\"{backupResult.BackupDirectory}\"");
@@ -451,7 +457,8 @@ public sealed class LegacyImportService
 
             _deviceJsonWriter.Write(
                 baseDir,
-                bindingModel.DeviceProfiles);
+                bindingModel.DeviceProfiles,
+                bindingModel.AircraftProfiles.Select(profile => profile.AircraftProfile));
 
             var result =
                 new LegacyImportExecutionResult

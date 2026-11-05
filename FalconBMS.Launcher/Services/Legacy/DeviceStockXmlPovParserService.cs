@@ -46,8 +46,16 @@ public sealed class DeviceStockXmlPovParserService
                 }
             }
 
-            ApplyAircraftSpecificPovSection(profile, doc, "profileDefaultF16", "F-16", actionId);
-            ApplyAircraftSpecificPovSection(profile, doc, "profileF15ABCD", "F-15ABCD", actionId);
+            // One section per registered aircraft. Root <pov> still means F-16 (handled above).
+            foreach (SupportedAircraft aircraft in SupportedAircraftService.GetAircraft())
+            {
+                ApplyAircraftSpecificPovSection(
+                    profile,
+                    doc,
+                    aircraft.XmlProfileElementName,
+                    aircraft.AircraftProfile,
+                    actionId);
+            }
 
             int total = profile.AircraftProfiles.Sum(a => a.PovBindings.Count);
 

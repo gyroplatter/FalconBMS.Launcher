@@ -131,7 +131,8 @@ public sealed class LaunchPrepService
 
         _deviceJsonWriter.Write(
             baseDir,
-            bindingModel.DeviceProfiles);
+            bindingModel.DeviceProfiles,
+            bindingModel.AircraftProfiles.Select(profile => profile.AircraftProfile));
     }
 
     private static bool HasAnyAssignedBinding(
