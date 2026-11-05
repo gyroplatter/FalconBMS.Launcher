@@ -126,14 +126,15 @@ public sealed class JoystickCalService
                 // device JSON. Unassigned axes retain the default zero offset.
                 ApplyCenterOffset(block, binding);
 
-                // Only the primary Throttle axis has detents in this launcher.
-                // Throttle_Right remains assignable, but does not expose or write detents.
-                if (string.Equals(
-                    binding.LogicalAxisName,
-                    "Throttle",
-                    StringComparison.OrdinalIgnoreCase))
+                // Both throttles use the primary Throttle's idle and afterburner detents.
+                if (string.Equals(logicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(logicalAxisName, "Throttle_Right", StringComparison.OrdinalIgnoreCase))
                 {
-                    ApplyThrottleDetents(block, binding);
+                    DeviceAxisBinding? throttleBinding =
+                        FindAssignedAxisBinding(deviceProfiles, "Throttle");
+
+                    if (throttleBinding is not null)
+                        ApplyThrottleDetents(block, throttleBinding);
                 }
             }
 

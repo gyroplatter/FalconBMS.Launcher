@@ -27,8 +27,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<Version>3.0.0-rc1</Version>
-		<InformationalVersion>3.0.0-rc1</InformationalVersion>
+		<Version>3.0.0-rc2</Version>
+		<InformationalVersion>3.0.0-rc2</InformationalVersion>
 		<AssemblyVersion>3.0.0.0</AssemblyVersion>
 		<FileVersion>3.0.0.0</FileVersion>
 
