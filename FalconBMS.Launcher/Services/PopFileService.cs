@@ -71,7 +71,7 @@ public sealed class PopFileService
         bs[336 + 48] = Properties.Settings.Default.Misc_TrackIRZ ? (byte)0x01 : (byte)0x00;
         bs[341 + 48] = Properties.Settings.Default.Misc_ExMouseLook ? (byte)0x01 : (byte)0x00;
         bs[342 + 48] = Properties.Settings.Default.Misc_NaturalHeadMovement ? (byte)0x01 : (byte)0x00;
-        bs[362 + 48] = Properties.Settings.Default.Misc_RLNWS ? (byte)0x01 : (byte)0x00;
+        //bs[362 + 48] = Properties.Settings.Default.Misc_RLNWS ? (byte)0x01 : (byte)0x00;
 
         bs[12] = Properties.Settings.Default.Misc_SmartScalingOverride ? (byte)0x05 : (byte)0x01;
 

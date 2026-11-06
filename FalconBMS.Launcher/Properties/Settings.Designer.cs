@@ -206,18 +206,6 @@ namespace FalconBMS.Launcher.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool Misc_RLNWS {
-            get {
-                return ((bool)(this["Misc_RLNWS"]));
-            }
-            set {
-                this["Misc_RLNWS"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool Misc_TrackIRZ {
             get {
                 return ((bool)(this["Misc_TrackIRZ"]));

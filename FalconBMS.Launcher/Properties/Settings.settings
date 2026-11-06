@@ -47,9 +47,6 @@
     <Setting Name="Misc_bExportRTTTextures" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="Misc_RLNWS" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
     <Setting Name="Misc_TrackIRZ" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
