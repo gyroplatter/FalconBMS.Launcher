@@ -6,18 +6,6 @@
 /// </summary>
 public sealed class ViewsViewModel : ViewModelBase
 {
-    private bool _useRollAxisForNws = Properties.Settings.Default.Misc_RLNWS;
-    public bool UseRollAxisForNws
-    {
-        get => _useRollAxisForNws;
-        set
-        {
-            if (!Set(ref _useRollAxisForNws, value)) return;
-            Properties.Settings.Default.Misc_RLNWS = value;
-            Properties.Settings.Default.Save();
-        }
-    }
-
     /// <summary>
     /// Matches the original launcher meaning:
     /// false = Head Forward
