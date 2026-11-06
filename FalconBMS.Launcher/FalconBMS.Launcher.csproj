@@ -8,8 +8,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <PlatformTarget>AnyCPU</PlatformTarget>
-	<ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
-	<Platforms>AnyCPU</Platforms>
+    <ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
+    <Platforms>AnyCPU</Platforms>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PreferNativeArm64>True</PreferNativeArm64>
 
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>  
 
@@ -20,92 +22,84 @@
     <Description>Falcon BMS Launcher</Description>
   </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-		<Version>3.0.0.9999</Version>
-		<AssemblyVersion>3.0.0.9999</AssemblyVersion>
-		<FileVersion>3.0.0.9999</FileVersion>
-	</PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <Version>3.0.0.9999</Version>
+    <AssemblyVersion>3.0.0.9999</AssemblyVersion>
+    <FileVersion>3.0.0.9999</FileVersion>
+  </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
-		<Version>3.0.0-rc2</Version>
-		<InformationalVersion>3.0.0-rc2</InformationalVersion>
-		<AssemblyVersion>3.0.0.0</AssemblyVersion>
-		<FileVersion>3.0.0.0</FileVersion>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <Version>3.0.0</Version>
+    <InformationalVersion>3.0.0</InformationalVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
 
-		<DebugSymbols>false</DebugSymbols>
-		<DebugType>None</DebugType>
-	</PropertyGroup>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-	  <PreferNativeArm64>True</PreferNativeArm64>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-	  <PreferNativeArm64>True</PreferNativeArm64>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <None Remove="Assets\AVC.png" />
-	  <None Remove="Assets\background-header-dark.jpg" />
-	  <None Remove="Assets\background-header-dark.png" />
-	  <None Remove="Assets\background-header-light.jpg" />
-	  <None Remove="Assets\background-header-light.png" />
-	  <None Remove="Assets\background-header.jpg" />
-	  <None Remove="Assets\background-main-balkans.jpg" />
-	  <None Remove="Assets\background-main-hellas.jpg" />
-	  <None Remove="Assets\background-main-israel.jpg" />
-	  <None Remove="Assets\background-main-korea.jpg" />
-	  <None Remove="Assets\background-main-korea1.jpg" />
-	  <None Remove="Assets\background-main-korea2.jpg" />
-	  <None Remove="Assets\background-main-korea3.jpg" />
-	  <None Remove="Assets\background-main.jpg" />
-	  <None Remove="Assets\background-v2-import.jpg" />
-	  <None Remove="Assets\background-window-axispair.jpg" />
-	  <None Remove="Assets\background-window-callsign.jpg" />
-	  <None Remove="Assets\background-window-keymapping.jpg" />
-	  <None Remove="Assets\background-window-throttle.jpg" />
-	  <None Remove="Assets\bms-logo-dark.png" />
-	  <None Remove="Assets\bms-logo-light.png" />
-	  <None Remove="Assets\bms-logo.png" />
-	  <None Remove="Assets\BmsMultiMon.png" />
-	  <None Remove="Assets\CFG.png" />
-	  <None Remove="Assets\DISX.png" />
-	  <None Remove="Assets\EDIT.png" />
-	  <None Remove="Assets\F4RADAR.png" />
-	  <None Remove="Assets\F4WX.png" />
-	  <None Remove="Assets\favicon.ico" />
-	  <None Remove="Assets\Fonts\Inter_18pt-Bold.ttf" />
-	  <None Remove="Assets\Fonts\Inter_18pt-Italic.ttf" />
-	  <None Remove="Assets\Fonts\Inter_18pt-Medium.ttf" />
-	  <None Remove="Assets\Fonts\Inter_18pt-Regular.ttf" />
-	  <None Remove="Assets\Fonts\Inter_18pt-SemiBold.ttf" />
-	  <None Remove="Assets\Fonts\NotoSans-Bold.ttf" />
-	  <None Remove="Assets\Fonts\NotoSans-Italic.ttf" />
-	  <None Remove="Assets\Fonts\NotoSans-Medium.ttf" />
-	  <None Remove="Assets\Fonts\NotoSans-Regular.ttf" />
-	  <None Remove="Assets\Fonts\NotoSans-SemiBold.ttf" />
-	  <None Remove="Assets\Fonts\OpenSans-Bold.ttf" />
-	  <None Remove="Assets\Fonts\OpenSans-Italic.ttf" />
-	  <None Remove="Assets\Fonts\OpenSans-Medium.ttf" />
-	  <None Remove="Assets\Fonts\OpenSans-Regular.ttf" />
-	  <None Remove="Assets\Fonts\OpenSans-SemiBold.ttf" />
-	  <None Remove="Assets\icon-folder.png" />
-	  <None Remove="Assets\icon-gear.png" />
-	  <None Remove="Assets\icon-launch.png" />
-	  <None Remove="Assets\icon-newspaper.png" />
-	  <None Remove="Assets\icon-tools.png" />
-	  <None Remove="Assets\IVCC.png" />
-	  <None Remove="Assets\IVCS.png" />
-	  <None Remove="Assets\MC.png" />
-	  <None Remove="Assets\RTTClient64.png" />
-	  <None Remove="Assets\RTTServer64.png" />
-	  <None Remove="Assets\Config.png" />
-	  <None Remove="Assets\trackir.png" />
-	  <None Remove="Assets\UPD.png" />
-	  <None Remove="Assets\WC.png" />
-	  <None Remove="Assets\WDP.png" />
-	  <None Remove="Services\Controls\StockDeviceManifest.json" />
-	</ItemGroup>
+  <ItemGroup>
+    <None Remove="Assets\AVC.png" />
+    <None Remove="Assets\background-header-dark.jpg" />
+    <None Remove="Assets\background-header-dark.png" />
+    <None Remove="Assets\background-header-light.jpg" />
+    <None Remove="Assets\background-header-light.png" />
+    <None Remove="Assets\background-header.jpg" />
+    <None Remove="Assets\background-main-balkans.jpg" />
+    <None Remove="Assets\background-main-hellas.jpg" />
+    <None Remove="Assets\background-main-israel.jpg" />
+    <None Remove="Assets\background-main-korea.jpg" />
+    <None Remove="Assets\background-main-korea1.jpg" />
+    <None Remove="Assets\background-main-korea2.jpg" />
+    <None Remove="Assets\background-main-korea3.jpg" />
+    <None Remove="Assets\background-main.jpg" />
+    <None Remove="Assets\background-v2-import.jpg" />
+    <None Remove="Assets\background-window-axispair.jpg" />
+    <None Remove="Assets\background-window-callsign.jpg" />
+    <None Remove="Assets\background-window-keymapping.jpg" />
+    <None Remove="Assets\background-window-throttle.jpg" />
+    <None Remove="Assets\bms-logo-dark.png" />
+    <None Remove="Assets\bms-logo-light.png" />
+    <None Remove="Assets\bms-logo.png" />
+    <None Remove="Assets\BmsMultiMon.png" />
+    <None Remove="Assets\CFG.png" />
+    <None Remove="Assets\DISX.png" />
+    <None Remove="Assets\EDIT.png" />
+    <None Remove="Assets\F4RADAR.png" />
+    <None Remove="Assets\F4WX.png" />
+    <None Remove="Assets\favicon.ico" />
+    <None Remove="Assets\Fonts\Inter_18pt-Bold.ttf" />
+    <None Remove="Assets\Fonts\Inter_18pt-Italic.ttf" />
+    <None Remove="Assets\Fonts\Inter_18pt-Medium.ttf" />
+    <None Remove="Assets\Fonts\Inter_18pt-Regular.ttf" />
+    <None Remove="Assets\Fonts\Inter_18pt-SemiBold.ttf" />
+    <None Remove="Assets\Fonts\NotoSans-Bold.ttf" />
+    <None Remove="Assets\Fonts\NotoSans-Italic.ttf" />
+    <None Remove="Assets\Fonts\NotoSans-Medium.ttf" />
+    <None Remove="Assets\Fonts\NotoSans-Regular.ttf" />
+    <None Remove="Assets\Fonts\NotoSans-SemiBold.ttf" />
+    <None Remove="Assets\Fonts\OpenSans-Bold.ttf" />
+    <None Remove="Assets\Fonts\OpenSans-Italic.ttf" />
+    <None Remove="Assets\Fonts\OpenSans-Medium.ttf" />
+    <None Remove="Assets\Fonts\OpenSans-Regular.ttf" />
+    <None Remove="Assets\Fonts\OpenSans-SemiBold.ttf" />
+    <None Remove="Assets\icon-folder.png" />
+    <None Remove="Assets\icon-gear.png" />
+    <None Remove="Assets\icon-launch.png" />
+    <None Remove="Assets\icon-newspaper.png" />
+    <None Remove="Assets\icon-tools.png" />
+    <None Remove="Assets\IVCC.png" />
+    <None Remove="Assets\IVCS.png" />
+    <None Remove="Assets\MC.png" />
+    <None Remove="Assets\RTTClient64.png" />
+    <None Remove="Assets\RTTServer64.png" />
+    <None Remove="Assets\Config.png" />
+    <None Remove="Assets\trackir.png" />
+    <None Remove="Assets\UPD.png" />
+    <None Remove="Assets\WC.png" />
+    <None Remove="Assets\WDP.png" />
+    <None Remove="Services\Controls\StockDeviceManifest.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\Settings.Designer.cs">
@@ -175,47 +169,47 @@
     </Resource>
   </ItemGroup>
 
-	<ItemGroup>
-		<Content Include="Stock\**\*.*">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
+  <ItemGroup>
+    <Content Include="Stock\**\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
-	<ItemGroup>
-	  <Content Include="Assets\favicon.ico" />
-	  <Content Include="Services\Controls\StockDeviceManifest.json">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	</ItemGroup>
+  <ItemGroup>
+    <Content Include="Assets\favicon.ico" />
+    <Content Include="Services\Controls\StockDeviceManifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
-	<ItemGroup>
-	  <Resource Include="Assets\bms-logo-dark.png">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\bms-logo-light.png">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\Fonts\OpenSans-Bold.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\Fonts\OpenSans-Italic.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\Fonts\OpenSans-Medium.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\Fonts\OpenSans-Regular.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\Fonts\OpenSans-SemiBold.ttf">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\trackir.png">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	  <Resource Include="Assets\config-app.png">
-	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	  </Resource>
-	</ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\bms-logo-dark.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\bms-logo-light.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Fonts\OpenSans-Bold.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Fonts\OpenSans-Italic.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Fonts\OpenSans-Medium.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Fonts\OpenSans-Regular.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Fonts\OpenSans-SemiBold.ttf">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\trackir.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\config-app.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
 
 </Project>
