@@ -1,4 +1,5 @@
 ﻿using FalconBMS.Launcher.Models;
+using FalconBMS.Launcher.Services.Legacy;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,10 @@ namespace FalconBMS.Launcher.Services;
 
 public sealed class BindingJsonImportExportService
 {
-    private const string BindingJsonFilter = "Launcher binding JSON (*.json)|*.json";
+    private const string BindingJsonFilter = 
+        "Launcher JSON (*.json)|*.json";
+    private const string BindingJsonOrLegacyKeyFilter = 
+        BindingJsonFilter + "|" + "Legacy KEY (*.key)|*.key";
 
     private readonly JsonKeyboardBindingWriterService _keyboardJsonWriter = new();
     private readonly DeviceJsonWriterService _deviceJsonWriter = new();
@@ -25,7 +29,7 @@ public sealed class BindingJsonImportExportService
         var openDialog = new OpenFileDialog
         {
             Title = "Import Controls",
-            Filter = BindingJsonFilter,
+            Filter = BindingJsonOrLegacyKeyFilter,
             CheckFileExists = true,
             Multiselect = false
         };
@@ -33,20 +37,32 @@ public sealed class BindingJsonImportExportService
         if (openDialog.ShowDialog(owner) != true)
             return false;
 
+        string sourceFile = openDialog.FileName;
+
+        //Airtex 20261109 - HACK: allow import of legacy .key files (F-16 only), in addition to modern .json files,
+        // by simply converting the .key to json.
+        if (0 == String.Compare(Path.GetExtension(sourceFile), ".key", StringComparison.OrdinalIgnoreCase))
+        {
+            string tempJsonPath = 
+                LegacyKeyToJsonConverter.ConvertLegacyKeyToJson(sourceFile);
+
+            sourceFile = tempJsonPath;
+        }
+
         try
         {
-            ImportCandidate candidate = ReadImportCandidate(openDialog.FileName);
+            ImportCandidate candidate = ReadImportCandidate(sourceFile);
 
             return candidate.BindingType switch
             {
-                "hotas" => ImportDeviceJson(baseDir, bindingModel, openDialog.FileName, candidate, owner),
-                "keyboard" => ImportKeyboardJson(baseDir, bindingModel, openDialog.FileName, candidate, owner),
+                "hotas" => ImportDeviceJson(baseDir, bindingModel, sourceFile, candidate, owner),
+                "keyboard" => ImportKeyboardJson(baseDir, bindingModel, sourceFile, candidate, owner),
                 _ => ShowUnsupportedImport(candidate.BindingType, owner)
             };
         }
         catch (Exception ex)
         {
-            DebugDiagnosticsService.Exception(ex, $"Binding JSON import failed: {openDialog.FileName}");
+            DebugDiagnosticsService.Exception(ex, $"Binding JSON import failed: {sourceFile}");
 
             MessageBox.Show(
                 owner,
