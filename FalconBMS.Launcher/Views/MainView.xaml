@@ -20,7 +20,7 @@
                OpacityMask="{StaticResource MainBackgroundArtworkFadeBrush}"/>
 
         <ScrollViewer Background="Transparent"
-                  VerticalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Hidden"
                   HorizontalScrollBarVisibility="Disabled"
                   CanContentScroll="False">
             <Grid Background="Transparent"
@@ -28,11 +28,11 @@
               ClipToBounds="True">
 
                 <Grid.RowDefinitions>
-                <RowDefinition Height="170"/>
+                <RowDefinition Height="188"/>
                 <RowDefinition Height="12"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="12"/>
-                <RowDefinition Height="105"/>
+                <RowDefinition Height="125"/>
             </Grid.RowDefinitions>
 
             <!-- Top row: choose the BMS version and theater, then launch -->
@@ -142,6 +142,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="20"/>
                             <RowDefinition Height="58"/>
+                            <RowDefinition Height="40"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0"
@@ -164,6 +165,21 @@
                             Style="{StaticResource LaunchDashboardButtonStyle}"
                             Content="Start Falcon BMS"
                             Command="{Binding LaunchCommand}"/>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="7" HorizontalAlignment="Center">
+                                <RadioButton Content="No VR" GroupName="DisplayVrMode" 
+                                    IsChecked="{Binding VrNoVr, Mode=TwoWay}"
+                                    Style="{DynamicResource MainPageRadioAccented}"
+                                    Margin="5,0,5,0"/>
+                                <RadioButton Content="SteamVR" GroupName="DisplayVrMode" 
+                                    IsChecked="{Binding VrSteamVr, Mode=TwoWay}"
+                                    Style="{DynamicResource MainPageRadioAccented}"
+                                    Margin="5,0,5,0"/>
+                                <RadioButton Content="OpenXR" GroupName="DisplayVrMode" 
+                                    IsChecked="{Binding VrOpenXr, Mode=TwoWay}"
+                                    Style="{DynamicResource MainPageRadioAccented}"
+                                    Margin="5,0,5,0"/>
+                            </StackPanel>
                     </Grid>
                 </Border>
             </Grid>
@@ -424,9 +440,9 @@
                             </Grid.ColumnDefinitions>
 
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="76"/>
+                                <RowDefinition Height="70"/>
                                 <RowDefinition Height="10"/>
-                                <RowDefinition Height="76"/>
+                                <RowDefinition Height="70"/>
                             </Grid.RowDefinitions>
 
                             <Button Grid.Row="0"
@@ -505,6 +521,7 @@
                                    Margin="0,0,0,6"/>
 
                         <ItemsControl ItemsSource="{Binding NewsItems}"
+                                      d:ItemsSource="{d:SampleData ItemCount=3}"
                                       AlternationCount="3"
                                       ClipToBounds="True">
                             <ItemsControl.ItemsPanel>
@@ -538,9 +555,8 @@
 
                                                 <TextBlock Text="{Binding Description}"
                                                        FontSize="{StaticResource FontSizeSmall}"
-                                                       TextWrapping="Wrap"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       MaxHeight="30"/>
+                                                       TextWrapping="Wrap" LineHeight="15" MaxHeight="55"
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
                                         </DataTemplate>

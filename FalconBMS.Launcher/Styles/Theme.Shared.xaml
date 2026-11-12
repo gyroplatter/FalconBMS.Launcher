@@ -1647,7 +1647,12 @@
                                           Margin="8,0,0,0"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           HorizontalAlignment="Left"
-                                          RecognizesAccessKey="True"/>
+                                          RecognizesAccessKey="True">
+                            <!-- Hack: block the implicit TextBlock style imposing AppForegroundBrush, so that Foreground property can be set and inherited-->
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock"/>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                     </Grid>
 
                     <ControlTemplate.Triggers>
@@ -1669,6 +1674,12 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type RadioButton}" x:Key="MainPageRadioAccented"
+            BasedOn="{StaticResource {x:Type RadioButton}}">
+        <Setter Property="Foreground" Value="{DynamicResource AppAccentBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
     <Style TargetType="{x:Type Hyperlink}">
