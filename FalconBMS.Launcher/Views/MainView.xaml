@@ -10,7 +10,7 @@
     <!-- Outer Grid: Solid theme background and fixed background image -->
     <Grid Background="{DynamicResource AppWindowBackgroundBrush}">
 
-        <Image Source="{Binding MainBackgroundImage}"
+        <Image Source="{Binding MainBackgroundImage}" d:Source="/Assets/background-main-korea.jpg"
                Stretch="UniformToFill"
                HorizontalAlignment="Center"
                VerticalAlignment="Bottom"
@@ -28,11 +28,11 @@
               ClipToBounds="True">
 
                 <Grid.RowDefinitions>
-                <RowDefinition Height="188"/>
-                <RowDefinition Height="12"/>
+                <RowDefinition Height="190"/>
+                <RowDefinition Height="10"/>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="12"/>
-                <RowDefinition Height="125"/>
+                <RowDefinition Height="10"/>
+                <RowDefinition Height="105"/>
             </Grid.RowDefinitions>
 
             <!-- Top row: choose the BMS version and theater, then launch -->
@@ -142,7 +142,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="20"/>
                             <RowDefinition Height="58"/>
-                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="44"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0"
@@ -435,13 +435,13 @@
                         <Grid Grid.Row="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="4"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="70"/>
-                                <RowDefinition Height="10"/>
+                                <RowDefinition Height="4"/>
                                 <RowDefinition Height="70"/>
                             </Grid.RowDefinitions>
 
@@ -555,7 +555,7 @@
 
                                                 <TextBlock Text="{Binding Description}"
                                                        FontSize="{StaticResource FontSizeSmall}"
-                                                       TextWrapping="Wrap" LineHeight="15" MaxHeight="55"
+                                                       TextWrapping="Wrap" MaxHeight="30"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Border>
