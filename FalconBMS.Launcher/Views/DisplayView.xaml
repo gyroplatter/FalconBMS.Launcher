@@ -89,8 +89,8 @@
         </Border>
 
 
-        <!-- Launcher settings -->
-        <Border Grid.Row="0"
+        <!-- Launcher UX Theme -->
+        <Border Grid.Row="2"
                 Grid.Column="2"
                 Style="{StaticResource DashboardCardStyle}">
 
@@ -142,38 +142,10 @@
                                  FontWeight="Bold"
                                  Margin="0,0,0,16"/>
 
-                    <TextBlock Text="BMS Start Behavior"
-                               Style="{StaticResource SubheadingTextBlockStyle}"
-                               Margin="0,0,0,12"/>
-
-                    <RadioButton Content="Minimize Launcher"
-                                 GroupName="DisplayLauncherLaunchBehavior"
-                                 IsChecked="{Binding Main.MinimizeLauncherOnBmsLaunch, Mode=TwoWay}"
-                                 FontWeight="Bold"
-                                 Margin="0,0,0,2"/>
-
-                    <TextBlock Text="Automatically minimize the Launcher when starting BMS, and restore it when BMS closes."
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               TextWrapping="Wrap"
-                               Margin="26,0,0,16"/>
-
-                    <RadioButton Content="Close Launcher"
-                                 GroupName="DisplayLauncherLaunchBehavior"
-                                 IsChecked="{Binding Main.CloseLauncherOnBmsLaunch, Mode=TwoWay}"
-                                 FontWeight="Bold"
-                                 Margin="0,0,0,2"/>
-
-                    <TextBlock Text="Automatically close the Launcher after starting BMS."
-                               Style="{StaticResource BodyTextBlockStyle}"
-                               TextWrapping="Wrap"
-                               Margin="26,0,0,16"/>
-
                 </StackPanel>
-
             </Grid>
         </Border>
 
-        <!-- Falcon BMS startup behavior. -->
         <Border Grid.Row="2"
                 Grid.Column="0"
                 Style="{StaticResource DashboardCardStyle}">
@@ -221,11 +193,9 @@
             </Grid>
         </Border>
 
-        <!-- Virtual Reality runtime options -->
-        <Border Grid.Row="2"
-        Grid.Column="2"
+        <!-- Launcher Minimize/Close Behavior -->
+        <Border Grid.Row="0" Grid.Column="2"
         Style="{StaticResource DashboardCardStyle}">
-
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -241,28 +211,34 @@
                         <ContentControl Style="{StaticResource DashboardBadgeToolsIconStyle}"/>
                     </Border>
 
-                    <TextBlock Text="Virtual Reality"
+                    <TextBlock Text="BMS Start Behavior"
                        Style="{StaticResource DashboardTitleStyle}"/>
+
+
                 </StackPanel>
 
                 <StackPanel Grid.Row="2">
-                    <RadioButton Content="No VR"
-                         GroupName="DisplayVrMode"
-                         IsChecked="{Binding Main.VrNoVr, Mode=TwoWay}"
-                         FontWeight="Bold"
-                         Margin="0,0,0,16"/>
+                    <RadioButton Content="Minimize Launcher"
+                                 GroupName="DisplayLauncherLaunchBehavior"
+                                 IsChecked="{Binding Main.MinimizeLauncherOnBmsLaunch, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,2"/>
 
-                    <RadioButton Content="SteamVR"
-                         GroupName="DisplayVrMode"
-                         IsChecked="{Binding Main.VrSteamVr, Mode=TwoWay}"
-                         FontWeight="Bold"
-                         Margin="0,0,0,16"/>
+                    <TextBlock Text="Automatically minimize the Launcher when starting BMS, and restore it when BMS closes."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
 
-                    <RadioButton Content="OpenXR"
-                         GroupName="DisplayVrMode"
-                         IsChecked="{Binding Main.VrOpenXr, Mode=TwoWay}"
-                         FontWeight="Bold"
-                         Margin="0,0,0,16"/>
+                    <RadioButton Content="Close Launcher"
+                                 GroupName="DisplayLauncherLaunchBehavior"
+                                 IsChecked="{Binding Main.CloseLauncherOnBmsLaunch, Mode=TwoWay}"
+                                 FontWeight="Bold"
+                                 Margin="0,0,0,2"/>
+
+                    <TextBlock Text="Automatically close the Launcher after starting BMS."
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Margin="26,0,0,16"/>
                 </StackPanel>
 
             </Grid>
