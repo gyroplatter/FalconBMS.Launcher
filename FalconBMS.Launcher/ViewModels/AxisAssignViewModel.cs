@@ -404,7 +404,18 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        AxisCaptureCandidate best = candidates
+
+        bool isThrottle = string.Equals(
+            LogicalAxisName, "Throttle", StringComparison.OrdinalIgnoreCase);
+
+        // For Throttle, keep the first qualifying candidate through the stability checks.
+        // This allows linked physical throttles to move together without competing.
+        AxisCaptureCandidate? previousCandidate = isThrottle
+            ? candidates.FirstOrDefault(candidate =>
+                _stableHitsByCandidate.TryGetValue(candidate.CandidateKey, out int hits) && hits > 0)
+            : null;
+
+        AxisCaptureCandidate best = previousCandidate ?? candidates
             .OrderByDescending(candidate => candidate.Delta)
             .First();
 
@@ -413,9 +424,10 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
             .OrderByDescending(candidate => candidate.Delta)
             .FirstOrDefault();
 
-        // A noisy axis can cross the raw movement threshold while the user is moving another control.
-        // Only count the candidate when it is clearly stronger than the next moving axis.
-        if (secondBest is not null && best.Delta < secondBest.Delta * DominantAxisRatio)
+        // Keep dominance filtering for all other axes.
+        // Physically linked throttles can move equally, so either physical axis can win.
+        if (!isThrottle && secondBest is not null &&
+            best.Delta < secondBest.Delta * DominantAxisRatio)
         {
             _stableHitsByCandidate.Clear();
             StatusText = "Move one axis clearly to assign";
@@ -425,6 +437,7 @@ public sealed class AxisAssignViewModel : ViewModelBase, IDisposable
 
             return;
         }
+
 
         foreach (string key in _stableHitsByCandidate.Keys.ToList())
         {
