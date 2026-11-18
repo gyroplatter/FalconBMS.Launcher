@@ -153,41 +153,57 @@ public sealed class JoystickCalService
         byte[] block,
         DeviceAxisBinding binding)
     {
-        int centerOffset = Math.Max(
-            -10000,
-            Math.Min(10000, binding.CenterOffset));
+        int centerOffset = Math.Max(-10000, Math.Min(10000, binding.CenterOffset));
 
         if (centerOffset == 0)
             return;
 
-        string logicalAxisName = binding.LogicalAxisName;
+        string axis = binding.LogicalAxisName;
 
         bool isMainControl =
-            string.Equals(logicalAxisName, "Pitch", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(logicalAxisName, "Roll", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(logicalAxisName, "Yaw", StringComparison.OrdinalIgnoreCase);
+            string.Equals(axis, "Pitch", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(axis, "Roll", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(axis, "Yaw", StringComparison.OrdinalIgnoreCase);
 
         bool isCursor =
-            string.Equals(logicalAxisName, "Cursor_X", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(logicalAxisName, "Cursor_Y", StringComparison.OrdinalIgnoreCase);
+            string.Equals(axis, "Cursor_X", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(axis, "Cursor_Y", StringComparison.OrdinalIgnoreCase);
 
         if (!isMainControl && !isCursor)
             return;
 
-        // BMS stores the signed center offset at bytes 0-3
+        if (isCursor)
+        {
+            int deadzone = binding.Deadzone switch
+            {
+                "Small" => 100,
+                "Medium" => 500,
+                "Large" => 1000,
+                _ => 0
+            };
+
+            // Convert the raw center offset to its post-deadzone value
+            if (deadzone > 0)
+            {
+                centerOffset = (int)Math.Round(
+                    Math.Sign(centerOffset) *
+                    Math.Max(0, Math.Abs(centerOffset) - deadzone) *
+                    10000.0 / (10000 - deadzone),
+                    MidpointRounding.AwayFromZero);
+            }
+        }
+
+        // Only the exported calibration changes, JSON retains the raw offset
         WriteInt32LittleEndian(block, 0, centerOffset);
 
         if (isMainControl)
         {
-            // Pitch, Roll and Yaw also store the opposite value at bytes 8-11
             WriteInt32LittleEndian(block, 8, -centerOffset);
 
-            // The additional calibration field at bytes 16-19 is not
-            // generated yet. Its calculation requires further research.
         }
-
-        // Cursor X and Y use the first integer field only in testing
     }
+
+
 
     private static void WriteInt32LittleEndian(
         byte[] block,
